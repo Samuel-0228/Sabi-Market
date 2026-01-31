@@ -12,18 +12,42 @@ export const db = {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data || !data.user) return null;
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
+
+    if (profileError || !profile) {
+      // If user exists in Auth but not in Profiles table yet, provide a temporary profile object
+      // This is common if the user hasn't verified their email and RLS prevented insertion
+      const minimalProfile: UserProfile = {
+        id: data.user.id,
+        email: data.user.email || '',
+        full_name: data.user.user_metadata?.full_name || 'Student',
+        role: 'student',
+        is_verified: data.user.email?.endsWith('@aau.edu.et') || false,
+        created_at: data.user.created_at
+      };
+      
+      // Attempt to fix the missing profile if user session is already active
+      try {
+        await supabase.from('profiles').upsert(minimalProfile);
+        return minimalProfile;
+      } catch (e) {
+        return minimalProfile;
+      }
+    }
 
     return profile;
   },
 
   async login(email: string, password: string): Promise<void> {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      console.error("Login error:", error.message);
+      throw error;
+    }
   },
 
   async register(email: string, password: string, fullName: string, preferences: string[]): Promise<void> {
@@ -32,14 +56,18 @@ export const db = {
       password,
       options: {
         data: { full_name: fullName, preferences },
-        // CRITICAL: Ensure the user is returned to the app home after clicking the email link
         emailRedirectTo: window.location.origin
       }
     });
-    if (error) throw error;
     
+    if (error) {
+      console.error("Signup error:", error.message);
+      throw error;
+    }
+    
+    // Attempt profile creation. This might fail if the user is unauthenticated and email verification is ON
     if (data?.user) {
-      await supabase.from('profiles').upsert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email: email,
         full_name: fullName,
@@ -47,6 +75,7 @@ export const db = {
         is_verified: email.endsWith('@aau.edu.et'),
         role: 'student'
       });
+      if (profileError) console.warn("Profile creation deferred until verification:", profileError.message);
     }
   },
 
@@ -64,7 +93,7 @@ export const db = {
     if (error) throw error;
     return data.map(l => ({
       ...l,
-      seller_name: l.profiles?.full_name
+      seller_name: (l as any).profiles?.full_name || 'Student'
     }));
   },
 
@@ -93,7 +122,7 @@ export const db = {
     
     return data.map(o => ({
       ...o,
-      listing_title: o.listings?.title
+      listing_title: (o as any).listings?.title
     }));
   }
 };
