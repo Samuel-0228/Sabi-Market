@@ -1,24 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLanguage } from './LanguageContext';
 import { useTheme } from './ThemeContext';
-import { db } from '../services/supabaseService';
 import { UserProfile } from '../types';
 
 interface NavbarProps {
   onNavigate: (page: string) => void;
   currentPage: string;
   onLogout: () => void;
+  user: UserProfile | null;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user }) => {
   const { lang, setLang, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    db.getCurrentUser().then(setUser);
-  }, [currentPage]);
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-white/10 px-6 sm:px-10 py-5 sm:py-6 flex items-center justify-between transition-all duration-700 dark:border-white/5">
@@ -27,7 +22,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) =>
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-bold text-xl sm:text-2xl shadow-xl group-hover:scale-110 transition-all duration-500">
             ሳ
           </div>
-          <span className="text-xl sm:text-2xl font-black tracking-tighter hidden sm:block dark:text-white">Savvy.</span>
+          <span className="text-xl sm:text-2xl font-black tracking-tighter hidden sm:block dark:text-white">{t('appName')}</span>
         </div>
 
         {user && (
@@ -36,13 +31,13 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) =>
               onClick={() => onNavigate('home')}
               className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'home' ? 'text-indigo-600' : 'text-gray-400'}`}
             >
-              Feed
+              {t('feed')}
             </button>
             <button 
               onClick={() => onNavigate('dashboard')}
               className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`}
             >
-              My Store
+              {t('myStore')}
             </button>
           </div>
         )}
@@ -61,9 +56,9 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) =>
         {/* Language Toggle */}
         <button 
           onClick={() => setLang(lang === 'en' ? 'am' : 'en')}
-          className="text-[10px] font-black text-gray-400 hover:text-indigo-500 dark:hover:text-white uppercase tracking-[0.3em] transition-all"
+          className="bg-gray-100 dark:bg-white/5 px-4 py-2 rounded-xl text-[10px] font-black text-black dark:text-white uppercase tracking-[0.1em] transition-all hover:bg-gray-200 dark:hover:bg-white/10"
         >
-          {lang === 'en' ? 'አማ' : 'EN'}
+          {lang === 'en' ? 'አማርኛ' : 'English'}
         </button>
 
         {user ? (
@@ -76,8 +71,10 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) =>
                </div>
                <button 
                  onClick={onLogout}
-                 className="bg-gray-50 dark:bg-white/5 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 text-black dark:text-white w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm active:scale-90"
+                 className="flex items-center gap-3 bg-gray-50 dark:bg-white/5 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 text-black dark:text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl transition-all duration-500 shadow-sm active:scale-90"
+                 title={t('logout')}
                >
+                 <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">{t('logout')}</span>
                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                </button>
             </div>
@@ -87,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout }) =>
             onClick={() => onNavigate('auth')}
             className="bg-black dark:bg-white text-white dark:text-black px-6 sm:px-10 py-3 sm:py-4 rounded-[1.25rem] text-[10px] font-black tracking-widest uppercase shadow-2xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
           >
-            Launch
+            {t('login')}
           </button>
         )}
       </div>

@@ -7,9 +7,10 @@ import { useLanguage } from './LanguageContext';
 interface HomeProps {
   onSelectListing: (listing: Listing) => void;
   onAddListing: () => void;
+  onBuyListing?: (listing: Listing) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
+const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing }) => {
   const { t } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
   const [filter, setFilter] = useState<ListingCategory | 'all'>('all');
@@ -48,13 +49,24 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
     }
   };
 
+  const handleBuyNow = () => {
+    if (detailItem && onBuyListing) {
+      if (detailItem.stock <= 0) {
+        alert("This item is currently sold out.");
+        return;
+      }
+      onBuyListing(detailItem);
+      setDetailItem(null);
+    }
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-16 reveal relative">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-24 gap-12">
         <div className="max-w-3xl">
-           <h1 className="text-5xl sm:text-[5rem] font-black text-black dark:text-white mb-8 tracking-tighter leading-[0.8]">Explore.</h1>
+           <h1 className="text-5xl sm:text-[5rem] font-black text-black dark:text-white mb-8 tracking-tighter leading-[0.8]">{t('explore')}</h1>
            <p className="text-gray-500 dark:text-gray-400 font-medium text-xl leading-relaxed max-w-xl">
-             Discover the best student-led projects and campus essentials. All protected by Savvy Escrow.
+             {t('discoverText')}
            </p>
         </div>
         
@@ -79,7 +91,7 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
         <div className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl opacity-40">🔍</div>
         <input 
           type="text" 
-          placeholder="Search listings..."
+          placeholder={t('search')}
           className="w-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-[2.5rem] pl-20 pr-10 py-9 text-2xl font-medium shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] focus:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.1)] focus:outline-none transition-all duration-500 dark:text-white dark:focus:bg-white/10"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -98,7 +110,7 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
       ) : filteredListings.length === 0 ? (
         <div className="text-center py-48 bg-white/60 dark:bg-white/5 glass rounded-[4rem] border border-white dark:border-white/5">
            <div className="text-7xl mb-10 opacity-20">📦</div>
-           <h2 className="text-3xl font-black text-black dark:text-white mb-4 tracking-tight">Nothing found</h2>
+           <h2 className="text-3xl font-black text-black dark:text-white mb-4 tracking-tight">{t('noListings')}</h2>
            <button onClick={() => {setSearchTerm(''); setFilter('all');}} className="text-black dark:text-white font-bold underline">Reset search</button>
         </div>
       ) : (
@@ -117,7 +129,7 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
                 />
                 <div className="absolute top-4 left-4">
                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full shadow-lg border border-white/10 ${listing.stock === 0 ? 'bg-red-500 text-white' : 'bg-white/90 dark:bg-black/90 backdrop-blur-xl dark:text-white'}`}>
-                     {listing.stock === 0 ? 'Sold Out' : t(listing.category)}
+                     {listing.stock === 0 ? t('soldOut') : t(listing.category)}
                    </span>
                 </div>
               </div>
@@ -146,7 +158,7 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
         className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] bg-black dark:bg-white text-white dark:text-black px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-[0_30px_60px_-10px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4"
       >
         <span className="text-xl">+</span>
-        Start Selling
+        {t('startSelling')}
       </button>
 
       {/* Item Detail Overlay */}
@@ -166,19 +178,19 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
                  
                  <div className="grid grid-cols-2 gap-8 mb-10">
                    <div>
-                     <p className="text-[10px] font-black text-gray-300 dark:text-gray-500 uppercase tracking-widest mb-2">Price</p>
+                     <p className="text-[10px] font-black text-gray-300 dark:text-gray-500 uppercase tracking-widest mb-2">{t('price')}</p>
                      <p className="text-3xl font-black text-black dark:text-white">{detailItem.price} ETB</p>
                    </div>
                    <div>
-                     <p className="text-[10px] font-black text-gray-300 dark:text-gray-500 uppercase tracking-widest mb-2">Availability</p>
+                     <p className="text-[10px] font-black text-gray-300 dark:text-gray-500 uppercase tracking-widest mb-2">{t('availability')}</p>
                      <p className={`text-xl font-bold ${detailItem.stock > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {detailItem.stock > 0 ? `${detailItem.stock} in stock` : 'Out of stock'}
+                        {detailItem.stock > 0 ? `${detailItem.stock} ${t('inStock')}` : t('soldOut')}
                      </p>
                    </div>
                  </div>
 
                  <div className="bg-gray-50 dark:bg-black/40 p-6 rounded-3xl border border-gray-100 dark:border-white/5">
-                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Seller Contact</p>
+                   <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">{t('sellerContact')}</p>
                    <div className="flex items-center justify-between">
                      <span className="font-bold text-xl text-black dark:text-white">{detailItem.contact_phone || 'Private'}</span>
                      <button className="bg-white dark:bg-white/5 text-black dark:text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-gray-100 dark:border-white/5 shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 transition-colors">Copy</button>
@@ -191,10 +203,14 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing }) => {
                    onClick={() => handleOpenChat(detailItem)}
                    className="flex-1 bg-gray-50 dark:bg-white/5 text-black dark:text-white py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
                  >
-                   Chat with Seller
+                   {t('chatWithSeller')}
                  </button>
-                 <button className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all">
-                   Buy Now
+                 <button 
+                  onClick={handleBuyNow}
+                  disabled={detailItem.stock <= 0}
+                  className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {detailItem.stock > 0 ? t('buyNow') : t('soldOut')}
                  </button>
                </div>
              </div>

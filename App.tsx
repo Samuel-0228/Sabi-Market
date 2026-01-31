@@ -2,24 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { db, supabase } from './services/supabaseService';
 import { Listing, UserProfile } from './types';
-import { LanguageProvider } from './components/LanguageContext';
-import { ThemeProvider } from './components/ThemeContext';
+import { useLanguage } from './components/LanguageContext';
 import Navbar from './components/Navbar';
 import Auth from './components/Auth';
 import Home from './components/Home';
 import SellerDashboard from './components/SellerDashboard';
 import AddListingModal from './components/AddListingModal';
 import ChatBot from './components/ChatBot';
+import Checkout from './components/Checkout';
 
 const App: React.FC = () => {
+  // Access the translation function 't' from the LanguageContext
+  const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'auth' | 'home' | 'dashboard' | 'admin'>('home');
+  const [currentPage, setCurrentPage] = useState<'auth' | 'home' | 'dashboard' | 'admin' | 'checkout'>('home');
   const [showAddListing, setShowAddListing] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   useEffect(() => {
-    // Check initial session
     const initAuth = async () => {
       const u = await db.getCurrentUser();
       if (u) {
@@ -30,7 +31,6 @@ const App: React.FC = () => {
 
     initAuth();
 
-    // Standard Supabase v2 auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
         const u = await db.getCurrentUser();
@@ -59,6 +59,11 @@ const App: React.FC = () => {
     setCurrentPage('auth');
   };
 
+  const handleInitiateCheckout = (listing: Listing) => {
+    setSelectedListing(listing);
+    setCurrentPage('checkout');
+  };
+
   const renderPage = () => {
     if (loading) return (
       <div className="h-screen flex items-center justify-center dark:bg-black">
@@ -70,51 +75,56 @@ const App: React.FC = () => {
 
     switch (currentPage) {
       case 'home':
-        return <Home onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} />;
+        return <Home onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleInitiateCheckout} />;
       case 'dashboard':
-        return <SellerDashboard />;
+        return <SellerDashboard user={user} />;
+      case 'checkout':
+        return selectedListing ? (
+          <Checkout 
+            listing={selectedListing} 
+            onSuccess={() => setCurrentPage('dashboard')} 
+            onCancel={() => setCurrentPage('home')} 
+          />
+        ) : <Home onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleInitiateCheckout} />;
       default:
-        return <Home onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} />;
+        return <Home onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleInitiateCheckout} />;
     }
   };
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <div className="min-h-screen pb-20 transition-colors duration-500">
-          <Navbar 
-            onNavigate={(p) => setCurrentPage(p as any)} 
-            currentPage={currentPage} 
-            onLogout={handleLogout}
-          />
-          
-          <main className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {renderPage()}
-          </main>
+    <div className="min-h-screen pb-20 transition-colors duration-500">
+      <Navbar 
+        onNavigate={(p) => setCurrentPage(p as any)} 
+        currentPage={currentPage} 
+        onLogout={handleLogout}
+        user={user}
+      />
+      
+      <main className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {renderPage()}
+      </main>
 
-          {showAddListing && (
-            <AddListingModal 
-              onClose={() => setShowAddListing(false)} 
-              onSuccess={() => {
-                setShowAddListing(false);
-                setCurrentPage('home');
-              }} 
-            />
-          )}
+      {showAddListing && (
+        <AddListingModal 
+          onClose={() => setShowAddListing(false)} 
+          onSuccess={() => {
+            setShowAddListing(false);
+            setCurrentPage('home');
+          }} 
+        />
+      )}
 
-          <footer className="mt-20 border-t border-gray-100 dark:border-white/5 py-10 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-               <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black font-bold">ሳ</div>
-               <span className="font-bold text-gray-900 dark:text-white">Savvy Market</span>
-            </div>
-            <p className="text-gray-400 text-xs">© 2025 Addis Ababa University Marketplace.</p>
-            <p className="text-indigo-500 font-black text-sm mt-2">Built by Savvy Team</p>
-          </footer>
-
-          {user && <ChatBot />}
+      <footer className="mt-20 border-t border-gray-100 dark:border-white/5 py-10 text-center">
+        <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black font-bold">ሳ</div>
+            <span className="font-bold text-gray-900 dark:text-white">{t('appName')}</span>
         </div>
-      </LanguageProvider>
-    </ThemeProvider>
+        <p className="text-gray-400 text-xs">© 2025 Addis Ababa University Marketplace.</p>
+        <p className="text-indigo-500 font-black text-sm mt-2">Built by Savvy Team</p>
+      </footer>
+
+      {user && <ChatBot />}
+    </div>
   );
 };
 

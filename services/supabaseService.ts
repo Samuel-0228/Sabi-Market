@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Listing, UserProfile, Order, Message, Conversation } from '../types';
+import { COMMISSION_RATE } from '../constants';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://fqkrddoodkawtmcapvyu.supabase.co';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
@@ -21,8 +22,6 @@ export const db = {
       .single();
 
     if (profileError || !profile) {
-      // If auth exists but profile is missing, create a basic profile
-      // This solves the issue of "forgetting" users whose profiles weren't synced
       const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
@@ -37,7 +36,7 @@ export const db = {
         await supabase.from('profiles').upsert(newProfile);
         return newProfile;
       } catch (e) {
-        return newProfile; // Return local object if upsert fails (e.g. RLS)
+        return newProfile;
       }
     }
 
@@ -87,7 +86,7 @@ export const db = {
         is_verified: email.endsWith('@aau.edu.et'),
         role: 'student'
       });
-      if (profileError) console.warn("Profile creation failed, usually due to RLS/Email verification required", profileError);
+      if (profileError) console.warn("Profile creation failed", profileError);
     }
   },
 
@@ -173,5 +172,35 @@ export const db = {
       ...o,
       listing_title: (o as any).listings?.title || 'Unknown Item'
     }));
+  },
+
+  async createOrder(listing: Listing, amount: number, deliveryInfo: string): Promise<void> {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) throw new Error("Unauthorized");
+
+    const commission = amount * COMMISSION_RATE;
+    
+    // 1. Create order
+    const { error: orderError } = await supabase.from('orders').insert({
+      buyer_id: userData.user.id,
+      seller_id: listing.seller_id,
+      listing_id: listing.id,
+      amount: amount,
+      commission: commission,
+      status: 'pending',
+      delivery_info: deliveryInfo
+    });
+    if (orderError) throw orderError;
+
+    // 2. Decrement stock
+    const newStock = Math.max(0, listing.stock - 1);
+    const { error: updateError } = await supabase
+      .from('listings')
+      .update({ 
+        stock: newStock,
+        status: newStock <= 0 ? 'sold_out' : 'active'
+      })
+      .eq('id', listing.id);
+    if (updateError) throw updateError;
   }
 };
