@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { Listing, UserProfile, Order } from '../types';
+import { Listing, UserProfile, Order, Message, Conversation } from '../types';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://fqkrddoodkawtmcapvyu.supabase.co';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
@@ -9,45 +9,62 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data || !data.user) return null;
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData || !authData.user) return null;
+
+    const user = authData.user;
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', data.user.id)
+      .eq('id', user.id)
       .single();
 
     if (profileError || !profile) {
-      // If user exists in Auth but not in Profiles table yet, provide a temporary profile object
-      // This is common if the user hasn't verified their email and RLS prevented insertion
-      const minimalProfile: UserProfile = {
-        id: data.user.id,
-        email: data.user.email || '',
-        full_name: data.user.user_metadata?.full_name || 'Student',
+      // If auth exists but profile is missing, create a basic profile
+      // This solves the issue of "forgetting" users whose profiles weren't synced
+      const newProfile: UserProfile = {
+        id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || 'Student',
         role: 'student',
-        is_verified: data.user.email?.endsWith('@aau.edu.et') || false,
-        created_at: data.user.created_at
+        is_verified: user.email?.endsWith('@aau.edu.et') || false,
+        created_at: user.created_at,
+        preferences: []
       };
-      
-      // Attempt to fix the missing profile if user session is already active
+
       try {
-        await supabase.from('profiles').upsert(minimalProfile);
-        return minimalProfile;
+        await supabase.from('profiles').upsert(newProfile);
+        return newProfile;
       } catch (e) {
-        return minimalProfile;
+        return newProfile; // Return local object if upsert fails (e.g. RLS)
       }
     }
 
     return profile;
   },
 
+  async uploadImage(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `listings/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('market-assets')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('market-assets')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  },
+
   async login(email: string, password: string): Promise<void> {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error("Login error:", error.message);
-      throw error;
-    }
+    if (error) throw error;
   },
 
   async register(email: string, password: string, fullName: string, preferences: string[]): Promise<void> {
@@ -55,17 +72,12 @@ export const db = {
       email, 
       password,
       options: {
-        data: { full_name: fullName, preferences },
-        emailRedirectTo: window.location.origin
+        data: { full_name: fullName }
       }
     });
     
-    if (error) {
-      console.error("Signup error:", error.message);
-      throw error;
-    }
+    if (error) throw error;
     
-    // Attempt profile creation. This might fail if the user is unauthenticated and email verification is ON
     if (data?.user) {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
@@ -75,7 +87,7 @@ export const db = {
         is_verified: email.endsWith('@aau.edu.et'),
         role: 'student'
       });
-      if (profileError) console.warn("Profile creation deferred until verification:", profileError.message);
+      if (profileError) console.warn("Profile creation failed, usually due to RLS/Email verification required", profileError);
     }
   },
 
@@ -87,7 +99,6 @@ export const db = {
     const { data, error } = await supabase
       .from('listings')
       .select('*, profiles(full_name)')
-      .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -104,25 +115,63 @@ export const db = {
     const { error } = await supabase.from('listings').insert({
       ...listing,
       seller_id: data.user.id,
-      status: 'active'
+      status: listing.stock === 0 ? 'sold_out' : 'active'
+    });
+    if (error) throw error;
+  },
+
+  async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) throw new Error("Unauthorized");
+    const buyerId = userData.user.id;
+
+    if (buyerId === sellerId) throw new Error("You cannot chat with yourself");
+
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('listing_id', listingId)
+      .eq('buyer_id', buyerId)
+      .single();
+
+    if (existing) return existing.id;
+
+    const { data: created, error } = await supabase
+      .from('conversations')
+      .insert({ listing_id: listingId, buyer_id: buyerId, seller_id: sellerId })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return created.id;
+  },
+
+  async sendMessage(conversationId: string, content: string): Promise<void> {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) throw new Error("Unauthorized");
+
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: userData.user.id,
+      content
     });
     if (error) throw error;
   },
 
   async getOrders(role: 'buyer' | 'seller'): Promise<Order[]> {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return [];
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) throw new Error("Unauthorized");
 
-    const query = supabase.from('orders').select('*, listings(title)');
-    if (role === 'buyer') query.eq('buyer_id', authData.user.id);
-    else query.eq('seller_id', authData.user.id);
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, listings(title)')
+      .eq(role === 'buyer' ? 'buyer_id' : 'seller_id', userData.user.id)
+      .order('created_at', { ascending: false });
 
-    const { data, error } = await query;
     if (error) throw error;
-    
-    return data.map(o => ({
+    return (data || []).map(o => ({
       ...o,
-      listing_title: (o as any).listings?.title
+      listing_title: (o as any).listings?.title || 'Unknown Item'
     }));
   }
 };

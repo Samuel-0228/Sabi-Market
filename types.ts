@@ -25,8 +25,26 @@ export interface Listing {
   image_url: string;
   stock: number;
   status: 'active' | 'sold_out' | 'archived';
+  contact_phone?: string;
   created_at: string;
   seller_name?: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  seller_id: string;
+  last_message?: string;
+  created_at: string;
 }
 
 export interface Order {
@@ -40,24 +58,6 @@ export interface Order {
   delivery_info: string;
   created_at: string;
   listing_title?: string;
-}
-
-export interface Review {
-  id: string;
-  order_id: string;
-  buyer_id: string;
-  seller_id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-}
-
-export interface Dispute {
-  id: string;
-  order_id: string;
-  reason: string;
-  status: 'open' | 'resolved';
-  created_at: string;
 }
 
 export interface Translation {

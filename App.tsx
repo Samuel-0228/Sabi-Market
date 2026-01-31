@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { db, supabase } from './services/supabaseService';
 import { Listing, UserProfile } from './types';
 import { LanguageProvider } from './components/LanguageContext';
+import { ThemeProvider } from './components/ThemeContext';
 import Navbar from './components/Navbar';
 import Auth from './components/Auth';
 import Home from './components/Home';
@@ -21,23 +22,28 @@ const App: React.FC = () => {
     // Check initial session
     const initAuth = async () => {
       const u = await db.getCurrentUser();
-      setUser(u);
+      if (u) {
+        setUser(u);
+      }
       setLoading(false);
     };
 
     initAuth();
 
     // Standard Supabase v2 auth listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, _session) => {
-      const u = await db.getCurrentUser();
-      setUser(u);
-      if (!u) setCurrentPage('auth');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+        const u = await db.getCurrentUser();
+        setUser(u);
+        if (u && currentPage === 'auth') setCurrentPage('home');
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setCurrentPage('auth');
+      }
     });
 
     return () => {
-      if (authListener?.subscription) {
-        authListener.subscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -55,7 +61,7 @@ const App: React.FC = () => {
 
   const renderPage = () => {
     if (loading) return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center dark:bg-black">
         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -73,40 +79,42 @@ const App: React.FC = () => {
   };
 
   return (
-    <LanguageProvider>
-      <div className="min-h-screen pb-20">
-        <Navbar 
-          onNavigate={(p) => setCurrentPage(p as any)} 
-          currentPage={currentPage} 
-          onLogout={handleLogout}
-        />
-        
-        <main className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {renderPage()}
-        </main>
-
-        {showAddListing && (
-          <AddListingModal 
-            onClose={() => setShowAddListing(false)} 
-            onSuccess={() => {
-              setShowAddListing(false);
-              setCurrentPage('home');
-            }} 
+    <ThemeProvider>
+      <LanguageProvider>
+        <div className="min-h-screen pb-20 transition-colors duration-500">
+          <Navbar 
+            onNavigate={(p) => setCurrentPage(p as any)} 
+            currentPage={currentPage} 
+            onLogout={handleLogout}
           />
-        )}
+          
+          <main className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {renderPage()}
+          </main>
 
-        <footer className="mt-20 border-t border-gray-100 py-10 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-             <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-bold">ሳ</div>
-             <span className="font-bold text-gray-900">Savvy Market</span>
-          </div>
-          <p className="text-gray-400 text-xs">© 2025 Addis Ababa University Marketplace.</p>
-          <p className="text-indigo-500 font-black text-sm mt-2">Built by Savvy Team</p>
-        </footer>
+          {showAddListing && (
+            <AddListingModal 
+              onClose={() => setShowAddListing(false)} 
+              onSuccess={() => {
+                setShowAddListing(false);
+                setCurrentPage('home');
+              }} 
+            />
+          )}
 
-        {user && <ChatBot />}
-      </div>
-    </LanguageProvider>
+          <footer className="mt-20 border-t border-gray-100 dark:border-white/5 py-10 text-center">
+            <div className="flex items-center justify-center gap-2 mb-4">
+               <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black font-bold">ሳ</div>
+               <span className="font-bold text-gray-900 dark:text-white">Savvy Market</span>
+            </div>
+            <p className="text-gray-400 text-xs">© 2025 Addis Ababa University Marketplace.</p>
+            <p className="text-indigo-500 font-black text-sm mt-2">Built by Savvy Team</p>
+          </footer>
+
+          {user && <ChatBot />}
+        </div>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 };
 

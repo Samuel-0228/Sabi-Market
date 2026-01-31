@@ -87,16 +87,16 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
 
   if (step === 'verify') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 reveal">
-        <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] p-12 text-center border border-gray-50">
-          <div className="w-20 h-20 bg-gray-900 rounded-3xl flex items-center justify-center mx-auto mb-10 rotate-3">
-            <span className="text-white text-4xl">📧</span>
+      <div className="min-h-[80vh] flex items-center justify-center p-6 reveal">
+        <div className="bg-white dark:bg-[#141414] w-full max-w-lg rounded-[2.5rem] shadow-2xl p-12 text-center border border-gray-50 dark:border-white/5">
+          <div className="w-20 h-20 bg-black dark:bg-white rounded-3xl flex items-center justify-center mx-auto mb-10 rotate-3 shadow-xl">
+            <span className="text-white dark:text-black text-4xl">📧</span>
           </div>
-          <h2 className="text-3xl font-black text-black mb-4">Check your inbox</h2>
-          <p className="text-gray-500 mb-8">We've sent a verification link to {formData.email}. Please verify your email to continue.</p>
+          <h2 className="text-3xl font-black text-black dark:text-white mb-4">Check your inbox</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">We've sent a verification link to <span className="text-black dark:text-white font-bold">{formData.email}</span>. Once verified, return here to log in.</p>
           <button 
             onClick={() => setStep('login')}
-            className="w-full bg-black text-white py-4 rounded-2xl font-bold"
+            className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95"
           >
             Go to Login
           </button>
@@ -106,16 +106,16 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-12 border border-gray-100">
+    <div className="min-h-[80vh] flex items-center justify-center p-6">
+      <div className="bg-white dark:bg-[#141414] w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 sm:p-12 border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in-95 duration-700">
         <div className="mb-10 text-center">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-white font-bold text-3xl mx-auto mb-6">ሳ</div>
-          <h2 className="text-4xl font-black text-black tracking-tighter">Welcome to Savvy.</h2>
-          <p className="text-gray-400 font-medium mt-2">The exclusive student marketplace.</p>
+          <div className="w-16 h-16 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-bold text-3xl mx-auto mb-6 shadow-xl">ሳ</div>
+          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">Welcome to Savvy.</h2>
+          <p className="text-gray-400 dark:text-gray-500 font-medium mt-2">The exclusive student marketplace.</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6 text-sm font-bold border border-red-100 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-red-50 dark:bg-red-500/10 text-red-500 p-4 rounded-xl mb-6 text-sm font-bold border border-red-100 dark:border-red-500/20 animate-in fade-in slide-in-from-top-2">
             {error}
           </div>
         )}
@@ -127,17 +127,17 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               <input 
                 type="email"
                 required
-                className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-black outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
                 placeholder="id@aau.edu.et"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
             </div>
-            <button className="w-full bg-black text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3">
+            <button className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all flex items-center justify-center gap-3 active:scale-95">
               Continue <span className="text-lg">→</span>
             </button>
             <p className="text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest pt-4">
-              Already have an account? <button type="button" onClick={() => setStep('login')} className="text-black underline">Login</button>
+              Already have an account? <button type="button" onClick={() => setStep('login')} className="text-black dark:text-white underline">Login</button>
             </p>
           </form>
         )}
@@ -154,19 +154,19 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
                     onClick={() => handleTogglePreference(opt.id)}
                     className={`p-6 rounded-3xl border-2 text-left transition-all ${
                       formData.preferences.includes(opt.id) 
-                      ? 'border-black bg-gray-50 scale-95 shadow-inner' 
-                      : 'border-gray-50 hover:border-gray-200'
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 scale-95 shadow-inner' 
+                      : 'border-gray-50 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10'
                     }`}
                   >
                     <span className="text-2xl mb-4 block">{opt.icon}</span>
-                    <p className="font-bold text-sm text-black">{opt.label}</p>
+                    <p className="font-bold text-sm text-black dark:text-white">{opt.label}</p>
                   </button>
                 ))}
               </div>
             </div>
             <button 
               onClick={() => setStep('account')}
-              className="w-full bg-black text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 transition-all"
+              className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
             >
               Next Step
             </button>
@@ -179,7 +179,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Full Name</label>
               <input 
                 required
-                className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-black outline-none"
+                className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
                 placeholder="Abebe Bikila"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -190,7 +190,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               <input 
                 type="password"
                 required
-                className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-black outline-none"
+                className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
                 placeholder="Min 6 characters"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -198,7 +198,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
             </div>
             <button 
               disabled={loading}
-              className="w-full bg-black text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 transition-all"
+              className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
             >
               {loading ? 'Creating...' : 'Finalize Profile'}
             </button>
@@ -213,7 +213,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               <input 
                 type="email"
                 required
-                className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-black outline-none"
+                className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
@@ -223,19 +223,19 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               <input 
                 type="password"
                 required
-                className="w-full bg-gray-50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-black outline-none"
+                className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
             </div>
             <button 
               disabled={loading}
-              className="w-full bg-black text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 transition-all"
+              className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all active:scale-95"
             >
               {loading ? 'Logging in...' : 'Sign In'}
             </button>
             <p className="text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest pt-4">
-              Need an account? <button type="button" onClick={() => setStep('initial')} className="text-black underline">Register</button>
+              Need an account? <button type="button" onClick={() => setStep('initial')} className="text-black dark:text-white underline">Register</button>
             </p>
           </form>
         )}

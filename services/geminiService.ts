@@ -21,10 +21,20 @@ export const chatWithGemini = async (history: { role: 'user' | 'model', parts: {
 
 // Use appropriate image generation model based on user quality requirements
 export const generateProductImage = async (prompt: string, size: "1K" | "2K" | "4K" = "1K") => {
-  // Always initialize right before making an API call
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   // Default to gemini-2.5-flash-image; upgrade to gemini-3-pro-image-preview only for high-quality (2K/4K)
   const model = size === "1K" ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+
+  // Handle mandatory API key selection for pro image models
+  if (model === 'gemini-3-pro-image-preview') {
+    const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+    if (!hasKey) {
+      await (window as any).aistudio.openSelectKey();
+      // Proceed immediately as per race condition guidelines
+    }
+  }
+
+  // Always initialize right before making an API call
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const response = await ai.models.generateContent({
     model: model,
