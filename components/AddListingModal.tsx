@@ -144,7 +144,6 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
                   className="w-full mt-1 bg-gray-50 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={formData.category}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  aria-label="Category"
                 >
                   <option value="goods">Goods</option>
                   <option value="tutoring">Tutoring</option>

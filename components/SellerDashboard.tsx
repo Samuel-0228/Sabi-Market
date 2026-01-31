@@ -16,7 +16,6 @@ const SellerDashboard: React.FC = () => {
   }, []);
 
   const loadData = async () => {
-    // Fixed: Await the async call to get the actual user profile
     const user = await db.getCurrentUser();
     if (!user) return;
     
@@ -36,73 +35,75 @@ const SellerDashboard: React.FC = () => {
   };
 
   const salesData = [
-    { name: 'Mon', sales: 400 },
-    { name: 'Tue', sales: 300 },
-    { name: 'Wed', sales: 200 },
-    { name: 'Thu', sales: 600 },
-    { name: 'Fri', sales: 800 },
-    { name: 'Sat', sales: 1200 },
-    { name: 'Sun', sales: 1000 },
+    { name: 'M', sales: 400 },
+    { name: 'T', sales: 300 },
+    { name: 'W', sales: 200 },
+    { name: 'T', sales: 600 },
+    { name: 'F', sales: 800 },
+    { name: 'S', sales: 1200 },
+    { name: 'S', sales: 1000 },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-8">{t('dashboard')}</h1>
+    <div className="max-w-[1400px] mx-auto px-8 py-20 reveal">
+      <header className="mb-20">
+        <h1 className="text-6xl font-black text-black tracking-tighter mb-4">Command Center.</h1>
+        <p className="text-gray-500 font-medium text-lg">Manage your storefront, track sales, and engage with buyers.</p>
+      </header>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
         {[
-          { label: 'Total Sales', val: `${stats.totalSales} ETB`, color: 'text-green-600', icon: '💰' },
-          { label: 'Active Listings', val: stats.activeListings, color: 'text-blue-600', icon: '📦' },
-          { label: 'Pending Orders', val: stats.pendingOrders, color: 'text-orange-600', icon: '⏳' },
+          { label: 'Revenue', val: `${stats.totalSales}`, unit: 'ETB', color: 'text-indigo-600' },
+          { label: 'Active Items', val: stats.activeListings, unit: 'Items', color: 'text-black' },
+          { label: 'Unresolved', val: stats.pendingOrders, unit: 'Orders', color: 'text-gray-400' },
         ].map((s, i) => (
-          <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{s.label}</p>
-              <h4 className={`text-2xl font-black mt-1 ${s.color}`}>{s.val}</h4>
+          <div key={i} className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">{s.label}</p>
+            <div className="flex items-baseline gap-2">
+              <h4 className={`text-5xl font-black tracking-tighter ${s.color}`}>{s.val}</h4>
+              <span className="text-xs font-bold text-gray-300 uppercase">{s.unit}</span>
             </div>
-            <div className="text-4xl bg-gray-50 w-16 h-16 rounded-2xl flex items-center justify-center">{s.icon}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 mb-20">
         {/* Analytics Chart */}
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold mb-6">Sales Analytics</h3>
-          <div className="h-64 w-full">
+        <div className="lg:col-span-3 bg-white p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50">
+          <h3 className="text-xl font-black mb-10 tracking-tight">Performance</h3>
+          <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                <Bar dataKey="sales" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} dy={15} />
+                <YAxis hide />
+                <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)'}} />
+                <Bar dataKey="sales" fill="#000" radius={[12, 12, 12, 12]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Recent Orders */}
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <h3 className="text-xl font-bold mb-6">Recent Orders</h3>
-          <div className="space-y-4">
+        <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50 overflow-hidden">
+          <h3 className="text-xl font-black mb-10 tracking-tight">Activity Log</h3>
+          <div className="space-y-6">
             {orders.length === 0 ? (
-              <p className="text-gray-400 text-center py-10 italic">No orders yet.</p>
+              <div className="text-center py-20 opacity-20">
+                <p className="text-5xl mb-4">🌀</p>
+                <p className="font-bold text-xs uppercase tracking-widest">No recent logs</p>
+              </div>
             ) : (
               orders.map(order => (
-                <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0">
                   <div>
-                    <p className="font-bold text-gray-800">Order #{order.id.slice(0, 5)}</p>
-                    <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                    <p className="font-bold text-black text-sm">Order ID • {order.id.slice(0, 8)}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-indigo-600">{order.amount} ETB</p>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${
-                      order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {order.status}
-                    </span>
+                    <p className="font-black text-black">{order.amount} ETB</p>
+                    <span className="text-[8px] font-black text-indigo-500 uppercase tracking-widest">Completed</span>
                   </div>
                 </div>
               ))
@@ -112,39 +113,39 @@ const SellerDashboard: React.FC = () => {
       </div>
 
       {/* My Listings */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">Manage My Listings</h3>
-          <button className="text-sm font-bold text-indigo-600 hover:underline">View All</button>
+      <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50">
+        <div className="flex justify-between items-center mb-12">
+          <h3 className="text-xl font-black tracking-tight">Active Inventory</h3>
+          <button className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-black transition-colors">Export CSV</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-gray-400 text-xs font-bold uppercase tracking-wider border-b border-gray-50">
-                <th className="pb-4">Product</th>
-                <th className="pb-4">Category</th>
-                <th className="pb-4">Price</th>
-                <th className="pb-4">Stock</th>
-                <th className="pb-4 text-right">Actions</th>
+              <tr className="text-gray-300 text-[9px] font-black uppercase tracking-[0.2em] border-b border-gray-50">
+                <th className="pb-6">Description</th>
+                <th className="pb-6">Group</th>
+                <th className="pb-6">Price</th>
+                <th className="pb-6">Quantity</th>
+                <th className="pb-6 text-right">Settings</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {listings.map(l => (
-                <tr key={l.id} className="group hover:bg-gray-50/50 transition-colors">
-                  <td className="py-4 flex items-center gap-3">
-                    <img src={l.image_url} className="w-10 h-10 rounded-lg object-cover" />
-                    <span className="font-semibold text-gray-800">{l.title}</span>
+                <tr key={l.id} className="group hover:bg-gray-50 transition-all duration-300">
+                  <td className="py-8 flex items-center gap-6">
+                    <img src={l.image_url} className="w-16 h-20 rounded-[1.25rem] object-cover shadow-sm" />
+                    <span className="font-bold text-black text-lg tracking-tight">{l.title}</span>
                   </td>
-                  <td className="py-4 text-sm text-gray-600 capitalize">{l.category}</td>
-                  <td className="py-4 font-bold text-gray-900">{l.price} ETB</td>
-                  <td className="py-4">
-                    <span className={`text-xs px-2 py-1 rounded-full ${l.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                      {l.stock} in stock
+                  <td className="py-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">{l.category}</td>
+                  <td className="py-8 font-black text-black">{l.price} ETB</td>
+                  <td className="py-8">
+                    <span className="text-[10px] font-black px-4 py-1.5 rounded-full bg-gray-100 text-black uppercase tracking-widest">
+                      In Stock
                     </span>
                   </td>
-                  <td className="py-4 text-right">
-                    <button className="text-gray-400 hover:text-indigo-600 font-bold px-2">Edit</button>
-                    <button className="text-gray-400 hover:text-red-500 font-bold px-2">Delete</button>
+                  <td className="py-8 text-right">
+                    <button className="text-[10px] font-black text-gray-300 hover:text-black uppercase tracking-widest mr-6 transition-colors">Modify</button>
+                    <button className="text-[10px] font-black text-gray-300 hover:text-red-500 uppercase tracking-widest transition-colors">Archive</button>
                   </td>
                 </tr>
               ))}

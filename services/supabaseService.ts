@@ -2,9 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Listing, UserProfile, Order } from '../types';
 
-// These variables are assumed to be provided by the environment
-const supabaseUrl = process.env.SUPABASE_URL || 'supabase-url';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'supabase-anon-key';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://fqkrddoodkawtmcapvyu.supabase.co';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -32,13 +31,13 @@ export const db = {
       email, 
       password,
       options: {
-        data: { full_name: fullName, preferences }
+        data: { full_name: fullName, preferences },
+        // CRITICAL: Ensure the user is returned to the app home after clicking the email link
+        emailRedirectTo: window.location.origin
       }
     });
     if (error) throw error;
     
-    // Note: In Supabase, verification emails are sent automatically if enabled.
-    // The profile will be created/updated upon verification via triggers or manually here if needed.
     if (data?.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
