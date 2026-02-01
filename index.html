@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ሳቪ – Savvy Market | AAU Student Marketplace</title>
+    <title>ሳቪ – Savvy Market | Campus Reimagined</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -16,115 +16,83 @@
                     },
                     colors: {
                         savvy: {
-                            vibrant: '#6366f1',
-                            hope: '#f59e0b',
-                            energy: '#ec4899'
+                            primary: '#6366f1',
+                            pink: '#ec4899',
+                            gold: '#f59e0b',
+                            teal: '#14b8a6',
                         }
                     }
                 },
             },
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --accent: #ec4899;
             --bg: #ffffff;
-            --text: #111827;
-            --card-bg: #ffffff;
-            --border: rgba(99, 102, 241, 0.1);
+            --text: #000000;
         }
-        
         .dark {
-            --primary: #818cf8;
-            --accent: #f472b6;
             --bg: #050505;
-            --text: #f9fafb;
-            --card-bg: #0f0f12;
-            --border: rgba(255, 255, 255, 0.05);
+            --text: #ffffff;
         }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+        body {
             background-color: var(--bg);
             color: var(--text);
+            transition: background-color 0.5s ease;
             overflow-x: hidden;
-            transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .mesh-bg {
+        .vibrant-mesh {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1;
-            background-color: var(--bg);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.1) 0px, transparent 50%),
-                radial-gradient(at 50% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.8;
+            background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.1) 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
         }
-
-        .dark .mesh-bg {
-            opacity: 0.4;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.2) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                radial-gradient(at 50% 50%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
-        }
-
-        .glass { 
-            background: rgba(255, 255, 255, 0.7); 
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .dark .glass {
-            background: rgba(15, 15, 18, 0.7);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(2deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-
-        .floating { animation: float 6s ease-in-out infinite; }
-
-        .vibrant-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%);
+        .text-gradient {
+            background: linear-gradient(to right, #6366f1, #ec4899, #f59e0b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(0.98); }
+        .btn-vibrant {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+        .btn-vibrant:hover {
+            transform: scale(1.05) translateY(-2px);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
-  }
-}
-</script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+        "recharts": "https://esm.sh/recharts@^3.7.0",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+      }
+    }
+    </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="transition-colors duration-500">
-    <div class="mesh-bg"></div>
+<body>
+    <div class="vibrant-mesh"></div>
     <div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 </body>
