@@ -18,29 +18,29 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user
   return (
     <nav className="sticky top-0 z-50 glass border-b border-white/10 px-6 sm:px-10 py-5 sm:py-6 flex items-center justify-between transition-all duration-700 dark:border-white/5">
       <div className="flex items-center gap-6 sm:gap-16">
-        <div className="flex items-center gap-4 cursor-pointer group" onClick={() => onNavigate('home')}>
+        <div className="flex items-center gap-4 cursor-pointer group" onClick={() => onNavigate('landing')}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-bold text-xl sm:text-2xl shadow-xl group-hover:scale-110 transition-all duration-500">
             ሳ
           </div>
           <span className="text-xl sm:text-2xl font-black tracking-tighter hidden sm:block dark:text-white">{t('appName')}</span>
         </div>
 
-        {user && (
-          <div className="hidden md:flex items-center gap-12">
-            <button 
-              onClick={() => onNavigate('home')}
-              className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'home' ? 'text-indigo-600' : 'text-gray-400'}`}
-            >
-              {t('feed')}
-            </button>
+        <div className="hidden md:flex items-center gap-12">
+          <button 
+            onClick={() => onNavigate(user ? 'home' : 'landing')}
+            className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'home' || currentPage === 'landing' ? 'text-indigo-600' : 'text-gray-400'}`}
+          >
+            {user ? t('feed') : 'Overview'}
+          </button>
+          {user && (
             <button 
               onClick={() => onNavigate('dashboard')}
               className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`}
             >
               {t('myStore')}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-4 sm:gap-8">
@@ -67,7 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user
             <div className="flex items-center gap-4">
                <div className="text-right hidden lg:block">
                  <p className="text-sm font-bold text-black dark:text-white leading-none mb-1">{user.full_name}</p>
-                 <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Live</span>
+                 <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">AAU Student</span>
                </div>
                <button 
                  onClick={onLogout}

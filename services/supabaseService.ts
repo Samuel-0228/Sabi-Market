@@ -9,8 +9,9 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsIn
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const handleSupabaseError = (err: any, tableName: string) => {
+  console.error(`Error in table ${tableName}:`, err);
   if (err.message?.includes('does not exist') || err.code === 'PGRST204' || err.message?.includes('schema cache')) {
-    throw new Error(`The '${tableName}' table is missing. Please run the SQL migration in your Supabase dashboard to create it.`);
+    throw new Error(`The '${tableName}' table is missing or inaccessible. Please ensure the SQL migration was run in Supabase.`);
   }
   throw err;
 };
@@ -29,10 +30,7 @@ export const db = {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (profileError) {
-        // If profile table is missing, we re-throw to be handled by the app init
-        handleSupabaseError(profileError, 'profiles');
-      }
+      if (profileError) handleSupabaseError(profileError, 'profiles');
 
       if (!profile) {
         const newProfile: UserProfile = {
@@ -46,18 +44,18 @@ export const db = {
         };
 
         try {
-          await supabase.from('profiles').upsert(newProfile);
+          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          if (insertError) console.warn("Auto-profile creation failed:", insertError);
           return newProfile;
         } catch (e) {
-          console.warn("Failed to create profile record", e);
           return newProfile;
         }
       }
 
       return profile;
     } catch (err) {
-      console.error("getCurrentUser error", err);
-      throw err;
+      console.error("Auth init failure:", err);
+      return null;
     }
   },
 
@@ -96,7 +94,7 @@ export const db = {
     if (error) throw error;
     
     if (data?.user) {
-      const { error: profileError } = await supabase.from('profiles').upsert({
+      const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         email: email,
         full_name: fullName,
@@ -113,16 +111,28 @@ export const db = {
   },
 
   async getListings(): Promise<Listing[]> {
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*, profiles(full_name)')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select(`
+          *,
+          profiles:seller_id (
+            full_name
+          )
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
-    if (error) handleSupabaseError(error, 'listings');
-    return (data || []).map(l => ({
-      ...l,
-      seller_name: (l as any).profiles?.full_name || 'Student'
-    }));
+      if (error) handleSupabaseError(error, 'listings');
+      
+      return (data || []).map(l => ({
+        ...l,
+        seller_name: (l as any).profiles?.full_name || 'Student'
+      }));
+    } catch (e) {
+      console.error("Fetch listings error:", e);
+      return [];
+    }
   },
 
   async createListing(listing: Partial<Listing>): Promise<void> {
@@ -139,37 +149,33 @@ export const db = {
 
   async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) throw new Error("Unauthorized. Please log in.");
+    if (!userData?.user) throw new Error("Please log in to contact the seller.");
     const buyerId = userData.user.id;
 
     if (buyerId === sellerId) throw new Error("You cannot start a chat with yourself.");
 
-    try {
-      const { data: existing, error: findError } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('listing_id', listingId)
-        .eq('buyer_id', buyerId)
-        .maybeSingle();
+    const { data: existing, error: findError } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('listing_id', listingId)
+      .eq('buyer_id', buyerId)
+      .maybeSingle();
 
-      if (findError) handleSupabaseError(findError, 'conversations');
-      if (existing) return existing.id;
+    if (findError) handleSupabaseError(findError, 'conversations');
+    if (existing) return existing.id;
 
-      const { data: created, error: createError } = await supabase
-        .from('conversations')
-        .insert({ 
-          listing_id: listingId, 
-          buyer_id: buyerId, 
-          seller_id: sellerId 
-        })
-        .select('id')
-        .single();
+    const { data: created, error: createError } = await supabase
+      .from('conversations')
+      .insert({ 
+        listing_id: listingId, 
+        buyer_id: buyerId, 
+        seller_id: sellerId 
+      })
+      .select('id')
+      .single();
 
-      if (createError) handleSupabaseError(createError, 'conversations');
-      return created.id;
-    } catch (err) {
-      throw err;
-    }
+    if (createError) handleSupabaseError(createError, 'conversations');
+    return created.id;
   },
 
   async sendMessage(conversationId: string, content: string): Promise<void> {

@@ -14,6 +14,13 @@
                     fontFamily: {
                         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
                     },
+                    colors: {
+                        savvy: {
+                            vibrant: '#6366f1',
+                            hope: '#f59e0b',
+                            energy: '#ec4899'
+                        }
+                    }
                 },
             },
         }
@@ -21,20 +28,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #000000;
-            --accent: #4f46e5;
-            --bg: #f9fafb;
+            --primary: #6366f1;
+            --accent: #ec4899;
+            --bg: #ffffff;
             --text: #111827;
             --card-bg: #ffffff;
-            --border: rgba(0, 0, 0, 0.05);
+            --border: rgba(99, 102, 241, 0.1);
         }
         
         .dark {
-            --primary: #ffffff;
-            --accent: #818cf8;
-            --bg: #0a0a0a;
+            --primary: #818cf8;
+            --accent: #f472b6;
+            --bg: #050505;
             --text: #f9fafb;
-            --card-bg: #141414;
+            --card-bg: #0f0f12;
             --border: rgba(255, 255, 255, 0.05);
         }
 
@@ -43,21 +50,9 @@
             background-color: var(--bg);
             color: var(--text);
             overflow-x: hidden;
-            transition: background-color 0.5s ease, color 0.5s ease;
+            transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .glass { 
-            background: rgba(var(--card-bg-rgb, 255, 255, 255), 0.7); 
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid var(--border);
-        }
-        
-        .dark .glass {
-            background: rgba(20, 20, 20, 0.7);
-        }
-
-        /* Premium Background Texture */
         .mesh-bg {
             position: fixed;
             top: 0;
@@ -67,39 +62,52 @@
             z-index: -1;
             background-color: var(--bg);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.1) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
                 url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.6;
+            opacity: 0.8;
         }
 
         .dark .mesh-bg {
-            opacity: 0.3;
+            opacity: 0.4;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%),
-                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
         }
 
-        @keyframes reveal {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .glass { 
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .reveal { animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        .dribbble-card {
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-        }
-        .dribbble-card:hover {
-            transform: translateY(-12px) scale(1.02);
-            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15);
+        
+        .dark .glass {
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 20px; }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating { animation: float 6s ease-in-out infinite; }
+
+        .vibrant-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+        .pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
     </style>
 <script type="importmap">
 {
