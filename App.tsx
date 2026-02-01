@@ -23,10 +23,6 @@ const App: React.FC = () => {
   const [showAddListing, setShowAddListing] = useState(false);
 
   useEffect(() => {
-    const initTimer = setTimeout(() => {
-      if (isInitializing) setIsInitializing(false);
-    }, 4000);
-
     const init = async () => {
       try {
         const currentUser = await db.getCurrentUser();
@@ -37,31 +33,29 @@ const App: React.FC = () => {
           setCurrentPage('landing');
         }
       } catch (e) {
+        console.error("Init error", e);
         setCurrentPage('landing');
       } finally {
         setIsInitializing(false);
-        clearTimeout(initTimer);
       }
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         const u = await db.getCurrentUser();
         setUser(u);
-        // Direct redirect on successful login if on landing or auth
-        setCurrentPage('home');
+        // Only redirect if we're on a page that requires auth or the entry gates
+        setCurrentPage(prev => (prev === 'landing' || prev === 'auth' ? 'home' : prev));
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(initTimer);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleNavigate = useCallback((page: any) => {
@@ -84,11 +78,8 @@ const App: React.FC = () => {
   if (isInitializing) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black">
-        <div className="relative mb-8">
-          <div className="w-24 h-24 border-2 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center text-3xl font-black dark:text-white">ሳ</div>
-        </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Launching Savvy...</p>
+        <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Initializing Savvy...</p>
       </div>
     );
   }
@@ -106,7 +97,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-savvy-pink selection:text-white">
+    <div className="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => db.logout()} user={user} />
       <main className="flex-1">
         {renderContent()}

@@ -14,10 +14,13 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ totalSales: 0, activeListings: 0, pendingOrders: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
-    loadData().then(() => setIsLoaded(true));
+    loadData();
+    // Delay chart rendering to ensure parent container has calculated its dimensions
+    const timer = setTimeout(() => setChartReady(true), 500);
+    return () => clearTimeout(timer);
   }, [user]);
 
   const loadData = async () => {
@@ -36,7 +39,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
         pendingOrders: myOrders.filter(o => o.status === 'pending').length
       });
     } catch (err) {
-      console.error("Failed to load dashboard data", err);
+      console.error("Dashboard load failed", err);
     }
   };
 
@@ -52,63 +55,66 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-20 animate-in fade-in duration-700">
-      <header className="mb-20">
+      <header className="mb-16">
         <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter mb-4">{t('commandCenter')}</h1>
-        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Manage your storefront and track AAU campus sales.</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Your campus sales activity at a glance.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
         {[
-          { label: t('revenue'), val: `${stats.totalSales}`, unit: 'ETB', color: 'text-savvy-primary' },
+          { label: t('revenue'), val: stats.totalSales, unit: 'ETB', color: 'text-indigo-600' },
           { label: t('activeItems'), val: stats.activeListings, unit: t('items'), color: 'text-black dark:text-white' },
-          { label: t('unresolved'), val: stats.pendingOrders, unit: t('orders'), color: 'text-savvy-pink' },
+          { label: t('unresolved'), val: stats.pendingOrders, unit: t('orders'), color: 'text-pink-600' },
         ].map((s, i) => (
-          <div key={i} className="bg-white dark:bg-[#0c0c0e] p-12 rounded-[3rem] shadow-sm border border-gray-100 dark:border-white/5">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">{s.label}</p>
+          <div key={i} className="bg-white dark:bg-[#0c0c0e] p-10 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{s.label}</p>
             <div className="flex items-baseline gap-2">
-              <h4 className={`text-5xl font-black tracking-tighter ${s.color}`}>{s.val}</h4>
-              <span className="text-xs font-bold text-gray-400 uppercase">{s.unit}</span>
+              <h4 className={`text-4xl font-black tracking-tighter ${s.color}`}>{s.val}</h4>
+              <span className="text-[10px] font-bold text-gray-400 uppercase">{s.unit}</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 mb-20">
-        <div className="lg:col-span-3 bg-white dark:bg-[#0c0c0e] p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/5 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="lg:col-span-3 bg-white dark:bg-[#0c0c0e] p-10 rounded-[3rem] border border-gray-100 dark:border-white/5">
           <h3 className="text-xl font-black mb-10 tracking-tight dark:text-white">{t('performance')}</h3>
-          {/* CRITICAL FIX: Explicit dimensions for Recharts container */}
-          <div className="w-full h-[400px] relative overflow-hidden" style={{ minWidth: 0 }}>
-            {isLoaded && (
+          <div className="w-full h-[350px] min-h-[350px]">
+            {chartReady ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={salesData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} dy={15} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} />
                   <YAxis hide />
-                  <Tooltip cursor={{fill: 'rgba(0,0,0,0.02)'}} contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)'}} />
-                  <Bar dataKey="sales" fill="#6366f1" radius={[10, 10, 10, 10]} barSize={32} />
+                  <Tooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)'}} />
+                  <Bar dataKey="sales" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-white/5 rounded-2xl animate-pulse">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Loading Graph...</span>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white dark:bg-[#0c0c0e] p-12 rounded-[3.5rem] border border-gray-100 dark:border-white/5">
+        <div className="lg:col-span-2 bg-white dark:bg-[#0c0c0e] p-10 rounded-[3rem] border border-gray-100 dark:border-white/5">
           <h3 className="text-xl font-black mb-10 tracking-tight dark:text-white">{t('activityLog')}</h3>
           <div className="space-y-6">
             {orders.length === 0 ? (
               <div className="text-center py-20 opacity-20">
-                <p className="text-5xl mb-4">📦</p>
-                <p className="font-bold text-xs uppercase tracking-widest dark:text-white">No sales yet</p>
+                <p className="text-4xl mb-4">📦</p>
+                <p className="font-bold text-xs uppercase tracking-widest dark:text-white">No history yet</p>
               </div>
             ) : (
               orders.map(order => (
-                <div key={order.id} className="flex items-center justify-between py-6 border-b border-gray-50 dark:border-white/5 last:border-0">
-                  <div>
-                    <p className="font-bold text-black dark:text-white text-sm">{order.listing_title}</p>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{new Date(order.created_at).toLocaleDateString()}</p>
+                <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 dark:border-white/5 last:border-0">
+                  <div className="min-w-0">
+                    <p className="font-bold text-black dark:text-white text-sm truncate">{order.listing_title}</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{new Date(order.created_at).toLocaleDateString()}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-black dark:text-white">{order.amount} ETB</p>
+                  <div className="text-right ml-4">
+                    <p className="font-black text-black dark:text-white text-sm">{order.amount} ETB</p>
                     <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">{order.status}</span>
                   </div>
                 </div>
