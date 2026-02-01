@@ -12,16 +12,16 @@ import AddListingModal from './components/AddListingModal';
 import ChatBot from './components/ChatBot';
 import Checkout from './components/Checkout';
 import Footer from './components/Footer';
+import Messages from './components/Messages';
 
 const App: React.FC = () => {
   const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'home' | 'dashboard' | 'checkout'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'home' | 'dashboard' | 'checkout' | 'messages'>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
 
-  // Initialize Auth with a fail-safe timeout
   useEffect(() => {
     const initTimer = setTimeout(() => {
       if (isInitializing) setIsInitializing(false);
@@ -33,9 +33,11 @@ const App: React.FC = () => {
         if (currentUser) {
           setUser(currentUser);
           setCurrentPage('home');
+        } else {
+          setCurrentPage('landing');
         }
       } catch (e) {
-        console.error("Initialization failed, defaulting to landing.", e);
+        setCurrentPage('landing');
       } finally {
         setIsInitializing(false);
         clearTimeout(initTimer);
@@ -45,10 +47,11 @@ const App: React.FC = () => {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         const u = await db.getCurrentUser();
         setUser(u);
-        if (u) setCurrentPage('home');
+        // Direct redirect on successful login if on landing or auth
+        setCurrentPage('home');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -62,7 +65,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleNavigate = useCallback((page: any) => {
-    if (!user && (page === 'dashboard' || page === 'checkout')) {
+    if (!user && (page === 'dashboard' || page === 'checkout' || page === 'messages')) {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
@@ -83,9 +86,9 @@ const App: React.FC = () => {
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black">
         <div className="relative mb-8">
           <div className="w-24 h-24 border-2 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center text-3xl font-black">ሳ</div>
+          <div className="absolute inset-0 flex items-center justify-center text-3xl font-black dark:text-white">ሳ</div>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 animate-pulse">Launching Savvy...</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Launching Savvy...</p>
       </div>
     );
   }
@@ -94,27 +97,24 @@ const App: React.FC = () => {
     switch (currentPage) {
       case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
       case 'auth': return <Auth onSuccess={() => setCurrentPage('home')} />;
-      case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} />;
+      case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
-      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('dashboard')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} />;
+      case 'messages': return user ? <Messages user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
+      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('dashboard')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col selection:bg-savvy-pink selection:text-white">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => db.logout()} user={user} />
-      
-      <main className="flex-1 animate-in fade-in slide-in-from-bottom-2 duration-700">
+      <main className="flex-1">
         {renderContent()}
       </main>
-
       <Footer onNavigate={handleNavigate} />
-      
       {showAddListing && (
         <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); setCurrentPage('home'); }} />
       )}
-      
       {user && <ChatBot />}
     </div>
   );

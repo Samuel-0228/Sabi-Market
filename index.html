@@ -18,8 +18,9 @@
                         savvy: {
                             primary: '#6366f1',
                             pink: '#ec4899',
-                            gold: '#f59e0b',
+                            amber: '#f59e0b',
                             teal: '#14b8a6',
+                            aurora: '#0ea5e9'
                         }
                     }
                 },
@@ -39,7 +40,7 @@
         body {
             background-color: var(--bg);
             color: var(--text);
-            transition: background-color 0.5s ease;
+            transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-x: hidden;
         }
         .vibrant-mesh {
@@ -49,33 +50,51 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                        radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.1) 0px, transparent 50%),
-                        radial-gradient(at 0% 100%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
+            background: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.22) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(245, 158, 11, 0.12) 0px, transparent 50%);
+            opacity: 0.8;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .text-gradient {
-            background: linear-gradient(to right, #6366f1, #ec4899, #f59e0b);
+        .dark .vibrant-mesh { opacity: 0.5; }
+        
+        .text-gradient-hope {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .btn-vibrant {
+        .btn-hope {
             background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: white;
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.5);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .btn-vibrant:hover {
-            transform: scale(1.05) translateY(-2px);
+        .btn-hope:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.6);
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .animate-float { animation: float 6s ease-in-out infinite; }
+        .dark .glass-panel {
+            background: rgba(12, 12, 14, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        @keyframes subtle-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.85; }
+        }
+        .animate-subtle { animation: subtle-pulse 5s ease-in-out infinite; }
+        
+        @keyframes bounce-x {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+        .animate-bounce-x { animation: bounce-x 1s infinite; }
     </style>
     <script type="importmap">
     {

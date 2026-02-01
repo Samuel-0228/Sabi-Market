@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const handleSupabaseError = (err: any, tableName: string) => {
   console.error(`Error in table ${tableName}:`, err);
   if (err.message?.includes('does not exist') || err.code === 'PGRST204' || err.message?.includes('schema cache')) {
-    throw new Error(`The '${tableName}' table is missing or inaccessible. Please ensure the SQL migration was run in Supabase.`);
+    throw new Error(`Connection issue with ${tableName}. Please verify your database schema.`);
   }
   throw err;
 };
@@ -23,7 +23,6 @@ export const db = {
       if (authError || !authData || !authData.user) return null;
 
       const user = authData.user;
-
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -33,47 +32,53 @@ export const db = {
       if (profileError) handleSupabaseError(profileError, 'profiles');
 
       if (!profile) {
+        // Safe auto-creation if profile is missing
         const newProfile: UserProfile = {
           id: user.id,
           email: user.email || '',
-          full_name: user.user_metadata?.full_name || 'Student',
+          full_name: user.user_metadata?.full_name || 'Savvy Student',
           role: 'student',
           is_verified: user.email?.endsWith('@aau.edu.et') || false,
           created_at: user.created_at,
           preferences: []
         };
-
-        try {
-          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
-          if (insertError) console.warn("Auto-profile creation failed:", insertError);
-          return newProfile;
-        } catch (e) {
-          return newProfile;
-        }
+        await supabase.from('profiles').upsert(newProfile);
+        return newProfile;
       }
 
       return profile;
     } catch (err) {
-      console.error("Auth init failure:", err);
+      console.error("Auth initialization failed:", err);
       return null;
     }
   },
 
   async uploadImage(file: File): Promise<string> {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `listings/${fileName}`;
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) throw new Error("You must be logged in to upload photos.");
+
+    // Generate a clean, unique name
+    const timestamp = Date.now();
+    const cleanFileName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+    const filePath = `listings/${timestamp}_${cleanFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('market-assets')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error("Supabase Storage Error:", uploadError);
+      throw new Error(uploadError.message || "Failed to upload image. Please ensure the bucket exists and is public.");
+    }
 
     const { data } = supabase.storage
       .from('market-assets')
       .getPublicUrl(filePath);
 
+    if (!data?.publicUrl) throw new Error("Could not retrieve public URL for the uploaded image.");
     return data.publicUrl;
   },
 
@@ -83,7 +88,8 @@ export const db = {
   },
 
   async register(email: string, password: string, fullName: string, preferences: string[]): Promise<void> {
-    const { data, error } = await supabase.auth.signUp({ 
+    // 1. Sign up the user
+    const { data, error: authError } = await supabase.auth.signUp({ 
       email, 
       password,
       options: {
@@ -91,18 +97,23 @@ export const db = {
       }
     });
     
-    if (error) throw error;
+    if (authError) throw authError;
     
+    // 2. Explicitly create the profile record
     if (data?.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email: email,
         full_name: fullName,
         preferences: preferences,
         is_verified: email.endsWith('@aau.edu.et'),
-        role: 'student'
+        role: 'student',
+        created_at: new Date().toISOString()
       });
-      if (profileError) console.warn("Profile creation failed", profileError);
+      if (profileError) {
+        console.error("Profile Upsert Error:", profileError);
+        throw new Error("User created, but profile failed. Please try logging in.");
+      }
     }
   },
 
@@ -127,32 +138,33 @@ export const db = {
       
       return (data || []).map(l => ({
         ...l,
-        seller_name: (l as any).profiles?.full_name || 'Student'
+        seller_name: (l as any).profiles?.full_name || 'Verified Seller'
       }));
     } catch (e) {
-      console.error("Fetch listings error:", e);
+      console.error("Failed to fetch listings:", e);
       return [];
     }
   },
 
   async createListing(listing: Partial<Listing>): Promise<void> {
     const { data } = await supabase.auth.getUser();
-    if (!data?.user) throw new Error("Unauthorized");
+    if (!data?.user) throw new Error("Please log in to post a listing.");
 
     const { error } = await supabase.from('listings').insert({
       ...listing,
       seller_id: data.user.id,
-      status: listing.stock === 0 ? 'sold_out' : 'active'
+      status: (listing.stock || 0) <= 0 ? 'sold_out' : 'active',
+      created_at: new Date().toISOString()
     });
     if (error) handleSupabaseError(error, 'listings');
   },
 
   async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) throw new Error("Please log in to contact the seller.");
+    if (!userData?.user) throw new Error("Log in required.");
     const buyerId = userData.user.id;
 
-    if (buyerId === sellerId) throw new Error("You cannot start a chat with yourself.");
+    if (buyerId === sellerId) throw new Error("You are the seller of this item.");
 
     const { data: existing, error: findError } = await supabase
       .from('conversations')
@@ -203,7 +215,7 @@ export const db = {
     if (error) handleSupabaseError(error, 'orders');
     return (data || []).map(o => ({
       ...o,
-      listing_title: (o as any).listings?.title || 'Unknown Item'
+      listing_title: (o as any).listings?.title || 'Campus Item'
     }));
   },
 
@@ -220,7 +232,8 @@ export const db = {
       amount: amount,
       commission: commission,
       status: 'pending',
-      delivery_info: deliveryInfo
+      delivery_info: deliveryInfo,
+      created_at: new Date().toISOString()
     });
     if (orderError) handleSupabaseError(orderError, 'orders');
 

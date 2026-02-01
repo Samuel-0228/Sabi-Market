@@ -28,23 +28,13 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session) {
-      alert("Please login again to upload images.");
-      return;
-    }
-
     setUploading(true);
     try {
       const publicUrl = await db.uploadImage(file);
       setFormData(prev => ({ ...prev, image_url: publicUrl }));
     } catch (err: any) {
       console.error("Upload error details:", err);
-      if (err.message?.includes('row-level security policy')) {
-        alert("Upload failed: Storage Bucket 'market-assets' needs public access enabled in Supabase.");
-      } else {
-        alert(`Upload failed: ${err.message || "Unknown error"}.`);
-      }
+      alert(`Upload failed: ${err.message || "Unknown error"}. Check if you are logged in and the 'market-assets' bucket is public.`);
     } finally {
       setUploading(false);
     }
@@ -73,30 +63,45 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
-      <div className="bg-white dark:bg-[#141414] w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-2xl animate-in fade-in duration-500">
+      <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-4xl rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh] border border-white/5">
         
-        <div className="md:w-[45%] bg-gray-50 dark:bg-black/20 p-10 flex flex-col items-center justify-center border-r border-gray-100 dark:border-white/5">
-          <div className="w-full aspect-square bg-white dark:bg-white/5 rounded-[2.5rem] shadow-sm border-2 border-dashed border-gray-100 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden relative group">
+        <div className="md:w-[45%] bg-gray-50/50 dark:bg-black/40 p-10 flex flex-col items-center justify-center border-r border-gray-100 dark:border-white/5 relative">
+          <div className="w-full aspect-[4/5] bg-white dark:bg-white/5 rounded-[2.5rem] shadow-inner border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden relative group">
             {formData.image_url ? (
               <img src={formData.image_url} className="w-full h-full object-cover" alt="Preview" />
             ) : (
               <div className="text-center p-8">
-                <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📸</div>
-                <p className="text-xs font-black text-gray-300 dark:text-gray-600 uppercase tracking-widest">{t('uploadPhoto')}</p>
+                <div className="w-20 h-20 bg-gray-50 dark:bg-white/5 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-sm">📸</div>
+                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-loose">
+                  {uploading ? 'Uploading assets...' : t('uploadPhoto')}
+                </p>
               </div>
             )}
+            
             {uploading && (
-              <div className="absolute inset-0 bg-white/80 dark:bg-black/80 backdrop-blur flex items-center justify-center">
-                <div className="w-10 h-10 border-4 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="w-12 h-12 border-4 border-savvy-pink border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 opacity-0 cursor-pointer" title={t('uploadPhoto')} />
+            
+            <button 
+              type="button" 
+              onClick={() => fileInputRef.current?.click()} 
+              disabled={uploading}
+              className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+              title={t('uploadPhoto')} 
+            />
           </div>
 
           <div className="w-full mt-10">
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:opacity-90 transition-all shadow-xl">
-              {t('selectImage')}
+            <button 
+              type="button" 
+              onClick={() => fileInputRef.current?.click()} 
+              disabled={uploading}
+              className="w-full py-5 rounded-2xl btn-hope font-black text-[11px] uppercase tracking-widest shadow-xl disabled:opacity-50"
+            >
+              {uploading ? 'Processing...' : t('selectImage')}
             </button>
           </div>
           <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
@@ -106,46 +111,49 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
           <div className="flex justify-between items-center mb-12">
             <div>
               <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">{t('newListing')}</h2>
-              <p className="text-gray-400 font-medium text-sm mt-1">Classify your item to reach the right students.</p>
+              <p className="text-gray-400 font-medium text-sm mt-2 italic">Savvy AI will help categorize your items.</p>
             </div>
-            <button onClick={onClose} className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-black dark:text-white">✕</button>
+            <button onClick={onClose} className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-black dark:text-white">✕</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-6">
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('productTitle')}</label>
-                <input required className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold text-lg outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" placeholder="e.g. Microeconomics Final Prep" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('productTitle')}</label>
+                <input required className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold text-lg outline-none transition-all dark:text-white" placeholder="e.g. Vintage AAU Hoodie" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('category')}</label>
-                <select className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white appearance-none" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
-                  <option value="goods">{t('goods')}</option>
-                  <option value="course">{t('course')}</option>
-                  <option value="academic_materials">{t('academic_materials')}</option>
-                  <option value="food">{t('food')}</option>
-                </select>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('category')}</label>
+                <div className="relative">
+                  <select className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white appearance-none cursor-pointer" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                    <option value="goods">{t('goods')}</option>
+                    <option value="course">{t('course')}</option>
+                    <option value="academic_materials">{t('academic_materials')}</option>
+                    <option value="food">{t('food')}</option>
+                  </select>
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">▼</div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('price')} (ETB)</label>
-                  <input type="number" required className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('price')} (ETB)</label>
+                  <input type="number" required className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('contactPhone')}</label>
-                  <input type="tel" required placeholder="+251..." className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" value={formData.contact_phone} onChange={(e) => setFormData({...formData, contact_phone: e.target.value})} />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('contactPhone')}</label>
+                  <input type="tel" required placeholder="+251..." className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white" value={formData.contact_phone} onChange={(e) => setFormData({...formData, contact_phone: e.target.value})} />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('description')}</label>
-                <textarea required rows={3} className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none dark:text-white" placeholder="Describe your item or service details..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('description')}</label>
+                <textarea required rows={4} className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all resize-none dark:text-white" placeholder="What should other students know about this item?" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
               </div>
             </div>
 
-            <button type="submit" disabled={loading || uploading} className="w-full bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 mt-4">
+            <button type="submit" disabled={loading || uploading} className="w-full py-7 rounded-[2rem] btn-hope font-black text-sm uppercase tracking-widest shadow-2xl disabled:opacity-50 mt-4 active:scale-95">
               {loading ? t('publishing') : t('launchMarket')}
             </button>
           </form>
