@@ -1,6 +1,6 @@
 
 export type Role = 'student' | 'admin';
-export type ListingCategory = 'goods' | 'tutoring' | 'digital' | 'services';
+export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
 export type OrderStatus = 'pending' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
 
 export interface UserProfile {

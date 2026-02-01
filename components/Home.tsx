@@ -1,19 +1,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { db } from '../services/supabaseService';
-import { Listing, ListingCategory } from '../types';
+import { Listing, ListingCategory, UserProfile } from '../types';
 import { useLanguage } from './LanguageContext';
 
 interface HomeProps {
+  user: UserProfile | null;
   onSelectListing: (listing: Listing) => void;
   onAddListing: () => void;
   onBuyListing?: (listing: Listing) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing }) => {
+const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyListing }) => {
   const { t } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [filter, setFilter] = useState<ListingCategory | 'all'>('all');
+  const [filter, setFilter] = useState<ListingCategory | 'all' | 'forYou'>(user?.preferences?.length ? 'forYou' : 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [detailItem, setDetailItem] = useState<Listing | null>(null);
@@ -35,17 +36,24 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing
   };
 
   const filteredListings = listings.filter(l => {
-    const matchesCategory = filter === 'all' || l.category === filter;
     const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    if (filter === 'all') return matchesSearch;
+    if (filter === 'forYou') {
+      // Show items matching user preferences
+      const userPrefs = user?.preferences || [];
+      return matchesSearch && userPrefs.includes(l.category);
+    }
+    
+    return matchesSearch && l.category === filter;
   });
 
   const handleOpenChat = async (listing: Listing) => {
     try {
       const conversationId = await db.getOrCreateConversation(listing.id, listing.seller_id);
-      alert(`🎉 Connection Successful! Conversation established. \n\nDirect Chat ID: ${conversationId.slice(0, 8)}\n\nYou can now coordinate the exchange with ${listing.seller_name}.`);
+      alert(`🎉 Connection Successful! \n\nYou can now coordinate the exchange with ${listing.seller_name}.`);
     } catch (err: any) {
-      alert("⚠️ Service Interaction Error: " + err.message);
+      alert("⚠️ Error: " + err.message);
     }
   };
 
@@ -60,28 +68,32 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing
     }
   };
 
+  const categories: (ListingCategory | 'all' | 'forYou')[] = ['all', 'forYou', 'course', 'academic_materials', 'goods', 'food'];
+
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-16 reveal relative">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-24 gap-12">
         <div className="max-w-3xl">
            <h1 className="text-5xl sm:text-[5rem] font-black text-black dark:text-white mb-8 tracking-tighter leading-[0.8]">{t('explore')}</h1>
            <p className="text-gray-500 dark:text-gray-400 font-medium text-xl leading-relaxed max-w-xl">
-             {t('discoverText')}
+             {user?.preferences?.length ? `Showing personalized picks for your interests.` : t('discoverText')}
            </p>
         </div>
         
         <div className="flex flex-wrap gap-2 bg-white dark:bg-white/5 p-2 rounded-[2rem] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] border border-gray-100 dark:border-white/5">
-          {['all', 'goods', 'tutoring', 'digital', 'services'].map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setFilter(cat as any)}
-              className={`px-8 py-4 rounded-[1.5rem] whitespace-nowrap text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${
+              onClick={() => setFilter(cat)}
+              className={`px-6 py-4 rounded-[1.5rem] whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${
                 filter === cat 
                 ? 'bg-black text-white dark:bg-white dark:text-black shadow-xl' 
                 : 'text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5'
               }`}
             >
-              {t(cat)}
+              {cat === 'forYou' ? (
+                <span className="flex items-center gap-2">✨ {t('forYou')}</span>
+              ) : t(cat)}
             </button>
           ))}
         </div>
@@ -152,16 +164,11 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing
         </div>
       )}
 
-      {/* Floating Sell Button */}
-      <button 
-        onClick={onAddListing}
-        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] bg-black dark:bg-white text-white dark:text-black px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-[0_30px_60px_-10px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4"
-      >
+      <button onClick={onAddListing} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] bg-black dark:bg-white text-white dark:text-black px-10 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-[0_30px_60px_-10px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4">
         <span className="text-xl">+</span>
         {t('startSelling')}
       </button>
 
-      {/* Item Detail Overlay */}
       {detailItem && (
         <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-300">
           <div className="bg-white dark:bg-[#141414] w-full max-w-5xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
@@ -199,17 +206,10 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing
                </div>
 
                <div className="flex flex-col sm:flex-row gap-4 mt-12">
-                 <button 
-                   onClick={() => handleOpenChat(detailItem)}
-                   className="flex-1 bg-gray-50 dark:bg-white/5 text-black dark:text-white py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
-                 >
+                 <button onClick={() => handleOpenChat(detailItem)} className="flex-1 bg-gray-50 dark:bg-white/5 text-black dark:text-white py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
                    {t('chatWithSeller')}
                  </button>
-                 <button 
-                  onClick={handleBuyNow}
-                  disabled={detailItem.stock <= 0}
-                  className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                 >
+                 <button onClick={handleBuyNow} disabled={detailItem.stock <= 0} className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                    {detailItem.stock > 0 ? t('buyNow') : t('soldOut')}
                  </button>
                </div>

@@ -28,7 +28,6 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preliminary check for authentication session
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData?.session) {
       alert("Please login again to upload images.");
@@ -42,7 +41,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     } catch (err: any) {
       console.error("Upload error details:", err);
       if (err.message?.includes('row-level security policy')) {
-        alert("Upload failed: Row-Level Security policy. Please ensure you have added the SQL policies for the 'market-assets' bucket in your Supabase dashboard.");
+        alert("Upload failed: Storage Bucket 'market-assets' needs public access enabled in Supabase.");
       } else {
         alert(`Upload failed: ${err.message || "Unknown error"}.`);
       }
@@ -67,11 +66,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
       });
       onSuccess();
     } catch (err: any) {
-      if (err.message?.includes('PGRST205')) {
-        alert("Database Error: 'listings' table missing. Run the SQL migration in Supabase.");
-      } else {
-        alert("Failed to create listing: " + err.message);
-      }
+      alert("Failed to create listing: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -81,7 +76,6 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500">
       <div className="bg-white dark:bg-[#141414] w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh]">
         
-        {/* Visual Selector */}
         <div className="md:w-[45%] bg-gray-50 dark:bg-black/20 p-10 flex flex-col items-center justify-center border-r border-gray-100 dark:border-white/5">
           <div className="w-full aspect-square bg-white dark:bg-white/5 rounded-[2.5rem] shadow-sm border-2 border-dashed border-gray-100 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden relative group">
             {formData.image_url ? (
@@ -97,32 +91,22 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
                 <div className="w-10 h-10 border-4 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
-            <button 
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              title={t('uploadPhoto')}
-            />
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 opacity-0 cursor-pointer" title={t('uploadPhoto')} />
           </div>
 
           <div className="w-full mt-10">
-            <button 
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:opacity-90 transition-all shadow-xl"
-            >
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:opacity-90 transition-all shadow-xl">
               {t('selectImage')}
             </button>
           </div>
           <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
         </div>
 
-        {/* Content Form */}
         <div className="md:w-[55%] p-12 overflow-y-auto">
           <div className="flex justify-between items-center mb-12">
             <div>
               <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">{t('newListing')}</h2>
-              <p className="text-gray-400 font-medium text-sm mt-1">Start your campus business.</p>
+              <p className="text-gray-400 font-medium text-sm mt-1">Classify your item to reach the right students.</p>
             </div>
             <button onClick={onClose} className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-black dark:text-white">✕</button>
           </div>
@@ -131,83 +115,37 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
             <div className="space-y-6">
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('productTitle')}</label>
-                <input 
-                  required
-                  className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold text-lg outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white"
-                  placeholder="e.g. Scientific Calculator"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                />
+                <input required className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold text-lg outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" placeholder="e.g. Microeconomics Final Prep" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('description')}</label>
-                <textarea 
-                  required
-                  rows={3}
-                  className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none dark:text-white"
-                  placeholder="Briefly describe the condition and features..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('category')}</label>
+                <select className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white appearance-none" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                  <option value="goods">{t('goods')}</option>
+                  <option value="course">{t('course')}</option>
+                  <option value="academic_materials">{t('academic_materials')}</option>
+                  <option value="food">{t('food')}</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('price')} (ETB)</label>
-                  <input 
-                    type="number"
-                    required
-                    className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  />
+                  <input type="number" required className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('contactPhone')}</label>
-                  <input 
-                    type="tel"
-                    required
-                    placeholder="+251..."
-                    className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
-                  />
+                  <input type="tel" required placeholder="+251..." className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white" value={formData.contact_phone} onChange={(e) => setFormData({...formData, contact_phone: e.target.value})} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('stockCount')}</label>
-                  <input 
-                    type="number"
-                    required
-                    className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('category')}</label>
-                  <select 
-                    className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:bg-white dark:focus:bg-black/70 focus:ring-2 focus:ring-black dark:focus:ring-white transition-all dark:text-white"
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  >
-                    <option value="goods">{t('goods')}</option>
-                    <option value="tutoring">{t('tutoring')}</option>
-                    <option value="digital">{t('digital')}</option>
-                    <option value="services">{t('services')}</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('description')}</label>
+                <textarea required rows={3} className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all resize-none dark:text-white" placeholder="Describe your item or service details..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
               </div>
             </div>
 
-            <button 
-              type="submit"
-              disabled={loading || uploading}
-              className="w-full bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 mt-4"
-            >
+            <button type="submit" disabled={loading || uploading} className="w-full bg-black dark:bg-white text-white dark:text-black py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all disabled:opacity-50 mt-4">
               {loading ? t('publishing') : t('launchMarket')}
             </button>
           </form>
