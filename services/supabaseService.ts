@@ -9,7 +9,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsIn
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const handleSupabaseError = (err: any, tableName: string) => {
-  if (err.message?.includes('does not exist') || err.code === 'PGRST204') {
+  if (err.message?.includes('does not exist') || err.code === 'PGRST204' || err.message?.includes('schema cache')) {
     throw new Error(`The '${tableName}' table is missing. Please run the SQL migration in your Supabase dashboard to create it.`);
   }
   throw err;
@@ -17,37 +17,48 @@ const handleSupabaseError = (err: any, tableName: string) => {
 
 export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData || !authData.user) return null;
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData || !authData.user) return null;
 
-    const user = authData.user;
+      const user = authData.user;
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    if (profileError || !profile) {
-      const newProfile: UserProfile = {
-        id: user.id,
-        email: user.email || '',
-        full_name: user.user_metadata?.full_name || 'Student',
-        role: 'student',
-        is_verified: user.email?.endsWith('@aau.edu.et') || false,
-        created_at: user.created_at,
-        preferences: []
-      };
-
-      try {
-        await supabase.from('profiles').upsert(newProfile);
-        return newProfile;
-      } catch (e) {
-        return newProfile;
+      if (profileError) {
+        // If profile table is missing, we re-throw to be handled by the app init
+        handleSupabaseError(profileError, 'profiles');
       }
-    }
 
-    return profile;
+      if (!profile) {
+        const newProfile: UserProfile = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || 'Student',
+          role: 'student',
+          is_verified: user.email?.endsWith('@aau.edu.et') || false,
+          created_at: user.created_at,
+          preferences: []
+        };
+
+        try {
+          await supabase.from('profiles').upsert(newProfile);
+          return newProfile;
+        } catch (e) {
+          console.warn("Failed to create profile record", e);
+          return newProfile;
+        }
+      }
+
+      return profile;
+    } catch (err) {
+      console.error("getCurrentUser error", err);
+      throw err;
+    }
   },
 
   async uploadImage(file: File): Promise<string> {
@@ -108,7 +119,7 @@ export const db = {
       .order('created_at', { ascending: false });
 
     if (error) handleSupabaseError(error, 'listings');
-    return data.map(l => ({
+    return (data || []).map(l => ({
       ...l,
       seller_name: (l as any).profiles?.full_name || 'Student'
     }));
@@ -134,7 +145,6 @@ export const db = {
     if (buyerId === sellerId) throw new Error("You cannot start a chat with yourself.");
 
     try {
-      // 1. Check for existing conversation
       const { data: existing, error: findError } = await supabase
         .from('conversations')
         .select('id')
@@ -145,7 +155,6 @@ export const db = {
       if (findError) handleSupabaseError(findError, 'conversations');
       if (existing) return existing.id;
 
-      // 2. Create if not exists
       const { data: created, error: createError } = await supabase
         .from('conversations')
         .insert({ 
@@ -198,7 +207,6 @@ export const db = {
 
     const commission = amount * COMMISSION_RATE;
     
-    // 1. Create order
     const { error: orderError } = await supabase.from('orders').insert({
       buyer_id: userData.user.id,
       seller_id: listing.seller_id,
@@ -210,7 +218,6 @@ export const db = {
     });
     if (orderError) handleSupabaseError(orderError, 'orders');
 
-    // 2. Decrement stock
     const newStock = Math.max(0, listing.stock - 1);
     const { error: updateError } = await supabase
       .from('listings')

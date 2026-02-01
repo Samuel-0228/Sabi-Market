@@ -12,30 +12,46 @@ import ChatBot from './components/ChatBot';
 import Checkout from './components/Checkout';
 
 const App: React.FC = () => {
-  // Access the translation function 't' from the LanguageContext
   const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<'auth' | 'home' | 'dashboard' | 'admin' | 'checkout'>('home');
   const [showAddListing, setShowAddListing] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   useEffect(() => {
     const initAuth = async () => {
-      const u = await db.getCurrentUser();
-      if (u) {
-        setUser(u);
+      try {
+        // Attempt to get the current user profile
+        const u = await db.getCurrentUser();
+        if (u) {
+          setUser(u);
+          setCurrentPage('home');
+        }
+      } catch (err: any) {
+        console.error("Critical Auth Initialization Error:", err);
+        // We don't block the app, just log the error and let them see the auth screen
+        if (err.message?.includes('profiles')) {
+          setInitError("Database table 'profiles' is missing. Please run the SQL migration.");
+        }
+      } finally {
+        // Crucial: Always stop loading regardless of error
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
-        const u = await db.getCurrentUser();
-        setUser(u);
-        if (u && currentPage === 'auth') setCurrentPage('home');
+        try {
+          const u = await db.getCurrentUser();
+          setUser(u);
+          if (u && currentPage === 'auth') setCurrentPage('home');
+        } catch (e) {
+          console.error("Auth state change error", e);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('auth');
@@ -48,9 +64,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleAuthSuccess = async () => {
-    const u = await db.getCurrentUser();
-    setUser(u);
-    setCurrentPage('home');
+    try {
+      setLoading(true);
+      const u = await db.getCurrentUser();
+      setUser(u);
+      setCurrentPage('home');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -71,8 +94,18 @@ const App: React.FC = () => {
 
   const renderPage = () => {
     if (loading) return (
-      <div className="h-screen flex items-center justify-center dark:bg-black">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="h-screen flex flex-col items-center justify-center dark:bg-black bg-white">
+        <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <div className="text-center animate-pulse">
+           <h2 className="text-xl font-black tracking-tighter dark:text-white">ሳቪ – Savvy Market</h2>
+           <p className="text-gray-400 text-xs uppercase tracking-widest mt-2">Loading Secure Environment...</p>
+        </div>
+        {initError && (
+          <div className="mt-10 p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl max-w-sm text-center">
+            <p className="text-red-500 text-xs font-bold">{initError}</p>
+            <button onClick={() => window.location.reload()} className="mt-3 text-[10px] font-black uppercase underline dark:text-white">Retry Connection</button>
+          </div>
+        )}
       </div>
     );
 
