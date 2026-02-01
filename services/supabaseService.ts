@@ -8,6 +8,13 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsIn
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const handleSupabaseError = (err: any, tableName: string) => {
+  if (err.message?.includes('does not exist') || err.code === 'PGRST204') {
+    throw new Error(`The '${tableName}' table is missing. Please run the SQL migration in your Supabase dashboard to create it.`);
+  }
+  throw err;
+};
+
 export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
     const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -100,7 +107,7 @@ export const db = {
       .select('*, profiles(full_name)')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'listings');
     return data.map(l => ({
       ...l,
       seller_name: (l as any).profiles?.full_name || 'Student'
@@ -116,33 +123,44 @@ export const db = {
       seller_id: data.user.id,
       status: listing.stock === 0 ? 'sold_out' : 'active'
     });
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'listings');
   },
 
   async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) throw new Error("Unauthorized");
+    if (!userData?.user) throw new Error("Unauthorized. Please log in.");
     const buyerId = userData.user.id;
 
-    if (buyerId === sellerId) throw new Error("You cannot chat with yourself");
+    if (buyerId === sellerId) throw new Error("You cannot start a chat with yourself.");
 
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('listing_id', listingId)
-      .eq('buyer_id', buyerId)
-      .single();
+    try {
+      // 1. Check for existing conversation
+      const { data: existing, error: findError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('listing_id', listingId)
+        .eq('buyer_id', buyerId)
+        .maybeSingle();
 
-    if (existing) return existing.id;
+      if (findError) handleSupabaseError(findError, 'conversations');
+      if (existing) return existing.id;
 
-    const { data: created, error } = await supabase
-      .from('conversations')
-      .insert({ listing_id: listingId, buyer_id: buyerId, seller_id: sellerId })
-      .select('id')
-      .single();
+      // 2. Create if not exists
+      const { data: created, error: createError } = await supabase
+        .from('conversations')
+        .insert({ 
+          listing_id: listingId, 
+          buyer_id: buyerId, 
+          seller_id: sellerId 
+        })
+        .select('id')
+        .single();
 
-    if (error) throw error;
-    return created.id;
+      if (createError) handleSupabaseError(createError, 'conversations');
+      return created.id;
+    } catch (err) {
+      throw err;
+    }
   },
 
   async sendMessage(conversationId: string, content: string): Promise<void> {
@@ -154,7 +172,7 @@ export const db = {
       sender_id: userData.user.id,
       content
     });
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'messages');
   },
 
   async getOrders(role: 'buyer' | 'seller'): Promise<Order[]> {
@@ -167,7 +185,7 @@ export const db = {
       .eq(role === 'buyer' ? 'buyer_id' : 'seller_id', userData.user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'orders');
     return (data || []).map(o => ({
       ...o,
       listing_title: (o as any).listings?.title || 'Unknown Item'
@@ -190,7 +208,7 @@ export const db = {
       status: 'pending',
       delivery_info: deliveryInfo
     });
-    if (orderError) throw orderError;
+    if (orderError) handleSupabaseError(orderError, 'orders');
 
     // 2. Decrement stock
     const newStock = Math.max(0, listing.stock - 1);
@@ -201,6 +219,6 @@ export const db = {
         status: newStock <= 0 ? 'sold_out' : 'active'
       })
       .eq('id', listing.id);
-    if (updateError) throw updateError;
+    if (updateError) handleSupabaseError(updateError, 'listings');
   }
 };

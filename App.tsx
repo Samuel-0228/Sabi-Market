@@ -54,9 +54,14 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await db.logout();
-    setUser(null);
-    setCurrentPage('auth');
+    try {
+      await db.logout();
+    } catch (err) {
+      console.error("Logout error", err);
+    } finally {
+      setUser(null);
+      setCurrentPage('auth');
+    }
   };
 
   const handleInitiateCheckout = (listing: Listing) => {

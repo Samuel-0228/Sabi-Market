@@ -38,20 +38,20 @@ const ChatBot: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-[60]">
       {isOpen ? (
-        <div className="w-80 h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="w-80 h-96 bg-white dark:bg-[#141414] rounded-2xl shadow-2xl border border-gray-200 dark:border-white/5 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
           <div className="bg-indigo-600 p-4 text-white flex justify-between items-center">
             <h3 className="font-bold flex items-center gap-2">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              Savvy AI
+              {t('savvyAI')}
             </h3>
             <button onClick={() => setIsOpen(false)} className="text-white hover:text-gray-200">✕</button>
           </div>
           
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-black/20">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm shadow-sm ${
-                  m.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
+                  m.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-[#1f1f1f] text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-white/5 rounded-bl-none'
                 }`}>
                   {m.text}
                 </div>
@@ -59,20 +59,20 @@ const ChatBot: React.FC = () => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-gray-100 px-4 py-2 rounded-2xl text-xs text-gray-400 animate-pulse">
-                  Thinking...
+                <div className="bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-white/5 px-4 py-2 rounded-2xl text-xs text-gray-400 animate-pulse">
+                  {t('thinking')}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-3 border-t bg-white flex gap-2">
+          <div className="p-3 border-t dark:border-white/5 bg-white dark:bg-[#141414] flex gap-2">
             <input 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask anything..."
-              className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder={t('askAnything')}
+              className="flex-1 bg-gray-100 dark:bg-black/50 dark:text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button 
               onClick={handleSend}

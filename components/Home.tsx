@@ -43,9 +43,9 @@ const Home: React.FC<HomeProps> = ({ onSelectListing, onAddListing, onBuyListing
   const handleOpenChat = async (listing: Listing) => {
     try {
       const conversationId = await db.getOrCreateConversation(listing.id, listing.seller_id);
-      alert("Chat initiated! ID: " + conversationId);
+      alert(`🎉 Connection Successful! Conversation established. \n\nDirect Chat ID: ${conversationId.slice(0, 8)}\n\nYou can now coordinate the exchange with ${listing.seller_name}.`);
     } catch (err: any) {
-      alert(err.message);
+      alert("⚠️ Service Interaction Error: " + err.message);
     }
   };
 

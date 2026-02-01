@@ -69,6 +69,14 @@ export const TRANSLATIONS: Translation = {
   category: { en: 'Category', am: 'ምድብ' },
   publishing: { en: 'Publishing...', am: 'በመለጠፍ ላይ...' },
   selectImage: { en: 'Select Image From Device', am: 'ከመሳሪያዎ ምስል ይምረጡ' },
+  nextStep: { en: 'Next Step', am: 'ቀጣይ እርምጃ' },
+  back: { en: 'Back', am: 'ተመለስ' },
+  universityEmail: { en: 'University Email', am: 'የዩኒቨርሲቲ ኢሜይል' },
+  createPassword: { en: 'Create Password', am: 'የይለፍ ቃል ፍጠር' },
+  min6Chars: { en: 'Min 6 characters', am: 'ቢያንስ 6 ፊደላት' },
+  askAnything: { en: 'Ask anything...', am: 'ማንኛውንም ነገር ይጠይቁ...' },
+  savvyAI: { en: 'Savvy AI Assistant', am: 'የሳቪ AI ረዳት' },
+  thinking: { en: 'Thinking...', am: 'በማሰብ ላይ...' },
 };
 
 export const COMMISSION_RATE = 0.05;

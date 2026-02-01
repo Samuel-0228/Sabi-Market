@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { db } from '../services/supabaseService';
+import { db, supabase } from '../services/supabaseService';
 import { useLanguage } from './LanguageContext';
 
 interface AddListingModalProps {
@@ -28,12 +28,24 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Preliminary check for authentication session
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      alert("Please login again to upload images.");
+      return;
+    }
+
     setUploading(true);
     try {
       const publicUrl = await db.uploadImage(file);
       setFormData(prev => ({ ...prev, image_url: publicUrl }));
-    } catch (err) {
-      alert("Failed to upload image. Ensure the 'market-assets' bucket exists in Supabase Storage and is set to Public.");
+    } catch (err: any) {
+      console.error("Upload error details:", err);
+      if (err.message?.includes('row-level security policy')) {
+        alert("Upload failed: Row-Level Security policy. Please ensure you have added the SQL policies for the 'market-assets' bucket in your Supabase dashboard.");
+      } else {
+        alert(`Upload failed: ${err.message || "Unknown error"}.`);
+      }
     } finally {
       setUploading(false);
     }
@@ -42,7 +54,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image_url) {
-      alert("Please upload a product photo");
+      alert("Please upload a product photo first.");
       return;
     }
     setLoading(true);
@@ -56,7 +68,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
       onSuccess();
     } catch (err: any) {
       if (err.message?.includes('PGRST205')) {
-        alert("Database Error: The 'listings' table was not found. Please run the SQL migration in your Supabase dashboard.");
+        alert("Database Error: 'listings' table missing. Run the SQL migration in Supabase.");
       } else {
         alert("Failed to create listing: " + err.message);
       }

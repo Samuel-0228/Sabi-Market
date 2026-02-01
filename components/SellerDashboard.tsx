@@ -14,9 +14,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({ totalSales: 0, activeListings: 0, pendingOrders: 0 });
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    loadData();
+    loadData().then(() => setIsLoaded(true));
   }, [user]);
 
   const loadData = async () => {
@@ -75,19 +76,30 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 mb-20">
         {/* Analytics Chart */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#141414] p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50 dark:border-white/5">
+        <div className="lg:col-span-3 bg-white dark:bg-[#141414] p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50 dark:border-white/5 min-w-0">
           <h3 className="text-xl font-black mb-10 tracking-tight dark:text-white">{t('performance')}</h3>
-          {/* Explicit height and min-height to prevent Recharts -1 error */}
-          <div className="w-full h-[350px] min-h-[350px]">
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
-              <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} dy={15} />
-                <YAxis hide />
-                <Tooltip cursor={{fill: '#f9fafb'}} contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)'}} />
-                <Bar dataKey="sales" fill="#000" radius={[12, 12, 12, 12]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Using a fixed height and aspect ratio to ensure Recharts always has dimensions */}
+          <div className="w-full h-[400px] min-h-[400px] relative overflow-hidden">
+            {isLoaded && (
+              <ResponsiveContainer width="99%" height="100%" debounce={100}>
+                <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#9ca3af', fontSize: 10, fontWeight: 700}} 
+                    dy={15} 
+                  />
+                  <YAxis hide />
+                  <Tooltip 
+                    cursor={{fill: '#f9fafb'}} 
+                    contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)'}} 
+                  />
+                  <Bar dataKey="sales" fill="#000" radius={[12, 12, 12, 12]} barSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -119,12 +131,12 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
       </div>
 
       {/* My Listings */}
-      <div className="bg-white dark:bg-[#141414] p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50 dark:border-white/5">
+      <div className="bg-white dark:bg-[#141414] p-10 rounded-[2.5rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-gray-50 dark:border-white/5 overflow-x-auto">
         <div className="flex justify-between items-center mb-12">
           <h3 className="text-xl font-black tracking-tight dark:text-white">{t('inventory')}</h3>
           <button className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors">Export CSV</button>
         </div>
-        <div className="overflow-x-auto">
+        <div className="min-w-[800px]">
           <table className="w-full text-left">
             <thead>
               <tr className="text-gray-300 dark:text-gray-600 text-[9px] font-black uppercase tracking-[0.2em] border-b border-gray-50 dark:border-white/5">

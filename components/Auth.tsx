@@ -23,10 +23,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
   const [error, setError] = useState('');
 
   const PREFERENCE_OPTIONS = [
-    { id: 'goods', label: 'Tech & Gear', icon: '⚡' },
-    { id: 'tutoring', label: 'Learning', icon: '🧠' },
-    { id: 'digital', label: 'Design & Code', icon: '🎨' },
-    { id: 'services', label: 'Life Services', icon: '🤝' },
+    { id: 'goods', label: t('goods'), icon: '⚡' },
+    { id: 'tutoring', label: t('tutoring'), icon: '🧠' },
+    { id: 'digital', label: t('digital'), icon: '🎨' },
+    { id: 'services', label: t('services'), icon: '🤝' },
   ];
 
   const validateEmail = (email: string) => {
@@ -92,13 +92,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
           <div className="w-20 h-20 bg-black dark:bg-white rounded-3xl flex items-center justify-center mx-auto mb-10 rotate-3 shadow-xl">
             <span className="text-white dark:text-black text-4xl">📧</span>
           </div>
-          <h2 className="text-3xl font-black text-black dark:text-white mb-4">Check your inbox</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">We've sent a verification link to <span className="text-black dark:text-white font-bold">{formData.email}</span>. Once verified, return here to log in.</p>
+          <h2 className="text-3xl font-black text-black dark:text-white mb-4">{t('checkInbox')}</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">{t('verificationText')} <span className="text-black dark:text-white font-bold">{formData.email}</span>.</p>
           <button 
             onClick={() => setStep('login')}
             className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95"
           >
-            Go to Login
+            {t('login')}
           </button>
         </div>
       </div>
@@ -110,8 +110,8 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
       <div className="bg-white dark:bg-[#141414] w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 sm:p-12 border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in-95 duration-700">
         <div className="mb-10 text-center">
           <div className="w-16 h-16 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-bold text-3xl mx-auto mb-6 shadow-xl">ሳ</div>
-          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">Welcome to Savvy.</h2>
-          <p className="text-gray-400 dark:text-gray-500 font-medium mt-2">The exclusive student marketplace.</p>
+          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">{t('welcome')}</h2>
+          <p className="text-gray-400 dark:text-gray-500 font-medium mt-2">{t('exclusiveMarket')}</p>
         </div>
 
         {error && (
@@ -123,7 +123,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
         {step === 'initial' && (
           <form onSubmit={handleStart} className="space-y-6">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">University Email</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('universityEmail')}</label>
               <input 
                 type="email"
                 required
@@ -134,10 +134,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               />
             </div>
             <button className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all flex items-center justify-center gap-3 active:scale-95">
-              Continue <span className="text-lg">→</span>
+              {t('continue')} <span className="text-lg">→</span>
             </button>
             <p className="text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest pt-4">
-              Already have an account? <button type="button" onClick={() => setStep('login')} className="text-black dark:text-white underline">Login</button>
+              {t('alreadyHaveAccount')} <button type="button" onClick={() => setStep('login')} className="text-black dark:text-white underline">{t('login')}</button>
             </p>
           </form>
         )}
@@ -145,7 +145,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
         {step === 'details' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-6 px-1">Pick your interests</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-6 px-1">{t('pickInterests')}</label>
               <div className="grid grid-cols-2 gap-4">
                 {PREFERENCE_OPTIONS.map(opt => (
                   <button
@@ -168,7 +168,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               onClick={() => setStep('account')}
               className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
             >
-              Next Step
+              {t('nextStep')}
             </button>
           </div>
         )}
@@ -176,7 +176,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
         {step === 'account' && (
           <form onSubmit={handleRegister} className="space-y-6 animate-in fade-in slide-in-from-right-4">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Full Name</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('fullName')}</label>
               <input 
                 required
                 className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
@@ -186,12 +186,12 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               />
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Create Password</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('createPassword')}</label>
               <input 
                 type="password"
                 required
                 className="w-full bg-gray-50 dark:bg-black/50 border-none rounded-2xl px-6 py-5 focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white"
-                placeholder="Min 6 characters"
+                placeholder={t('min6Chars')}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
@@ -200,16 +200,16 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               disabled={loading}
               className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all"
             >
-              {loading ? 'Creating...' : 'Finalize Profile'}
+              {loading ? t('publishing') : t('finalize')}
             </button>
-            <button type="button" onClick={() => setStep('details')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest">Back</button>
+            <button type="button" onClick={() => setStep('details')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('back')}</button>
           </form>
         )}
 
         {step === 'login' && (
           <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-top-4">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Email</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('email')}</label>
               <input 
                 type="email"
                 required
@@ -219,7 +219,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               />
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Password</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">{t('password')}</label>
               <input 
                 type="password"
                 required
@@ -232,10 +232,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialEmail = '' }) => {
               disabled={loading}
               className="w-full bg-black dark:bg-white text-white dark:text-black py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-gray-800 dark:hover:bg-gray-200 transition-all active:scale-95"
             >
-              {loading ? 'Logging in...' : 'Sign In'}
+              {loading ? t('publishing') : t('login')}
             </button>
             <p className="text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest pt-4">
-              Need an account? <button type="button" onClick={() => setStep('initial')} className="text-black dark:text-white underline">Register</button>
+              {t('needAccount')} <button type="button" onClick={() => setStep('initial')} className="text-black dark:text-white underline">{t('register')}</button>
             </p>
           </form>
         )}
