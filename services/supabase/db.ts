@@ -1,11 +1,15 @@
 
 import { supabase } from './client';
-import { Listing, Order } from '../../types';
+import { Listing, Order } from '../../types/index';
 
-// Renamed from dbService to db to match component imports and added missing functionality
 export const db = {
   async getListings() {
-    const { data, error } = await supabase.from('listings').select('*, profiles:seller_id(full_name)').eq('status', 'active').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('listings')
+      .select('*, profiles:seller_id(full_name)')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    
     if (error) throw error;
     return data;
   },
@@ -21,7 +25,12 @@ export const db = {
   async getOrders(role: 'buyer' | 'seller', userId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const uid = userId || user?.id;
-    const { data, error } = await supabase.from('orders').select('*, listings(title)').eq(role === 'buyer' ? 'buyer_id' : 'seller_id', uid).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, listings(title)')
+      .eq(role === 'buyer' ? 'buyer_id' : 'seller_id', uid)
+      .order('created_at', { ascending: false });
+    
     if (error) throw error;
     return data;
   },

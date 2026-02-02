@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { authApi } from '../features/auth/auth.api';
 import { supabase } from '../services/supabase/client';
-import { Listing, UserProfile } from '../types';
-import { LanguageProvider, useLanguage } from './LanguageContext';
-import { ThemeProvider } from './ThemeContext';
+import { Listing, UserProfile } from '../types/index';
+import { useLanguage } from './LanguageContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
