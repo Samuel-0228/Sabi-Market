@@ -4,6 +4,7 @@ import { UserProfile } from '../../types/index';
 
 export const authApi = {
   async register(email, password, fullName, preferences) {
+    // 1. Sign up the user
     const { data, error } = await authService.signUp(email, password, { 
       full_name: fullName, 
       preferences 
@@ -11,42 +12,36 @@ export const authApi = {
     
     if (error) throw error;
 
-    // If sign up is successful, we try to create a profile.
-    // NOTE: If Supabase requires email verification, data.session might be null.
-    // In that case, we won't have the permissions to write to the 'profiles' table via RLS yet.
-    // That's why syncProfile uses Auth metadata as a backup.
-    if (data.user && data.session) {
+    // 2. Immediately try to create the profile record.
+    // We use upsert so if it already exists it just updates.
+    // If 'Confirm Email' is OFF in Supabase, data.session will be present.
+    if (data.user) {
       try {
         await authService.upsertProfile({
           id: data.user.id,
-          email,
+          email: email,
           full_name: fullName,
-          preferences,
+          preferences: preferences,
           role: 'student',
           is_verified: email.endsWith('@aau.edu.et'),
           created_at: new Date().toISOString()
         });
       } catch (e) {
-        console.warn("Background profile creation deferred (requires verified session).", e);
+        console.warn("Profile table insert failed. Ensure RLS allows inserts for authenticated/anon during signup or disable email confirmation in Supabase.", e);
       }
     }
     
     return {
       user: data.user,
       session: data.session,
-      // If session is null, it means verification is required
+      // If session is null here, Supabase still has 'Confirm Email' enabled.
       needsConfirmation: data.user && !data.session
     };
   },
 
   async login(email, password) {
     const { data, error } = await authService.signIn(email, password);
-    if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
-      }
-      throw error;
-    }
+    if (error) throw error;
     return data;
   },
 
@@ -77,14 +72,16 @@ export const authApi = {
         created_at: user.created_at
       };
       
-      // Attempt to save the recovery profile to the DB if we have a session
+      // Attempt to save the recovery profile to the DB
       try {
-        await authService.upsertProfile(recoveryProfile);
+        const { error: upsertError } = await authService.upsertProfile(recoveryProfile);
+        if (upsertError) throw upsertError;
+        return recoveryProfile;
       } catch (e) {
-        // This might fail if the user is unverified or RLS is blocking
-        console.debug("Could not persist profile yet, using metadata fallback.");
+        console.error("Could not sync profile to DB:", e);
+        // Still return the local object so the UI works
+        return recoveryProfile;
       }
-      return recoveryProfile;
     }
     
     return profile as UserProfile;

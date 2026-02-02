@@ -13,18 +13,12 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
   const [formData, setFormData] = useState({ email: '', password: '', fullName: '', preferences: [] as string[] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    // Basic validation
-    if (!formData.email.endsWith('@aau.edu.et') && !confirm("You are not using a university email. You might have limited access. Continue?")) {
-      setLoading(false);
-      return;
-    }
 
     try {
       const result = await authApi.register(
@@ -34,41 +28,31 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
         formData.preferences
       );
       
-      if (result.needsConfirmation) {
-        setNeedsConfirmation(true);
-      } else {
+      setSuccess(true);
+      // Brief delay to show success state before navigating
+      setTimeout(() => {
         onSuccess();
-      }
+      }, 1500);
+
     } catch (err: any) {
       console.error("Registration Error:", err);
-      // Supabase returns descriptive errors. We display them directly.
-      setError(err.message || 'Registration failed. Please check your internet connection and try again.');
-    } finally {
+      setError(err.message || 'Registration failed. Please try again.');
       setLoading(false);
     }
   };
 
-  if (needsConfirmation) {
+  if (success) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
         <div className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] rounded-[3rem] p-10 sm:p-16 shadow-2xl border border-indigo-500/10 text-center">
-          <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner">📧</div>
-          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Check your email</h2>
+          <div className="w-24 h-24 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner">✅</div>
+          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Account Created!</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-10 leading-relaxed font-medium">
-            We've sent a verification link to <br/>
-            <strong className="text-indigo-600 dark:text-indigo-400">{formData.email}</strong>. <br/>
-            Please click the link in the email to activate your account.
+            Welcome to the community, <strong className="text-indigo-600">{formData.fullName}</strong>.<br/>
+            Taking you to the marketplace...
           </p>
-          <div className="space-y-4">
-            <button 
-              onClick={onSwitch}
-              className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all"
-            >
-              Back to Login
-            </button>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-              Don't see it? Check your spam folder.
-            </p>
+          <div className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+            <div className="h-full bg-indigo-600 animate-[loading_1.5s_ease-in-out]"></div>
           </div>
         </div>
       </div>
@@ -81,7 +65,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
         <div className="text-center mb-12">
           <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-white font-black text-4xl mx-auto mb-8 shadow-xl">ሳ</div>
           <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-2">{t('register')}</h2>
-          <p className="text-gray-400 font-medium">Addis Ababa University Marketplace</p>
+          <p className="text-gray-400 font-medium italic">Join the Addis Ababa University Marketplace</p>
         </div>
 
         {error && (
@@ -128,7 +112,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
             disabled={loading} 
             className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
           >
-            {loading ? 'Processing...' : t('finalize')}
+            {loading ? 'Creating Account...' : t('finalize')}
           </button>
           
           <button type="button" onClick={onSwitch} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4">
@@ -136,6 +120,12 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
           </button>
         </form>
       </div>
+      <style>{`
+        @keyframes loading {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 };
