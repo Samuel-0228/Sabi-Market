@@ -15,9 +15,11 @@ export const db = {
   },
   async createListing(listing: any) {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Authenticated user required to create listing.");
+    
     const { error } = await supabase.from('listings').insert({
       ...listing,
-      seller_id: user?.id,
+      seller_id: user.id,
       created_at: new Date().toISOString()
     });
     if (error) throw error;
@@ -25,6 +27,8 @@ export const db = {
   async getOrders(role: 'buyer' | 'seller', userId?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     const uid = userId || user?.id;
+    if (!uid) return [];
+
     const { data, error } = await supabase
       .from('orders')
       .select('*, listings(title)')
@@ -36,8 +40,10 @@ export const db = {
   },
   async createOrder(listing: any, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Authenticated user required to place order.");
+
     const { error } = await supabase.from('orders').insert({
-      buyer_id: user?.id,
+      buyer_id: user.id,
       seller_id: listing.seller_id,
       listing_id: listing.id,
       amount,
@@ -50,15 +56,20 @@ export const db = {
   },
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Authenticated user required to send message.");
+
     const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
-      sender_id: user?.id,
+      sender_id: user.id,
       content,
       created_at: new Date().toISOString()
     });
     if (error) throw error;
   },
   async uploadImage(file: File) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Authenticated user required to upload images.");
+
     const timestamp = Date.now();
     const filePath = `listings/${timestamp}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
     const { error: uploadError } = await supabase.storage

@@ -22,33 +22,29 @@ const App: React.FC = () => {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
 
+  const syncUser = useCallback(async () => {
+    try {
+      const u = await db.getCurrentUser();
+      setUser(u);
+      return u;
+    } catch (e) {
+      console.error("User sync error", e);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
-      try {
-        const currentUser = await db.getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-          setCurrentPage('home');
-        } else {
-          setCurrentPage('landing');
-        }
-      } catch (e) {
-        console.error("Init error", e);
-        setCurrentPage('landing');
-      } finally {
-        setIsInitializing(false);
-      }
+      const u = await syncUser();
+      if (u) setCurrentPage('home');
+      setIsInitializing(false);
     };
-
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        const u = await db.getCurrentUser();
-        setUser(u);
-        // Only redirect if we're on a page that requires auth or the entry gates
-        setCurrentPage(prev => (prev === 'landing' || prev === 'auth' ? 'home' : prev));
+        const u = await syncUser();
+        if (u) setCurrentPage(p => (['landing', 'auth'].includes(p) ? 'home' : p));
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -56,23 +52,14 @@ const App: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [syncUser]);
 
-  const handleNavigate = useCallback((page: any) => {
-    if (!user && (page === 'dashboard' || page === 'checkout' || page === 'messages')) {
+  const handleNavigate = (page: any) => {
+    if (!user && ['dashboard', 'messages', 'checkout'].includes(page)) {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
     }
-  }, [user]);
-
-  const handleBuyNow = (listing: Listing) => {
-    if (!user) {
-      setCurrentPage('auth');
-      return;
-    }
-    setSelectedListing(listing);
-    setCurrentPage('checkout');
   };
 
   if (isInitializing) {
@@ -88,10 +75,10 @@ const App: React.FC = () => {
     switch (currentPage) {
       case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
       case 'auth': return <Auth onSuccess={() => setCurrentPage('home')} />;
-      case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} onNavigate={handleNavigate} />;
+      case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
       case 'messages': return user ? <Messages user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
-      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('dashboard')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={handleBuyNow} onNavigate={handleNavigate} />;
+      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('dashboard')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };
@@ -104,7 +91,7 @@ const App: React.FC = () => {
       </main>
       <Footer onNavigate={handleNavigate} />
       {showAddListing && (
-        <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); setCurrentPage('home'); }} />
+        <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); setCurrentPage('home'); }} />
       )}
       {user && <ChatBot />}
     </div>

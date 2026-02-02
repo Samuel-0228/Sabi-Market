@@ -43,15 +43,22 @@ const App: React.FC = () => {
     };
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+    // The subscription detects when the user logs in, logs out, or refreshes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`Supabase Auth Event: ${event}`);
+      
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
         const u = await syncUser();
-        if (u) setCurrentPage(prev => (prev === 'landing' || prev === 'login' || prev === 'register' ? 'home' : prev));
+        if (u) {
+          // Redirect to home if on a gate page
+          setCurrentPage(prev => (['landing', 'login', 'register'].includes(prev) ? 'home' : prev));
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
       }
     });
+
     return () => subscription.unsubscribe();
   }, [syncUser]);
 
@@ -63,18 +70,29 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+
   if (isInitializing) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black">
-        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Launching Savvy</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black transition-all duration-700">
+        <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-6 shadow-2xl shadow-indigo-500/10"></div>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Initializing Savvy</p>
+          <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Campus Market Hub</p>
+        </div>
       </div>
     );
   }
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'landing': return <Landing onGetStarted={() => handleNavigate('login')} />;
+      case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'login')} />;
       case 'login': return <Login onSwitch={() => setCurrentPage('register')} onSuccess={() => setCurrentPage('home')} />;
       case 'register': return <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />;
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
@@ -86,8 +104,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
+    <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+      <Navbar 
+        onNavigate={handleNavigate} 
+        currentPage={currentPage} 
+        onLogout={handleLogout} 
+        user={user} 
+      />
       <main className="flex-1">
         {renderContent()}
       </main>

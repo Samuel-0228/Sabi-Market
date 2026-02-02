@@ -1,6 +1,6 @@
 
 import { authService } from '../../services/supabase/auth';
-import { UserProfile } from '../../types';
+import { UserProfile } from '../../types/index';
 
 export const authApi = {
   async register(email, password, fullName, preferences) {
@@ -8,42 +8,64 @@ export const authApi = {
       full_name: fullName, 
       preferences 
     });
+    
     if (error) throw error;
 
-    if (data.user) {
-      // Attempt to create the DB profile immediately. 
-      // If RLS fails because session is not yet active, getProfile in App.tsx will fix it.
-      await authService.upsertProfile({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        preferences,
-        role: 'student',
-        is_verified: email.endsWith('@aau.edu.et'),
-        created_at: new Date().toISOString()
-      }).catch(e => console.warn("Background profile creation failed:", e));
+    // If sign up is successful, we try to create a profile.
+    // NOTE: If Supabase requires email verification, data.session might be null.
+    // In that case, we won't have the permissions to write to the 'profiles' table via RLS yet.
+    // That's why syncProfile uses Auth metadata as a backup.
+    if (data.user && data.session) {
+      try {
+        await authService.upsertProfile({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          preferences,
+          role: 'student',
+          is_verified: email.endsWith('@aau.edu.et'),
+          created_at: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn("Background profile creation deferred (requires verified session).", e);
+      }
     }
-    return data;
+    
+    return {
+      user: data.user,
+      session: data.session,
+      // If session is null, it means verification is required
+      needsConfirmation: data.user && !data.session
+    };
   },
 
   async login(email, password) {
     const { data, error } = await authService.signIn(email, password);
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        throw new Error('Please verify your email before logging in. Check your inbox for the verification link.');
+      }
+      throw error;
+    }
     return data;
   },
 
   async logout() {
     const { error } = await authService.signOut();
-    if (error) throw error;
+    if (error) {
+      localStorage.removeItem('supabase.auth.token');
+      window.location.reload();
+    }
   },
 
   async syncProfile(): Promise<UserProfile | null> {
     const { data: { user }, error: authError } = await authService.getUser();
     if (authError || !user) return null;
 
+    // Fetch profile from DB
     const { data: profile, error: profileError } = await authService.getProfile(user.id);
     
-    // Recovery logic: If Auth exists but Profile doesn't (due to timing)
+    // Recovery Logic: If Auth exists but Profile record is missing in the database table
     if (!profile) {
       const recoveryProfile: UserProfile = {
         id: user.id,
@@ -54,10 +76,17 @@ export const authApi = {
         preferences: user.user_metadata?.preferences || [],
         created_at: user.created_at
       };
-      // Try to save the recovery profile
-      await authService.upsertProfile(recoveryProfile).catch(console.error);
+      
+      // Attempt to save the recovery profile to the DB if we have a session
+      try {
+        await authService.upsertProfile(recoveryProfile);
+      } catch (e) {
+        // This might fail if the user is unverified or RLS is blocking
+        console.debug("Could not persist profile yet, using metadata fallback.");
+      }
       return recoveryProfile;
     }
-    return profile;
+    
+    return profile as UserProfile;
   }
 };

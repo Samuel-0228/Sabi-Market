@@ -6,12 +6,9 @@ import { LanguageProvider } from './components/LanguageContext';
 import { ThemeProvider } from './components/ThemeContext';
 
 const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+if (!rootElement) throw new Error('Failed to find the root element');
 
 const root = ReactDOM.createRoot(rootElement);
-// Wrap App with context providers to make them available globally
 root.render(
   <React.StrictMode>
     <ThemeProvider>
