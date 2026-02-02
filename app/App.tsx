@@ -36,21 +36,32 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
-      const u = await syncUser();
-      if (u) setCurrentPage('home');
-      setIsInitializing(false);
+      try {
+        // Use getSession for instant local storage check to prevent "forever loading"
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && mounted) {
+          const u = await syncUser();
+          if (u) setCurrentPage('home');
+        }
+      } catch (err) {
+        console.error("Init error:", err);
+      } finally {
+        if (mounted) setIsInitializing(false);
+      }
     };
+
     init();
 
-    // The subscription detects when the user logs in, logs out, or refreshes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`Supabase Auth Event: ${event}`);
+      if (!mounted) return;
+      console.log(`Auth Event: ${event}`);
       
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         const u = await syncUser();
         if (u) {
-          // Redirect to home if on a gate page
           setCurrentPage(prev => (['landing', 'login', 'register'].includes(prev) ? 'home' : prev));
         }
       } else if (event === 'SIGNED_OUT') {
@@ -59,7 +70,10 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [syncUser]);
 
   const handleNavigate = (page: string) => {
@@ -70,22 +84,14 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
-
   if (isInitializing) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black transition-all duration-700">
-        <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-6 shadow-2xl shadow-indigo-500/10"></div>
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Initializing Savvy</p>
-          <p className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Campus Market Hub</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
+        <div className="relative">
+          <div className="w-16 h-16 border-[3px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-xs">ሳ</div>
         </div>
+        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Synchronizing Savvy</p>
       </div>
     );
   }
@@ -104,16 +110,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
-      <Navbar 
-        onNavigate={handleNavigate} 
-        currentPage={currentPage} 
-        onLogout={handleLogout} 
-        user={user} 
-      />
-      <main className="flex-1">
-        {renderContent()}
-      </main>
+    <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
+      <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
+      <main className="flex-1">{renderContent()}</main>
       <Footer onNavigate={handleNavigate} />
       {showAddListing && (
         <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); setCurrentPage('home'); }} />

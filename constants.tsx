@@ -12,6 +12,7 @@ export const TRANSLATIONS: Translation = {
   fullName: { en: 'Full Name', am: 'ሙሉ ስም' },
   marketplace: { en: 'Marketplace', am: 'ገበያ' },
   dashboard: { en: 'Dashboard', am: 'ዳሽቦርድ' },
+  inbox: { en: 'Inbox', am: 'መልእክቶች' },
   admin: { en: 'Admin', am: 'አስተዳዳሪ' },
   logout: { en: 'Logout', am: 'ውጣ' },
   sell: { en: 'Sell', am: 'ሽጥ' },

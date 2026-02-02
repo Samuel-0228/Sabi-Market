@@ -33,18 +33,29 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user
             {user ? t('feed') : 'Overview'}
           </button>
           {user && (
-            <button 
-              onClick={() => onNavigate('dashboard')}
-              className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`}
-            >
-              {t('myStore')}
-            </button>
+            <>
+              <button 
+                onClick={() => onNavigate('dashboard')}
+                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`}
+              >
+                {t('myStore')}
+              </button>
+              <button 
+                onClick={() => onNavigate('messages')}
+                className={`relative group/btn text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'messages' ? 'text-indigo-600' : 'text-gray-400'}`}
+              >
+                {t('inbox')}
+                <span className="absolute -top-1 -right-3 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
+                </span>
+              </button>
+            </>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-4 sm:gap-8">
-        {/* Theme Toggle */}
         <button 
           onClick={toggleTheme}
           className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:scale-110 transition-all text-xl"
@@ -53,7 +64,6 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
 
-        {/* Language Toggle */}
         <button 
           onClick={() => setLang(lang === 'en' ? 'am' : 'en')}
           className="bg-gray-100 dark:bg-white/5 px-4 py-2 rounded-xl text-[10px] font-black text-black dark:text-white uppercase tracking-[0.1em] transition-all hover:bg-gray-200 dark:hover:bg-white/10"

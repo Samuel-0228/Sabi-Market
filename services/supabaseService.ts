@@ -69,8 +69,7 @@ export const db = {
 
     if (error) throw error;
 
-    // Immediate attempt to create profile if session exists (e.g. email confirmation is OFF)
-    // Fix: Using standard error handling instead of .catch() which is not available on the builder type
+    // If 'Confirm Email' is OFF in Supabase, data.session will be present.
     if (data.user && data.session) {
       const { error: upsertError } = await supabase.from('profiles').upsert({
         id: data.user.id,
@@ -180,12 +179,10 @@ export const db = {
     return data.publicUrl;
   },
 
-  // Fix: Added missing getOrCreateConversation method for campus messaging
   async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
     
-    // Check if conversation already exists between this buyer and the listing
     const { data: existing, error: fetchError } = await supabase
       .from('conversations')
       .select('id')
@@ -196,7 +193,6 @@ export const db = {
     if (fetchError) handleSupabaseError(fetchError, 'getExistingConversation');
     if (existing) return (existing as any).id;
 
-    // Create new conversation
     const { data: created, error: createError } = await supabase
       .from('conversations')
       .insert({
