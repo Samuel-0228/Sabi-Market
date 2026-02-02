@@ -11,7 +11,6 @@ export interface UserProfile {
   is_verified: boolean;
   preferences?: string[];
   avatar_url?: string;
-  student_id_url?: string;
   created_at: string;
 }
 
@@ -38,6 +37,7 @@ export interface Message {
   created_at: string;
 }
 
+// Added missing Conversation interface to fix import error in MessagesPage
 export interface Conversation {
   id: string;
   listing_id: string;
@@ -58,11 +58,4 @@ export interface Order {
   delivery_info: string;
   created_at: string;
   listing_title?: string;
-}
-
-export interface Translation {
-  [key: string]: {
-    en: string;
-    am: string;
-  };
 }
