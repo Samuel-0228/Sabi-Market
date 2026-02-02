@@ -1,12 +1,7 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { Listing, UserProfile, Order, Message, Conversation } from '../types';
-import { COMMISSION_RATE } from '../constants';
-
-const supabaseUrl = process.env.SUPABASE_URL || 'https://fqkrddoodkawtmcapvyu.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from './client';
+import { Listing, UserProfile, Order, Message, Conversation } from '../../types/index.d';
+import { COMMISSION_RATE } from '../../config/constants';
 
 const handleSupabaseError = (err: any, tableName: string) => {
   console.error(`Error in table ${tableName}:`, err);
@@ -24,7 +19,6 @@ export const db = {
 
       const user = authData.user;
       
-      // Attempt to get profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -35,8 +29,6 @@ export const db = {
         console.error("Error fetching profile:", profileError);
       }
 
-      // If no profile exists, create it now. 
-      // This is the most reliable way to handle missing profiles regardless of how they were registered.
       if (!profile) {
         const newProfile: UserProfile = {
           id: user.id,
@@ -51,7 +43,6 @@ export const db = {
         const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
         if (insertError) {
           console.error("Critical: Could not auto-create profile:", insertError);
-          // Return the constructed profile anyway so the UI can function
           return newProfile;
         }
         return newProfile;
@@ -98,9 +89,6 @@ export const db = {
   },
 
   async register(email: string, password: string, fullName: string, preferences: string[]): Promise<void> {
-    // 1. Sign up the user and store metadata
-    // Storing full_name in metadata ensures that if the 'profiles' insert fails, 
-    // getCurrentUser() can still recover the name later.
     const { data, error: authError } = await supabase.auth.signUp({ 
       email, 
       password,
@@ -114,9 +102,6 @@ export const db = {
     
     if (authError) throw authError;
     
-    // 2. Attempt to create the profile record immediately
-    // If this fails (common with RLS timing), we don't throw an error 
-    // because getCurrentUser() will catch it on the next check.
     if (data?.user) {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,

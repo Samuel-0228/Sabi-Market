@@ -40,7 +40,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
         clearInterval(interval);
         finalAction();
       }
-    }, 1000);
+    }, 800);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -71,8 +71,8 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     try {
       await db.register(formData.email, formData.password, formData.name, formData.preferences);
       runEmotionalLoading(() => {
-        // After emotional loading, we either wait for onAuthStateChange 
-        // or manually trigger onSuccess if email verify is disabled
+        // App.tsx handles navigation via onAuthStateChange. 
+        // We call onSuccess as a fallback/clean-up.
         onSuccess();
       });
     } catch (err: any) {
