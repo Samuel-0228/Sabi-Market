@@ -41,6 +41,12 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentPage, onLogout, user
                 {t('myStore')}
               </button>
               <button 
+                onClick={() => onNavigate('orders')}
+                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'orders' ? 'text-indigo-600' : 'text-gray-400'}`}
+              >
+                {t('myOrders')}
+              </button>
+              <button 
                 onClick={() => onNavigate('messages')}
                 className={`relative group/btn text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-indigo-500 ${currentPage === 'messages' ? 'text-indigo-600' : 'text-gray-400'}`}
               >

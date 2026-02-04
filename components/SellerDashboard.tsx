@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/supabaseService';
-import { Listing, Order, UserProfile } from '../types';
+import { Listing, OrderItem, UserProfile } from '../types';
 import { useLanguage } from './LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -12,13 +12,12 @@ interface SellerDashboardProps {
 const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const { t } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [stats, setStats] = useState({ totalSales: 0, activeListings: 0, pendingOrders: 0 });
   const [chartReady, setChartReady] = useState(false);
 
   useEffect(() => {
     loadData();
-    // Delay chart rendering to ensure parent container has calculated its dimensions
     const timer = setTimeout(() => setChartReady(true), 500);
     return () => clearTimeout(timer);
   }, [user]);
@@ -27,12 +26,12 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
     try {
       const allListings = await db.getListings();
       const myListings = allListings.filter(l => l.seller_id === user.id);
-      const myOrders = await db.getOrders('seller');
+      const myOrders = await db.getSellerOrderItems();
 
       setListings(myListings);
       setOrders(myOrders);
 
-      const totalSales = myOrders.reduce((acc, o) => acc + (o.status === 'completed' ? o.amount : 0), 0);
+      const totalSales = myOrders.reduce((acc, o) => acc + (o.status === 'completed' ? o.price : 0), 0);
       setStats({
         totalSales,
         activeListings: myListings.length,
@@ -110,11 +109,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
               orders.map(order => (
                 <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 dark:border-white/5 last:border-0">
                   <div className="min-w-0">
-                    <p className="font-bold text-black dark:text-white text-sm truncate">{order.listing_title}</p>
+                    <p className="font-bold text-black dark:text-white text-sm truncate">{order.product_title}</p>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{new Date(order.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-black text-black dark:text-white text-sm">{order.amount} ETB</p>
+                    <p className="font-black text-black dark:text-white text-sm">{order.price} ETB</p>
                     <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">{order.status}</span>
                   </div>
                 </div>

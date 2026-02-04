@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Listing } from '../types';
 import { db } from '../services/supabaseService';
 import { useLanguage } from './LanguageContext';
-import { COMMISSION_RATE } from '../constants';
 
 interface CheckoutProps {
   listing: Listing;
@@ -11,14 +10,20 @@ interface CheckoutProps {
   onCancel: () => void;
 }
 
+/**
+ * Checkout component for handling secure purchases via the escrow system.
+ */
 const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState('');
 
-  const commission = listing.price * COMMISSION_RATE;
-  const total = listing.price + commission;
+  // Service fee removed as per request - Total is exactly the listing price
+  const total = listing.price;
 
+  /**
+   * Handles the order placement logic by calling the supabase service.
+   */
   const handlePlaceOrder = async () => {
     if (!deliveryInfo.trim()) {
       alert("Please provide delivery details (e.g., Campus, Dormitory No.)");
@@ -51,11 +56,11 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
         {/* Left: Product & Delivery */}
         <div className="space-y-10">
           <div className="bg-white dark:bg-[#141414] p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5 flex gap-6 items-center">
-            <img src={listing.image_url} className="w-24 h-32 object-cover rounded-2xl" />
+            <img src={listing.image_url} className="w-24 h-32 object-cover rounded-2xl shadow-lg" alt={listing.title} />
             <div>
-              <h3 className="text-2xl font-black dark:text-white">{listing.title}</h3>
+              <h3 className="text-2xl font-black dark:text-white leading-tight">{listing.title}</h3>
               <p className="text-gray-400 text-sm mt-1">{listing.seller_name}</p>
-              <p className="text-xl font-black mt-2 dark:text-white">{listing.price} ETB</p>
+              <p className="text-xl font-black mt-2 text-indigo-600">{listing.price} ETB</p>
             </div>
           </div>
 
@@ -71,29 +76,29 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
         </div>
 
         {/* Right: Summary */}
-        <div className="bg-black dark:bg-white text-white dark:text-black p-10 rounded-[3rem] shadow-2xl h-fit">
-          <h3 className="text-xl font-black mb-10 tracking-tight">{t('checkout')}</h3>
+        <div className="bg-black dark:bg-white text-white dark:text-black p-12 rounded-[3.5rem] shadow-2xl h-fit">
+          <h3 className="text-2xl font-black mb-10 tracking-tight">{t('checkout')}</h3>
           
-          <div className="space-y-6 mb-10">
+          <div className="space-y-6 mb-12">
             <div className="flex justify-between items-center opacity-70">
               <span className="text-sm font-bold">{t('price')}</span>
               <span className="font-black">{listing.price} ETB</span>
             </div>
-            <div className="flex justify-between items-center opacity-70">
-              <span className="text-sm font-bold">{t('commission')}</span>
-              <span className="font-black">{commission.toFixed(2)} ETB</span>
+            <div className="flex justify-between items-center text-green-500">
+              <span className="text-sm font-bold">Service Fee</span>
+              <span className="font-black text-[10px] uppercase tracking-widest">Waived (Promo)</span>
             </div>
             <div className="h-[1px] bg-white/10 dark:bg-black/10"></div>
             <div className="flex justify-between items-center">
               <span className="text-lg font-black">{t('total')}</span>
-              <span className="text-3xl font-black">{total.toFixed(2)} ETB</span>
+              <span className="text-4xl font-black">{total.toFixed(2)} ETB</span>
             </div>
           </div>
 
           <button 
             disabled={loading}
             onClick={handlePlaceOrder}
-            className="w-full bg-white dark:bg-black text-black dark:text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-all disabled:opacity-50"
+            className="w-full bg-white dark:bg-black text-black dark:text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? 'Processing...' : t('placeOrder')}
           </button>

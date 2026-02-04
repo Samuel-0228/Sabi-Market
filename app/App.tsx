@@ -13,6 +13,7 @@ import Register from '../pages/Auth/Register';
 import SellerDashboard from '../pages/Dashboard/SellerDashboard';
 import CheckoutPage from '../pages/Checkout/CheckoutPage';
 import MessagesPage from '../pages/Messages/MessagesPage';
+import OrdersPage from '../pages/Orders/OrdersPage';
 import AddListingModal from '../components/product/AddListingModal';
 import ChatBot from '../features/chat/ChatBot';
 
@@ -72,7 +73,7 @@ const App: React.FC = () => {
 
   const handleNavigate = (page: string) => {
     // SECURITY GATE: Redirect unauthenticated users
-    if (!user && ['dashboard', 'messages', 'checkout', 'home'].includes(page)) {
+    if (!user && ['dashboard', 'messages', 'checkout', 'home', 'orders'].includes(page)) {
       setCurrentPage('login');
       return;
     }
@@ -104,8 +105,9 @@ const App: React.FC = () => {
         {currentPage === 'register' && <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />}
         {currentPage === 'home' && <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />}
         {currentPage === 'dashboard' && user && <SellerDashboard user={user} />}
+        {currentPage === 'orders' && user && <OrdersPage user={user} />}
         {currentPage === 'messages' && user && <MessagesPage user={user} />}
-        {currentPage === 'checkout' && selectedListing && <CheckoutPage listing={selectedListing} onSuccess={() => handleNavigate('dashboard')} onCancel={() => handleNavigate('home')} />}
+        {currentPage === 'checkout' && selectedListing && <CheckoutPage listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} />}
       </main>
       <Footer onNavigate={handleNavigate} />
       {showAddListing && (

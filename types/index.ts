@@ -1,7 +1,6 @@
-
 export type Role = 'student' | 'admin';
 export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
-export type OrderStatus = 'pending' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
+export type OrderStatus = 'pending' | 'accepted' | 'shipped' | 'completed' | 'disputed' | 'cancelled';
 
 export interface UserProfile {
   id: string;
@@ -49,12 +48,25 @@ export interface Conversation {
 export interface Order {
   id: string;
   buyer_id: string;
-  seller_id: string;
-  listing_id: string;
-  amount: number;
-  commission: number;
+  total_amount: number;
   status: OrderStatus;
   delivery_info: string;
   created_at: string;
-  listing_title?: string;
+}
+
+// Added optional fields used in OrdersPage and SellerDashboard for enhanced detail view
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  seller_id: string;
+  product_id: string;
+  product_title: string;
+  price: number;
+  quantity: number;
+  status: OrderStatus;
+  created_at: string;
+  buyer_name?: string;
+  seller_name?: string;
+  image_url?: string;
+  delivery_info?: string;
 }

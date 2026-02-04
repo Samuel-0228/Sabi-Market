@@ -15,6 +15,7 @@ export const TRANSLATIONS: any = {
   buyNow: { en: 'Buy Now', am: 'አሁን ግዛ' },
   feed: { en: 'Feed', am: 'ልጥፎች' },
   myStore: { en: 'My Store', am: 'የኔ ሱቅ' },
+  myOrders: { en: 'My Orders', am: 'ትዕዛዞቼ' },
   startSelling: { en: 'Start Selling', am: 'መሸጥ ይጀምሩ' },
   chatWithSeller: { en: 'Chat with Seller', am: 'ከሻጩ ጋር ይወያዩ' },
   explore: { en: 'Explore.', am: 'ይቃኙ' },

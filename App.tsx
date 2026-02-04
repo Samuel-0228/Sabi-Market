@@ -13,12 +13,13 @@ import ChatBot from './components/ChatBot';
 import Checkout from './components/Checkout';
 import Footer from './components/Footer';
 import Messages from './components/Messages';
+import OrdersPage from './pages/Orders/OrdersPage';
 
 const App: React.FC = () => {
   const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'home' | 'dashboard' | 'checkout' | 'messages'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'auth' | 'home' | 'dashboard' | 'checkout' | 'messages' | 'orders'>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
 
@@ -74,7 +75,7 @@ const App: React.FC = () => {
 
   const handleNavigate = (page: any) => {
     // Immediate navigation for better perceived performance
-    if (!user && ['dashboard', 'messages', 'checkout'].includes(page)) {
+    if (!user && ['dashboard', 'messages', 'checkout', 'orders'].includes(page)) {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
@@ -99,8 +100,9 @@ const App: React.FC = () => {
       case 'auth': return <Auth onSuccess={() => setCurrentPage('home')} />;
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
+      case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
       case 'messages': return user ? <Messages user={user} /> : <Auth onSuccess={() => setCurrentPage('home')} />;
-      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('dashboard')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
+      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => setCurrentPage('orders')} onCancel={() => setCurrentPage('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };

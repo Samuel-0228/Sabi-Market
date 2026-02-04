@@ -32,6 +32,7 @@ export const TRANSLATIONS: Translation = {
   total: { en: 'Total', am: 'ጠቅላላ' },
   feed: { en: 'Feed', am: 'ልጥፎች' },
   myStore: { en: 'My Store', am: 'የኔ ሱቅ' },
+  myOrders: { en: 'My Orders', am: 'ትዕዛዞቼ' },
   explore: { en: 'Explore.', am: 'ይቃኙ' },
   discoverText: { en: 'Discover the best student-led projects and campus essentials.', am: 'ምርጥ የተማሪ ፕሮጀክቶችን እና ግቢ ውስጥ የሚያስፈልጉ ነገሮችን ያግኙ።' },
   startSelling: { en: 'Start Selling', am: 'መሸጥ ይጀምሩ' },
@@ -97,5 +98,5 @@ export const TRANSLATIONS: Translation = {
   builtForAAU: { en: 'Built for Addis Ababa University Students', am: 'ለአዲስ አበባ ዩኒቨርሲቲ ተማሪዎች የተገነባ' },
 };
 
-export const COMMISSION_RATE = 0.05;
-export const FIXED_FEE = 10;
+export const COMMISSION_RATE = 0;
+export const FIXED_FEE = 0;
