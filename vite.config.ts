@@ -6,11 +6,8 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
+      // Do not externalize react or react/jsx-runtime to avoid build failures
       external: [
-        'react',
-        'react-dom',
-        'react-dom/client',
-        'react/jsx-runtime',
         'zustand',
         'recharts',
         '@supabase/supabase-js',
