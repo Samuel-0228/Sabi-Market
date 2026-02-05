@@ -4,7 +4,6 @@ import { UserProfile } from '../../types/index';
 
 export const authApi = {
   async register(email, password, fullName, preferences) {
-    // 1. Sign up the user
     const { data, error } = await authService.signUp(email, password, { 
       full_name: fullName, 
       preferences 
@@ -12,9 +11,6 @@ export const authApi = {
     
     if (error) throw error;
 
-    // 2. Immediately try to create the profile record.
-    // We use upsert so if it already exists it just updates.
-    // If 'Confirm Email' is OFF in Supabase, data.session will be present.
     if (data.user) {
       try {
         await authService.upsertProfile({
@@ -27,14 +23,13 @@ export const authApi = {
           created_at: new Date().toISOString()
         });
       } catch (e) {
-        console.warn("Profile table insert failed. Ensure RLS allows inserts for authenticated/anon during signup or disable email confirmation in Supabase.", e);
+        console.warn("Profile sync skipped or failed during signup.", e);
       }
     }
     
     return {
       user: data.user,
       session: data.session,
-      // If session is null here, Supabase still has 'Confirm Email' enabled.
       needsConfirmation: data.user && !data.session
     };
   },
@@ -46,10 +41,15 @@ export const authApi = {
   },
 
   async logout() {
-    const { error } = await authService.signOut();
-    if (error) {
-      localStorage.removeItem('supabase.auth.token');
-      window.location.reload();
+    try {
+      const { error } = await authService.signOut();
+      if (error) throw error;
+    } catch (e) {
+      console.error("Logout failed, clearing local storage as fallback", e);
+    } finally {
+      // Hard clear all local state to prevent any stale sessions
+      localStorage.clear();
+      sessionStorage.clear();
     }
   },
 
@@ -57,10 +57,8 @@ export const authApi = {
     const { data: { user }, error: authError } = await authService.getUser();
     if (authError || !user) return null;
 
-    // Fetch profile from DB
-    const { data: profile, error: profileError } = await authService.getProfile(user.id);
+    const { data: profile } = await authService.getProfile(user.id);
     
-    // Recovery Logic: If Auth exists but Profile record is missing in the database table
     if (!profile) {
       const recoveryProfile: UserProfile = {
         id: user.id,
@@ -72,14 +70,10 @@ export const authApi = {
         created_at: user.created_at
       };
       
-      // Attempt to save the recovery profile to the DB
       try {
-        const { error: upsertError } = await authService.upsertProfile(recoveryProfile);
-        if (upsertError) throw upsertError;
+        await authService.upsertProfile(recoveryProfile);
         return recoveryProfile;
       } catch (e) {
-        console.error("Could not sync profile to DB:", e);
-        // Still return the local object so the UI works
         return recoveryProfile;
       }
     }

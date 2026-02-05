@@ -6,7 +6,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
 import FeedPage from '../core/feed/FeedPage';
-import OrdersPage from '../pages/Orders/OrdersPage'; // Kept existing but logic refactored
+import OrdersPage from '../pages/Orders/OrdersPage';
 import InboxPage from '../messaging/inbox/InboxPage';
 import SellerDashboard from '../pages/Dashboard/SellerDashboard';
 import Login from '../pages/Auth/Login';
@@ -14,34 +14,73 @@ import Register from '../pages/Auth/Register';
 import AddListingModal from '../components/product/AddListingModal';
 import CheckoutPage from '../pages/Checkout/CheckoutPage';
 import ChatBot from '../features/chat/ChatBot';
+import ToastContainer from '../components/ui/ToastContainer';
+import { coreClient } from '../services/supabase/coreClient';
+import { authApi } from '../features/auth/auth.api';
 import { Listing } from '../types';
 
 const App: React.FC = () => {
-  const { user, loading: authLoading, sync } = useAuthStore();
+  const { user, loading: authLoading, sync, setUser } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
 
+  // 1. Initial Session Sync & Realtime Auth Listener
   useEffect(() => {
+    // Initial check on mount
     sync().then(u => {
       if (u) setCurrentPage('home');
     });
-  }, [sync]);
+
+    // Listen for auth events (Login/Logout/Token Refresh) to keep store in sync
+    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        const u = await sync();
+        // If they were on a guest page, move them to home
+        if (u && (currentPage === 'login' || currentPage === 'register' || currentPage === 'landing')) {
+           setCurrentPage('home');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setCurrentPage('landing');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [sync, setUser]);
 
   const handleNavigate = (page: string) => {
-    // SECURITY GATE: Redirect unauthenticated
-    if (!user && ['dashboard', 'messages', 'checkout', 'home', 'orders'].includes(page)) {
+    // Check authStore directly to ensure we have the most immediate state
+    const currentUser = useAuthStore.getState().user;
+    
+    // Protection guard for private sections
+    if (!currentUser && ['dashboard', 'messages', 'checkout', 'orders'].includes(page)) {
       setCurrentPage('login');
       return;
     }
+    
+    if (page === 'home' && !currentUser) {
+      setCurrentPage('landing');
+      return;
+    }
+
     setCurrentPage(page);
+  };
+
+  const handleLogout = async () => {
+    await authApi.logout();
+    setUser(null);
+    setCurrentPage('landing');
   };
 
   if (authLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
         <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">AAU Secure Node Sync...</div>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white text-center">
+          <span className="block mb-2">ሳ</span>
+          AAU Node Sync...
+        </div>
       </div>
     );
   }
@@ -77,7 +116,7 @@ const App: React.FC = () => {
       <Navbar 
         onNavigate={handleNavigate} 
         currentPage={currentPage} 
-        onLogout={() => { useAuthStore.getState().setUser(null); setCurrentPage('landing'); }} 
+        onLogout={handleLogout} 
         user={user} 
       />
       <main className="flex-1">
@@ -91,6 +130,7 @@ const App: React.FC = () => {
         />
       )}
       {user && <ChatBot />}
+      <ToastContainer />
     </div>
   );
 };

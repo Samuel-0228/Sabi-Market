@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { db } from '../../services/supabase/db';
+import React, { useEffect } from 'react';
+import { useOrdersStore } from '../../store/orders.store';
 import { UserProfile } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
 
@@ -10,23 +10,14 @@ interface OrdersPageProps {
 
 const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const { t } = useLanguage();
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: orders, loading, fetch } = useOrdersStore();
 
+  // MANDATORY: Refetch on mount using the isolated coreClient to avoid socket poisoning
   useEffect(() => {
-    loadOrders();
-  }, [user]);
-
-  const loadOrders = async () => {
-    try {
-      const data = await db.getBuyerOrderItems();
-      setOrders(data);
-    } catch (err) {
-      console.error("Orders load failed", err);
-    } finally {
-      setLoading(false);
+    if (user?.id) {
+      fetch(user.id);
     }
-  };
+  }, [user?.id, fetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -38,7 +29,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     }
   };
 
-  if (loading) {
+  if (loading && orders.length === 0) {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -63,7 +54,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
         ) : (
           orders.map((order) => (
             <div key={order.id} className="bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm p-8 flex flex-col md:flex-row gap-8 items-center group hover:border-indigo-500/30 transition-all">
-              <div className="w-full md:w-32 aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 shadow-inner">
+              <div className="w-full md:w-32 aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 shadow-inner flex-shrink-0">
                 {order.image_url ? (
                   <img src={order.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={order.product_title} />
                 ) : (
@@ -93,7 +84,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                 </div>
               </div>
 
-              <div className="text-right flex flex-col gap-2">
+              <div className="text-right flex flex-col gap-2 flex-shrink-0">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trade ID</p>
                 <p className="text-[10px] font-bold dark:text-white opacity-40">{order.id.slice(0, 8)}</p>
               </div>

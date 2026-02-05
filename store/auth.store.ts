@@ -7,6 +7,7 @@ interface AuthState {
   user: UserProfile | null;
   loading: boolean;
   setUser: (user: UserProfile | null) => void;
+  setLoading: (loading: boolean) => void;
   sync: () => Promise<UserProfile | null>;
 }
 
@@ -14,25 +15,33 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
   setUser: (user) => set({ user, loading: false }),
+  setLoading: (loading) => set({ loading }),
   sync: async () => {
-    const { data: { user } } = await coreClient.auth.getUser();
-    if (!user) {
+    try {
+      const { data: { user } } = await coreClient.auth.getUser();
+      if (!user) {
+        set({ user: null, loading: false });
+        return null;
+      }
+      
+      const { data: profile } = await coreClient
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      const finalUser = (profile as UserProfile) || { 
+        id: user.id, 
+        email: user.email, 
+        full_name: user.user_metadata?.full_name || 'Student',
+        role: 'student' 
+      };
+      
+      set({ user: finalUser, loading: false });
+      return finalUser;
+    } catch (e) {
       set({ user: null, loading: false });
       return null;
     }
-    const { data: profile } = await coreClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    const finalUser = profile as UserProfile || { 
-      id: user.id, 
-      email: user.email, 
-      full_name: user.user_metadata?.full_name || 'Student',
-      role: 'student' 
-    };
-    set({ user: finalUser, loading: false });
-    return finalUser;
   }
 }));

@@ -1,9 +1,9 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { LanguageProvider } from './components/LanguageContext';
-import { ThemeProvider } from './components/ThemeContext';
+import App from './app/App';
+import { LanguageProvider } from './app/LanguageContext';
+import { ThemeProvider } from './app/ThemeContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');
