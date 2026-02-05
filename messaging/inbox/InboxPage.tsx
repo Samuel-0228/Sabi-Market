@@ -3,12 +3,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { useChatStore } from '../chat.store';
 import { UserProfile } from '../../types';
+import { useLanguage } from '../../app/LanguageContext';
 
 interface InboxPageProps {
   user: UserProfile;
 }
 
 const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
+  const { t } = useLanguage();
   const { 
     conversations, 
     messages, 
@@ -25,8 +27,13 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // SECURITY POLICY: Only verified users can fetch conversation data
+    if (!user.is_verified) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
-    
     const fetchInboxes = async () => {
       if (conversations.length === 0) setLoading(true);
 
@@ -52,10 +59,10 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
     fetchInboxes();
     return () => { mounted = false; };
-  }, [user.id]);
+  }, [user.id, user.is_verified]);
 
   useEffect(() => {
-    if (!activeConversation) return;
+    if (!activeConversation || !user.is_verified) return;
 
     supabase.from('messages')
       .select('*')
@@ -78,7 +85,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id, user.is_verified]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -86,7 +93,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !activeConversation) return;
+    if (!input.trim() || !activeConversation || !user.is_verified) return;
     const content = input;
     setInput('');
     
@@ -104,6 +111,22 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       content
     });
   };
+
+  // ACCESS POLICY VIEW: Restriction for unverified users
+  if (!user.is_verified) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
+        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10 shadow-inner">🔒</div>
+        <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Inbox Restricted</h2>
+        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic leading-relaxed">
+          For campus safety, only students with a verified <span className="text-indigo-600 font-bold">@aau.edu.et</span> email can access private trade inquiries.
+        </p>
+        <button className="mt-12 btn-hope px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">
+          Check Verification Status
+        </button>
+      </div>
+    );
+  }
 
   if (loading && conversations.length === 0) return (
     <div className="h-[80vh] flex flex-col items-center justify-center dark:text-white">

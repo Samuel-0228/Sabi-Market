@@ -12,12 +12,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const { t } = useLanguage();
   const { items: orders, loading, fetch } = useOrdersStore();
 
-  // MANDATORY: Refetch on mount using the isolated coreClient to avoid socket poisoning
+  // MANDATORY: Refetch on mount
   useEffect(() => {
-    if (user?.id) {
+    // SECURITY POLICY: Only verified users can fetch transaction history
+    if (user?.id && user.is_verified) {
       fetch(user.id);
     }
-  }, [user?.id, fetch]);
+  }, [user?.id, user?.is_verified, fetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -28,6 +29,24 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
       default: return 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400';
     }
   };
+
+  // ACCESS POLICY VIEW: Restriction for unverified users
+  if (!user.is_verified) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
+        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10 shadow-inner">🏦</div>
+        <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Orders Restricted</h2>
+        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic leading-relaxed">
+          Escrow and transaction history are high-security areas. Please verify your <span className="text-indigo-600 font-bold">@aau.edu.et</span> identity to continue.
+        </p>
+        <div className="mt-12 flex gap-4">
+          <button className="btn-hope px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">
+            Verify Now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && orders.length === 0) {
     return (

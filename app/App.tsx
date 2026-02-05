@@ -8,11 +8,11 @@ import { Listing, UserProfile } from '../types';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
-import Home from '../components/Home';
+import Home from '../pages/Home/Home';
 import SellerDashboard from '../pages/Dashboard/SellerDashboard';
 import InboxPage from '../messaging/inbox/InboxPage';
 import OrdersPage from '../pages/Orders/OrdersPage';
-import Checkout from '../components/Checkout';
+import Checkout from '../pages/Checkout/CheckoutPage';
 import Auth from '../components/Auth';
 import AddListingModal from '../components/product/AddListingModal';
 import ChatBot from '../features/chat/ChatBot';
@@ -40,7 +40,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       const u = await syncUser();
-      if (u) setCurrentPage('home');
+      if (u) {
+        // If coming from a refresh, stay on a sensible page
+        const savedPage = localStorage.getItem('savvy_last_page');
+        if (savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage)) {
+          setCurrentPage(savedPage);
+        } else {
+          setCurrentPage('home');
+        }
+      }
       setLoading(false);
     };
     init();
@@ -52,6 +60,7 @@ const App: React.FC = () => {
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
+        localStorage.removeItem('savvy_last_page');
       }
     });
 
@@ -63,14 +72,18 @@ const App: React.FC = () => {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
+      if (user) localStorage.setItem('savvy_last_page', page);
     }
   };
 
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
-        <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – AAU Sync</div>
+        <div className="relative">
+          <div className="w-16 h-16 border-[3px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-[10px]">ሳ</div>
+        </div>
+        <div className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – AAU Sync</div>
       </div>
     );
   }
@@ -78,7 +91,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentPage) {
       case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
-      case 'auth': return <Auth onSuccess={() => setCurrentPage('home')} />;
+      case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
       case 'home': return (
         <Home 
           user={user} 
@@ -88,16 +101,16 @@ const App: React.FC = () => {
           onNavigate={handleNavigate}
         />
       );
-      case 'dashboard': return user ? <SellerDashboard user={user} /> : null;
-      case 'messages': return user ? <InboxPage user={user} /> : null;
-      case 'orders': return user ? <OrdersPage user={user} /> : null;
+      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
+      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
+      case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
       case 'checkout': return selectedListing ? (
         <Checkout 
           listing={selectedListing} 
-          onSuccess={() => setCurrentPage('orders')} 
-          onCancel={() => setCurrentPage('home')} 
+          onSuccess={() => handleNavigate('orders')} 
+          onCancel={() => handleNavigate('home')} 
         />
-      ) : null;
+      ) : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };
@@ -105,16 +118,28 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
+      
+      {user && !user.is_verified && (
+        <div className="bg-amber-500 text-white px-6 py-3 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest shadow-lg animate-in slide-in-from-top duration-700 z-[90]">
+          <span className="text-xl">⚠️</span>
+          <span>Verification Required: Please check your AAU email to unlock full marketplace access.</span>
+          <button className="underline ml-4 hover:opacity-80">Resend Link</button>
+        </div>
+      )}
+
       <main className="flex-1">
         {renderContent()}
       </main>
+      
       <Footer onNavigate={handleNavigate} />
+      
       {showAddListing && (
         <AddListingModal 
           onClose={() => setShowAddListing(false)} 
           onSuccess={() => { setShowAddListing(false); handleNavigate('home'); }} 
         />
       )}
+      
       {user && <ChatBot />}
       <ToastContainer />
     </div>
