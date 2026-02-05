@@ -1,11 +1,8 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase/client';
+// Re-export supabase so it can be used by components importing from this module
+export { supabase };
 import { Listing, UserProfile, Order, Message, Conversation } from '../types';
-
-const supabaseUrl = process.env.SUPABASE_URL || 'https://fqkrddoodkawtmcapvyu.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const handleSupabaseError = (err: any, context: string) => {
   console.error(`Supabase Error [${context}]:`, err);
@@ -31,10 +28,9 @@ export const db = {
           full_name: user.user_metadata?.full_name || 'Savvy Student',
           role: 'student',
           is_verified: user.email?.endsWith('@aau.edu.et') || false,
-          created_at: user.created_at,
-          preferences: user.user_metadata?.preferences || []
+          created_at: user.created_at
         };
-        const { error: insertError } = await supabase.from('profiles').upsert(recoveryProfile);
+        await supabase.from('profiles').upsert(recoveryProfile);
         return recoveryProfile;
       }
       return profile;
@@ -90,22 +86,20 @@ export const db = {
     if (!user) return [];
 
     const { data, error } = await supabase
-      .from('order_items')
+      .from('orders')
       .select(`
         *,
-        listings(image_url),
-        seller:profiles!order_items_seller_id_fkey(full_name),
-        order:orders!inner(buyer_id, delivery_info)
+        listings(title, image_url, profiles:seller_id(full_name))
       `)
-      .eq('order.buyer_id', user.id)
+      .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) handleSupabaseError(error, 'getBuyerOrderItems');
-    return (data || []).map(item => ({
-      ...item,
-      seller_name: (item.seller as any)?.full_name || 'Verified Seller',
-      image_url: (item.listings as any)?.image_url,
-      delivery_info: (item.order as any)?.delivery_info
+    return (data || []).map(order => ({
+      ...order,
+      product_title: (order.listings as any)?.title,
+      image_url: (order.listings as any)?.image_url,
+      seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
     }));
   },
 
@@ -113,26 +107,28 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase
-      .from('order_items')
+      .from('orders')
       .select(`
         *,
-        order:orders(delivery_info, buyer:profiles!orders_buyer_id_fkey(full_name))
+        listings!inner(title, image_url, seller_id),
+        buyer:profiles!orders_buyer_id_fkey(full_name)
       `)
-      .eq('seller_id', user.id)
+      .eq('listings.seller_id', user.id)
       .order('created_at', { ascending: false });
     if (error) handleSupabaseError(error, 'getSellerOrderItems');
-    return (data || []).map(item => ({
-      ...item,
-      buyer_name: (item.order as any)?.buyer?.full_name || 'Anonymous Student',
-      delivery_info: (item.order as any)?.delivery_info
+    return (data || []).map(order => ({
+      ...order,
+      product_title: (order.listings as any)?.title,
+      image_url: (order.listings as any)?.image_url,
+      buyer_name: (order.buyer as any)?.full_name || 'Anonymous Student',
     }));
   },
 
-  async updateOrderItemStatus(itemId: string, status: string) {
+  async updateOrderItemStatus(orderId: string, status: string) {
     const { error } = await supabase
-      .from('order_items')
+      .from('orders')
       .update({ status })
-      .eq('id', itemId);
+      .eq('id', orderId);
     if (error) handleSupabaseError(error, 'updateOrderItemStatus');
   },
 
@@ -140,36 +136,18 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // 1. Create Master Order
-    const { data: order, error: orderError } = await supabase
+    const { error } = await supabase
       .from('orders')
       .insert({
         buyer_id: user.id,
-        total_amount: amount,
+        listing_id: listing.id,
+        amount: amount,
         status: 'pending',
         delivery_info: deliveryInfo,
         created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (orderError) handleSupabaseError(orderError, 'createOrderMaster');
-
-    // 2. Create Order Item Snapshot (This is what the Orders Page reads)
-    const { error: itemError } = await supabase
-      .from('order_items')
-      .insert({
-        order_id: order.id,
-        seller_id: listing.seller_id,
-        product_id: listing.id,
-        product_title: listing.title,
-        price: amount,
-        quantity: 1,
-        status: 'pending',
-        created_at: new Date().toISOString()
       });
 
-    if (itemError) handleSupabaseError(itemError, 'createOrderItem');
+    if (error) handleSupabaseError(error, 'createOrder');
   },
 
   async sendMessage(conversationId: string, content: string) {

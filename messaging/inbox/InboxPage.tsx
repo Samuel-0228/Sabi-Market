@@ -43,8 +43,8 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
           .select(`
             *,
             listings(title, image_url, price),
-            seller:profiles!seller_id(full_name),
-            buyer:profiles!buyer_id(full_name)
+            seller:profiles!conversations_seller_id_fkey(full_name),
+            buyer:profiles!conversations_buyer_id_fkey(full_name)
           `)
           .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
           .order('created_at', { ascending: false });
@@ -118,10 +118,8 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     const content = input;
     setInput('');
     
-    // Optimistic Update
-    const tempId = Math.random().toString();
     addMessage({
-      id: tempId,
+      id: Math.random().toString(),
       conversation_id: activeConversation.id,
       sender_id: user.id,
       content,
@@ -137,11 +135,9 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       if (error) throw error;
     } catch (err) {
       console.error("Send failed:", err);
-      // Optional: Remove optimistic message on fail
     }
   };
 
-  // ACCESS POLICY VIEW: Restriction for unverified users
   if (!user.is_verified) {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
@@ -220,9 +216,6 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
                    </div>
                  </div>
                ))}
-               {messages.length === 0 && !loading && (
-                 <div className="text-center py-20 opacity-20 italic text-sm">No messages yet. Start the conversation!</div>
-               )}
             </div>
             <form onSubmit={handleSend} className="p-8 border-t dark:border-white/5 flex gap-4 bg-white dark:bg-[#0c0c0e]">
               <input 

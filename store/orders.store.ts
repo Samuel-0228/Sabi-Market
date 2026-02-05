@@ -18,15 +18,14 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { lastFetched, items } = get();
     const now = Date.now();
     
-    // Throttle fetches unless forced
-    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 15000)) {
+    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 10000)) {
       return; 
     }
 
     set({ loading: true });
 
     try {
-      // Simplified query hints to be more resilient
+      // Using explicit joins to avoid issues with multiple relationships to profiles
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -34,7 +33,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
           listing:listings(
             title, 
             image_url, 
-            seller:profiles(full_name)
+            seller:profiles!listings_seller_id_fkey(full_name)
           )
         `)
         .eq('buyer_id', userId)
@@ -56,7 +55,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     } catch (e) {
       console.error("Orders store fetch failed:", e);
     } finally {
-      // CRITICAL: Always release the loading lock
+      // IMPORTANT: Always set loading to false to prevent UI hang
       set({ loading: false });
     }
   },
