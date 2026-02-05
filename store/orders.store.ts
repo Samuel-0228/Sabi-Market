@@ -18,21 +18,23 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { lastFetched, items } = get();
     const now = Date.now();
     
-    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 30000)) {
+    // Throttle fetches unless forced
+    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 15000)) {
       return; 
     }
 
-    if (items.length === 0) set({ loading: true });
+    set({ loading: true });
 
     try {
+      // Simplified query hints to be more resilient
       const { data, error } = await supabase
         .from('orders')
         .select(`
           *,
-          listings(
+          listing:listings(
             title, 
             image_url, 
-            profiles:seller_id(full_name)
+            seller:profiles(full_name)
           )
         `)
         .eq('buyer_id', userId)
@@ -40,18 +42,21 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
 
       if (error) throw error;
       
+      const formattedData = (data || []).map(order => ({
+        ...order,
+        product_title: (order.listing as any)?.title || 'Market Product',
+        image_url: (order.listing as any)?.image_url,
+        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Seller'
+      }));
+
       set({ 
-        items: (data || []).map(order => ({
-          ...order,
-          product_title: (order.listings as any)?.title || 'Unknown Product',
-          image_url: (order.listings as any)?.image_url,
-          seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
-        })),
-        loading: false,
+        items: formattedData,
         lastFetched: now
       });
     } catch (e) {
       console.error("Orders store fetch failed:", e);
+    } finally {
+      // CRITICAL: Always release the loading lock
       set({ loading: false });
     }
   },

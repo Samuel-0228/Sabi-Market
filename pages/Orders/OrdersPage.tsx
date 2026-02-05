@@ -12,9 +12,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const { t } = useLanguage();
   const { items: orders, loading, fetch } = useOrdersStore();
 
-  // MANDATORY: Refetch on mount
   useEffect(() => {
-    // SECURITY POLICY: Only verified users can fetch transaction history
+    // Only attempt fetch if user is verified
     if (user?.id && user.is_verified) {
       fetch(user.id);
     }
@@ -68,7 +67,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
         {orders.length === 0 ? (
           <div className="py-40 text-center opacity-30 flex flex-col items-center">
             <span className="text-6xl mb-6">🛍️</span>
-            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No orders found yet</p>
+            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No trade history found yet</p>
           </div>
         ) : (
           orders.map((order) => (
@@ -97,8 +96,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
                     <p className="text-sm font-bold dark:text-white">{order.seller_name}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Meeting Details</p>
-                    <p className="text-xs font-medium dark:text-gray-300 italic truncate">{order.delivery_info || 'Not specified'}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Trade Details</p>
+                    <p className="text-xs font-medium dark:text-gray-300 italic truncate">{order.delivery_info || 'Meetup info not provided'}</p>
                   </div>
                 </div>
               </div>

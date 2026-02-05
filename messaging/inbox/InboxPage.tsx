@@ -35,25 +35,33 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
     let mounted = true;
     const fetchInboxes = async () => {
-      if (conversations.length === 0) setLoading(true);
+      try {
+        if (conversations.length === 0) setLoading(true);
 
-      const { data, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          listings(title, image_url, price),
-          seller:profiles!conversations_seller_id_fkey(full_name),
-          buyer:profiles!conversations_buyer_id_fkey(full_name)
-        `)
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('conversations')
+          .select(`
+            *,
+            listings(title, image_url, price),
+            seller:profiles!seller_id(full_name),
+            buyer:profiles!buyer_id(full_name)
+          `)
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order('created_at', { ascending: false });
 
-      if (mounted) {
-        setConversations(data || []);
-        if (data && data.length > 0 && !activeConversation) {
-          setActiveConversation(data[0]);
+        if (error) throw error;
+
+        if (mounted) {
+          const formattedData = data || [];
+          setConversations(formattedData);
+          if (formattedData.length > 0 && !activeConversation) {
+            setActiveConversation(formattedData[0]);
+          }
         }
-        setLoading(false);
+      } catch (err) {
+        console.error("Inbox fetch failed:", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
     };
 
@@ -64,11 +72,23 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
   useEffect(() => {
     if (!activeConversation || !user.is_verified) return;
 
-    supabase.from('messages')
-      .select('*')
-      .eq('conversation_id', activeConversation.id)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => setMessages(data || []));
+    let mounted = true;
+    const fetchMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', activeConversation.id)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        if (mounted) setMessages(data || []);
+      } catch (err) {
+        console.error("Messages fetch failed:", err);
+      }
+    };
+
+    fetchMessages();
 
     const channel = supabase
       .channel(`room_${activeConversation.id}`)
@@ -78,11 +98,12 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
         table: 'messages',
         filter: `conversation_id=eq.${activeConversation.id}`
       }, (payload) => {
-        addMessage(payload.new as any);
+        if (mounted) addMessage(payload.new as any);
       })
       .subscribe();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [activeConversation?.id, user.is_verified]);
@@ -97,19 +118,27 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     const content = input;
     setInput('');
     
+    // Optimistic Update
+    const tempId = Math.random().toString();
     addMessage({
-      id: Math.random().toString(),
+      id: tempId,
       conversation_id: activeConversation.id,
       sender_id: user.id,
       content,
       created_at: new Date().toISOString()
     } as any);
 
-    await supabase.from('messages').insert({
-      conversation_id: activeConversation.id,
-      sender_id: user.id,
-      content
-    });
+    try {
+      const { error } = await supabase.from('messages').insert({
+        conversation_id: activeConversation.id,
+        sender_id: user.id,
+        content
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Send failed:", err);
+      // Optional: Remove optimistic message on fail
+    }
   };
 
   // ACCESS POLICY VIEW: Restriction for unverified users
@@ -140,7 +169,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl">
         <div className="p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
           <h2 className="text-2xl font-black dark:text-white tracking-tighter leading-none">Inbox</h2>
-          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-2">Active Inquiries</p>
+          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-2">Active Inquiries ({conversations.length})</p>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 && !loading && (
@@ -191,6 +220,9 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
                    </div>
                  </div>
                ))}
+               {messages.length === 0 && !loading && (
+                 <div className="text-center py-20 opacity-20 italic text-sm">No messages yet. Start the conversation!</div>
+               )}
             </div>
             <form onSubmit={handleSend} className="p-8 border-t dark:border-white/5 flex gap-4 bg-white dark:bg-[#0c0c0e]">
               <input 
