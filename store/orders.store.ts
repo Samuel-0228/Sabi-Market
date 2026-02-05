@@ -5,16 +5,28 @@ import { coreClient } from '../services/supabase/coreClient';
 interface OrdersState {
   items: any[];
   loading: boolean;
-  fetch: (userId: string) => Promise<void>;
+  lastFetched: number | null;
+  fetch: (userId: string, force?: boolean) => Promise<void>;
+  clear: () => void;
 }
 
-export const useOrdersStore = create<OrdersState>((set) => ({
+export const useOrdersStore = create<OrdersState>((set, get) => ({
   items: [],
   loading: false,
-  fetch: async (userId) => {
-    set({ loading: true });
+  lastFetched: null,
+  fetch: async (userId, force = false) => {
+    const { lastFetched, items } = get();
+    const now = Date.now();
+    
+    // If we have data and it's fresh (last 30 seconds), don't show loading spinner
+    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 30000)) {
+      return; 
+    }
+
+    // Only show full-screen loading if we have no data at all
+    if (items.length === 0) set({ loading: true });
+
     try {
-      // Use coreClient to bypass any Realtime connection poisoning
       const { data, error } = await coreClient
         .from('orders')
         .select(`
@@ -37,11 +49,13 @@ export const useOrdersStore = create<OrdersState>((set) => ({
           image_url: (order.listings as any)?.image_url,
           seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
         })),
-        loading: false 
+        loading: false,
+        lastFetched: now
       });
     } catch (e) {
       console.error("Orders store fetch failed:", e);
-      set({ items: [], loading: false });
+      set({ loading: false });
     }
-  }
+  },
+  clear: () => set({ items: [], loading: false, lastFetched: null })
 }));

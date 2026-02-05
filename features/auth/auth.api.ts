@@ -1,6 +1,9 @@
 
 import { authService } from '../../services/supabase/auth';
 import { UserProfile } from '../../types/index';
+import { useOrdersStore } from '../../store/orders.store';
+import { useChatStore } from '../../messaging/chat.store';
+import { useFeedStore } from '../../store/feed.store';
 
 export const authApi = {
   async register(email, password, fullName, preferences) {
@@ -42,12 +45,16 @@ export const authApi = {
 
   async logout() {
     try {
+      // Clear all state stores
+      useOrdersStore.getState().clear();
+      useChatStore.getState().clear();
+      useFeedStore.getState().fetch(); // Refresh feed on next load
+
       const { error } = await authService.signOut();
       if (error) throw error;
     } catch (e) {
       console.error("Logout failed, clearing local storage as fallback", e);
     } finally {
-      // Hard clear all local state to prevent any stale sessions
       localStorage.clear();
       sessionStorage.clear();
     }
