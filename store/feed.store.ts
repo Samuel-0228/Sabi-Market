@@ -1,5 +1,5 @@
 
-import { create } from 'zustand';
+import { create } from 'https://esm.sh/zustand@4.5.2?deps=react@19.0.0';
 import { Listing } from '../types';
 import { supabase } from '../services/supabase/client';
 
