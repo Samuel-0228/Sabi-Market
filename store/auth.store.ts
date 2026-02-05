@@ -30,9 +30,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         .eq('id', user.id)
         .maybeSingle();
       
-      const finalUser = (profile as UserProfile) || { 
+      const finalUser: UserProfile = (profile as UserProfile) || { 
         id: user.id, 
-        email: user.email, 
+        email: user.email || '', 
         full_name: user.user_metadata?.full_name || 'Student',
         role: 'student',
         is_verified: user.email?.endsWith('@aau.edu.et') || false,
@@ -42,7 +42,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: finalUser, loading: false });
       return finalUser;
     } catch (e) {
-      console.error("Auth sync failed:", e);
       set({ user: null, loading: false });
       return null;
     }

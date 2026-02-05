@@ -24,19 +24,28 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  // Initial Boot
+  // Core Sync Logic
+  const performSync = useCallback(async () => {
+    try {
+      const u = await sync();
+      if (u && (currentPage === 'landing' || currentPage === 'login' || currentPage === 'register')) {
+        setCurrentPage('home');
+      }
+    } catch (e) {
+      console.error("Session sync failed", e);
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [sync, currentPage]);
+
   useEffect(() => {
-    sync().then((u) => {
-      if (u) setCurrentPage('home');
-      setIsReady(true);
-    });
+    performSync();
 
-    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
-        const u = await sync();
-        if (u) setCurrentPage('home');
+        await performSync();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -44,17 +53,16 @@ const App: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [sync, setUser]);
+  }, [performSync, setUser]);
 
   const handleNavigate = useCallback((page: string) => {
     const currentUser = useAuthStore.getState().user;
     
-    // Auth guards
+    // Auth guards for private routes
     if (!currentUser && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setCurrentPage('login');
       return;
     }
-
     setCurrentPage(page);
   }, []);
 
@@ -64,12 +72,12 @@ const App: React.FC = () => {
     setCurrentPage('landing');
   };
 
-  // Prevent white screen during initial boot
-  if (!isReady || authLoading) {
+  // Prevent blank screen with a branded loader
+  if (isInitializing || authLoading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] transition-all">
-        <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – Syncing</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
+        <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – AAU Sync</div>
       </div>
     );
   }
@@ -81,7 +89,7 @@ const App: React.FC = () => {
       case 'register': return <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />;
       case 'home': return (
         <FeedPage 
-          onSelectListing={(l) => { setSelectedListing(l); }} 
+          onSelectListing={(l) => setSelectedListing(l)} 
           onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }}
           onAddListing={() => setShowAddListing(true)}
         />
