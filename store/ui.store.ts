@@ -1,5 +1,5 @@
 
-import { create } from 'https://esm.sh/zustand';
+import { create } from 'zustand';
 
 export type ToastType = 'success' | 'error' | 'info';
 

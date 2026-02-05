@@ -1,5 +1,5 @@
 
-import { create } from 'https://esm.sh/zustand';
+import { create } from 'zustand';
 import { UserProfile } from '../types';
 import { coreClient } from '../services/supabase/coreClient';
 
@@ -34,12 +34,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         id: user.id, 
         email: user.email, 
         full_name: user.user_metadata?.full_name || 'Student',
-        role: 'student' 
+        role: 'student',
+        is_verified: user.email?.endsWith('@aau.edu.et') || false,
+        created_at: user.created_at
       };
       
       set({ user: finalUser, loading: false });
       return finalUser;
     } catch (e) {
+      console.error("Auth sync failed:", e);
       set({ user: null, loading: false });
       return null;
     }

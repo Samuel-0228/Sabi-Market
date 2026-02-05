@@ -1,5 +1,5 @@
 
-import { create } from 'https://esm.sh/zustand';
+import { create } from 'zustand';
 import { coreClient } from '../services/supabase/coreClient';
 
 interface OrdersState {
@@ -18,12 +18,10 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const { lastFetched, items } = get();
     const now = Date.now();
     
-    // If we have data and it's fresh (last 30 seconds), don't show loading spinner
     if (items.length > 0 && !force && lastFetched && (now - lastFetched < 30000)) {
       return; 
     }
 
-    // Only show full-screen loading if we have no data at all
     if (items.length === 0) set({ loading: true });
 
     try {

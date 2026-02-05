@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../store/auth.store';
 import { useLanguage } from './LanguageContext';
 import Navbar from '../components/layout/Navbar';
@@ -24,22 +24,19 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  // 1. Initial Session Sync & Realtime Auth Listener
+  // Initial Boot
   useEffect(() => {
-    // Initial check on mount
-    sync().then(u => {
+    sync().then((u) => {
       if (u) setCurrentPage('home');
+      setIsReady(true);
     });
 
-    // Listen for auth events (Login/Logout/Token Refresh) to keep store in sync
-    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
         const u = await sync();
-        // If they were on a guest page, move them to home
-        if (u && (currentPage === 'login' || currentPage === 'register' || currentPage === 'landing')) {
-           setCurrentPage('home');
-        }
+        if (u) setCurrentPage('home');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -49,23 +46,17 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [sync, setUser]);
 
-  const handleNavigate = (page: string) => {
-    // Check authStore directly to ensure we have the most immediate state
+  const handleNavigate = useCallback((page: string) => {
     const currentUser = useAuthStore.getState().user;
     
-    // Protection guard for private sections
-    if (!currentUser && ['dashboard', 'messages', 'checkout', 'orders'].includes(page)) {
+    // Auth guards
+    if (!currentUser && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setCurrentPage('login');
-      return;
-    }
-    
-    if (page === 'home' && !currentUser) {
-      setCurrentPage('landing');
       return;
     }
 
     setCurrentPage(page);
-  };
+  }, []);
 
   const handleLogout = async () => {
     await authApi.logout();
@@ -73,14 +64,12 @@ const App: React.FC = () => {
     setCurrentPage('landing');
   };
 
-  if (authLoading) {
+  // Prevent white screen during initial boot
+  if (!isReady || authLoading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
-        <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white text-center">
-          <span className="block mb-2">ሳ</span>
-          AAU Node Sync...
-        </div>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] transition-all">
+        <div className="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – Syncing</p>
       </div>
     );
   }
@@ -92,7 +81,7 @@ const App: React.FC = () => {
       case 'register': return <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />;
       case 'home': return (
         <FeedPage 
-          onSelectListing={setSelectedListing} 
+          onSelectListing={(l) => { setSelectedListing(l); }} 
           onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }}
           onAddListing={() => setShowAddListing(true)}
         />

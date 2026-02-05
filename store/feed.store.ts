@@ -1,5 +1,5 @@
 
-import { create } from 'https://esm.sh/zustand';
+import { create } from 'zustand';
 import { Listing } from '../types';
 import { coreClient } from '../services/supabase/coreClient';
 
@@ -37,7 +37,6 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       }));
       
       set({ listings: fetchedListings, filteredListings: fetchedListings, loading: false });
-      get().setSearchQuery(get().searchQuery); // Re-apply filter if exists
     } catch (e) {
       console.error("Feed fetch failed", e);
       set({ loading: false });

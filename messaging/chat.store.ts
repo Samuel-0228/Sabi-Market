@@ -1,5 +1,5 @@
 
-import { create } from 'https://esm.sh/zustand';
+import { create } from 'zustand';
 import { Message } from '../types';
 
 interface ChatState {
@@ -15,7 +15,6 @@ interface ChatState {
   clear: () => void;
 }
 
-// Stores conversation and message history to allow instant UI switching
 export const useChatStore = create<ChatState>((set) => ({
   conversations: [],
   messages: [],
