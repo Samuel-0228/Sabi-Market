@@ -1,117 +1,94 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../services/supabase/client';
-import { db } from '../services/supabase/db';
-import { Listing, UserProfile } from '../types/index';
+import React, { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/auth.store';
 import { useLanguage } from './LanguageContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
-import Home from '../pages/Home/Home';
+import FeedPage from '../core/feed/FeedPage';
+import OrdersPage from '../pages/Orders/OrdersPage'; // Kept existing but logic refactored
+import InboxPage from '../messaging/inbox/InboxPage';
+import SellerDashboard from '../pages/Dashboard/SellerDashboard';
 import Login from '../pages/Auth/Login';
 import Register from '../pages/Auth/Register';
-import SellerDashboard from '../pages/Dashboard/SellerDashboard';
-import CheckoutPage from '../pages/Checkout/CheckoutPage';
-import MessagesPage from '../pages/Messages/MessagesPage';
-import OrdersPage from '../pages/Orders/OrdersPage';
 import AddListingModal from '../components/product/AddListingModal';
+import CheckoutPage from '../pages/Checkout/CheckoutPage';
 import ChatBot from '../features/chat/ChatBot';
+import { Listing } from '../types';
 
 const App: React.FC = () => {
-  const { t } = useLanguage();
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const { user, loading: authLoading, sync } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
 
-  const syncProfile = useCallback(async () => {
-    try {
-      const profile = await db.getCurrentUser();
-      setUser(profile);
-      return profile;
-    } catch (e) {
-      console.error("Auth sync error:", e);
-      return null;
-    }
-  }, []);
-
   useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && mounted) {
-        const u = await syncProfile();
-        if (u && mounted) {
-          setCurrentPage(p => ['landing', 'login', 'register'].includes(p) ? 'home' : p);
-        }
-      }
-      if (mounted) setIsInitializing(false);
-    };
-
-    init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        await syncProfile();
-        setCurrentPage(p => ['landing', 'login', 'register'].includes(p) ? 'home' : p);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setCurrentPage('landing');
-        // Clean up all sockets on logout
-        supabase.removeAllChannels();
-      }
+    sync().then(u => {
+      if (u) setCurrentPage('home');
     });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [syncProfile]);
+  }, [sync]);
 
   const handleNavigate = (page: string) => {
-    // SECURITY GATE: Redirect unauthenticated users
+    // SECURITY GATE: Redirect unauthenticated
     if (!user && ['dashboard', 'messages', 'checkout', 'home', 'orders'].includes(page)) {
       setCurrentPage('login');
       return;
     }
-
-    // REALTIME HYGIENE: Remove all channels when leaving the messages page
-    // This prevents WebSocket saturation which causes the app to hang.
-    if (currentPage === 'messages' && page !== 'messages') {
-      supabase.removeAllChannels();
-    }
-
     setCurrentPage(page);
   };
 
-  if (isInitializing) {
+  if (authLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
         <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">Connecting to AAU Node...</div>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">AAU Secure Node Sync...</div>
       </div>
     );
   }
 
+  const renderContent = () => {
+    switch (currentPage) {
+      case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'login')} />;
+      case 'login': return <Login onSwitch={() => setCurrentPage('register')} onSuccess={() => setCurrentPage('home')} />;
+      case 'register': return <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />;
+      case 'home': return (
+        <FeedPage 
+          onSelectListing={setSelectedListing} 
+          onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }}
+          onAddListing={() => setShowAddListing(true)}
+        />
+      );
+      case 'dashboard': return user ? <SellerDashboard user={user} /> : null;
+      case 'orders': return user ? <OrdersPage user={user} /> : null;
+      case 'messages': return user ? <InboxPage user={user} /> : null;
+      case 'checkout': return selectedListing ? (
+        <CheckoutPage 
+          listing={selectedListing} 
+          onSuccess={() => handleNavigate('orders')} 
+          onCancel={() => handleNavigate('home')} 
+        />
+      ) : null;
+      default: return <Landing onGetStarted={() => handleNavigate('login')} />;
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
-      <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => supabase.auth.signOut()} user={user} />
+      <Navbar 
+        onNavigate={handleNavigate} 
+        currentPage={currentPage} 
+        onLogout={() => { useAuthStore.getState().setUser(null); setCurrentPage('landing'); }} 
+        user={user} 
+      />
       <main className="flex-1">
-        {currentPage === 'landing' && <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'login')} />}
-        {currentPage === 'login' && <Login onSwitch={() => setCurrentPage('register')} onSuccess={() => setCurrentPage('home')} />}
-        {currentPage === 'register' && <Register onSwitch={() => setCurrentPage('login')} onSuccess={() => setCurrentPage('home')} />}
-        {currentPage === 'home' && <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />}
-        {currentPage === 'dashboard' && user && <SellerDashboard user={user} />}
-        {currentPage === 'orders' && user && <OrdersPage user={user} />}
-        {currentPage === 'messages' && user && <MessagesPage user={user} />}
-        {currentPage === 'checkout' && selectedListing && <CheckoutPage listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} />}
+        {renderContent()}
       </main>
       <Footer onNavigate={handleNavigate} />
       {showAddListing && (
-        <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncProfile(); handleNavigate('home'); }} />
+        <AddListingModal 
+          onClose={() => setShowAddListing(false)} 
+          onSuccess={() => { setShowAddListing(false); handleNavigate('home'); }} 
+        />
       )}
       {user && <ChatBot />}
     </div>

@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../../services/supabaseService';
-import { OrderItem, UserProfile } from '../../types';
-import { useLanguage } from '../../components/LanguageContext';
+import { db } from '../../services/supabase/db';
+import { UserProfile } from '../../types/index';
+import { useLanguage } from '../../app/LanguageContext';
 
 interface OrdersPageProps {
   user: UserProfile;
@@ -10,7 +10,7 @@ interface OrdersPageProps {
 
 const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const { t } = useLanguage();
-  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +19,8 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
 
   const loadOrders = async () => {
     try {
-      const items = await db.getBuyerOrderItems();
-      setOrderItems(items);
+      const data = await db.getBuyerOrderItems();
+      setOrders(data);
     } catch (err) {
       console.error("Orders load failed", err);
     } finally {
@@ -51,21 +51,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     <div className="max-w-[1200px] mx-auto px-6 py-20 animate-in fade-in duration-700">
       <header className="mb-16">
         <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter mb-4">{t('myOrders')}</h1>
-        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg italic">Track your purchases and campus trade status.</p>
+        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg italic">Track your campus trades and secure exchanges.</p>
       </header>
 
       <div className="space-y-6">
-        {orderItems.length === 0 ? (
+        {orders.length === 0 ? (
           <div className="py-40 text-center opacity-30 flex flex-col items-center">
             <span className="text-6xl mb-6">🛍️</span>
             <p className="text-sm font-black uppercase tracking-widest dark:text-white">No orders found yet</p>
           </div>
         ) : (
-          orderItems.map((item) => (
-            <div key={item.id} className="bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm p-8 flex flex-col md:flex-row gap-8 items-center group hover:border-indigo-500/30 transition-all">
+          orders.map((order) => (
+            <div key={order.id} className="bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm p-8 flex flex-col md:flex-row gap-8 items-center group hover:border-indigo-500/30 transition-all">
               <div className="w-full md:w-32 aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 shadow-inner">
-                {item.image_url ? (
-                  <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={item.product_title} />
+                {order.image_url ? (
+                  <img src={order.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={order.product_title} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
                 )}
@@ -73,29 +73,29 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
 
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-black dark:text-white tracking-tight leading-none">{item.product_title}</h3>
-                  <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(item.status)}`}>
-                    {item.status}
+                  <h3 className="text-2xl font-black dark:text-white tracking-tight leading-none">{order.product_title}</h3>
+                  <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(order.status)}`}>
+                    {order.status}
                   </span>
                 </div>
                 
-                <p className="text-sm font-bold text-indigo-600 mb-4">{item.price} ETB</p>
+                <p className="text-sm font-bold text-indigo-600 mb-4">{order.amount} ETB</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Seller</p>
-                    <p className="text-sm font-bold dark:text-white">{item.seller_name}</p>
+                    <p className="text-sm font-bold dark:text-white">{order.seller_name}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Meeting Details</p>
-                    <p className="text-xs font-medium dark:text-gray-300 italic truncate">{item.delivery_info || 'Not specified'}</p>
+                    <p className="text-xs font-medium dark:text-gray-300 italic truncate">{order.delivery_info || 'Not specified'}</p>
                   </div>
                 </div>
               </div>
 
               <div className="text-right flex flex-col gap-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</p>
-                <p className="text-[10px] font-bold dark:text-white opacity-40">{item.id.slice(0, 8)}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trade ID</p>
+                <p className="text-[10px] font-bold dark:text-white opacity-40">{order.id.slice(0, 8)}</p>
               </div>
             </div>
           ))

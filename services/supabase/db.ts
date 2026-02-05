@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import { Listing, Order, UserProfile, OrderItem } from '../../types/index';
+import { Listing, UserProfile } from '../../types/index';
 
 export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
@@ -43,60 +43,58 @@ export const db = {
     if (error) throw error;
   },
 
-  // Optimized for Seller Dashboard: Only fetch items belonging to this seller
-  async getSellerOrderItems(): Promise<OrderItem[]> {
+  async getSellerOrderItems() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
-      .from('order_items')
+      .from('orders')
       .select(`
         *,
-        order:orders(delivery_info, buyer:profiles!orders_buyer_id_fkey(full_name))
+        listings!inner(title, image_url, seller_id),
+        buyer:profiles!orders_buyer_id_fkey(full_name)
       `)
-      .eq('seller_id', user.id)
+      .eq('listings.seller_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     
-    return (data || []).map(item => ({
-      ...item,
-      buyer_name: (item.order as any)?.buyer?.full_name || 'Anonymous Student',
-      delivery_info: (item.order as any)?.delivery_info
+    return (data || []).map(order => ({
+      ...order,
+      product_title: (order.listings as any)?.title,
+      image_url: (order.listings as any)?.image_url,
+      buyer_name: (order.buyer as any)?.full_name || 'Anonymous Student'
     }));
   },
 
-  // Optimized for Buyer View: Fetch items the user has ordered
-  async getBuyerOrderItems(): Promise<OrderItem[]> {
+  async getBuyerOrderItems() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
-      .from('order_items')
+      .from('orders')
       .select(`
         *,
-        listings(image_url),
-        seller:profiles!order_items_seller_id_fkey(full_name),
-        order:orders!inner(buyer_id, delivery_info)
+        listings(title, image_url, profiles:seller_id(full_name))
       `)
-      .eq('order.buyer_id', user.id)
+      .eq('buyer_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     
-    return (data || []).map(item => ({
-      ...item,
-      seller_name: (item.seller as any)?.full_name || 'Verified Seller',
-      image_url: (item.listings as any)?.image_url,
-      delivery_info: (item.order as any)?.delivery_info
+    return (data || []).map(order => ({
+      ...order,
+      product_title: (order.listings as any)?.title,
+      image_url: (order.listings as any)?.image_url,
+      seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
     }));
   },
 
-  async updateOrderItemStatus(itemId: string, status: string) {
+  async updateOrderItemStatus(orderId: string, status: string) {
     const { error } = await supabase
-      .from('order_items')
+      .from('orders')
       .update({ status })
-      .eq('id', itemId);
+      .eq('id', orderId);
     if (error) throw error;
   },
 
@@ -104,34 +102,18 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // 1. Create the Master Order record
-    const { data: order, error: orderError } = await supabase
+    const { error } = await supabase
       .from('orders')
       .insert({
         buyer_id: user.id,
-        total_amount: amount,
+        listing_id: listing.id,
+        amount: amount,
         status: 'pending',
-        delivery_info: deliveryInfo
-      })
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // 2. Create the Order Item snapshot (multi-vendor ready)
-    const { error: itemError } = await supabase
-      .from('order_items')
-      .insert({
-        order_id: order.id,
-        seller_id: listing.seller_id,
-        product_id: listing.id,
-        product_title: listing.title,
-        price: amount,
-        quantity: 1,
-        status: 'pending'
+        delivery_info: deliveryInfo,
+        created_at: new Date().toISOString()
       });
 
-    if (itemError) throw itemError;
+    if (error) throw error;
   },
 
   async getOrCreateConversation(listingId: string, sellerId: string) {
@@ -145,7 +127,7 @@ export const db = {
       .eq('buyer_id', user.id)
       .maybeSingle();
 
-    if (existing) return existing.id;
+    if (existing) return (existing as any).id;
 
     const { data: newConv, error } = await supabase
       .from('conversations')
@@ -158,7 +140,7 @@ export const db = {
       .single();
 
     if (error) throw error;
-    return newConv.id;
+    return (newConv as any).id;
   },
 
   async sendMessage(conversationId: string, content: string) {
