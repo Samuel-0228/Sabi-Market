@@ -1,6 +1,6 @@
 
-import { create } from 'zustand';
-import { UserProfile } from '../types';
+import { create } from 'https://esm.sh/zustand@4.5.2';
+import { UserProfile } from '../types/index';
 import { coreClient } from '../services/supabase/coreClient';
 
 interface AuthState {
@@ -42,6 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: finalUser, loading: false });
       return finalUser;
     } catch (e) {
+      console.error("Auth sync failed", e);
       set({ user: null, loading: false });
       return null;
     }

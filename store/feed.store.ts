@@ -1,6 +1,6 @@
 
-import { create } from 'zustand';
-import { Listing } from '../types';
+import { create } from 'https://esm.sh/zustand@4.5.2';
+import { Listing } from '../types/index';
 import { coreClient } from '../services/supabase/coreClient';
 
 interface FeedState {
@@ -62,6 +62,4 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       const matchesCategory = category === 'all' || l.category === category;
       return matchesSearch && matchesCategory;
     });
-    set({ activeCategory: category, filteredListings: filtered });
-  }
-}));
+    set({ active
