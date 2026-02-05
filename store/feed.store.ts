@@ -1,7 +1,7 @@
 
-import { create } from 'https://esm.sh/zustand@4.5.2';
-import { Listing } from '../types/index';
-import { coreClient } from '../services/supabase/coreClient';
+import { create } from 'zustand';
+import { Listing } from '../types';
+import { supabase } from '../services/supabase/client';
 
 interface FeedState {
   listings: Listing[];
@@ -24,7 +24,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   fetch: async () => {
     set({ loading: true });
     try {
-      const { data, error } = await coreClient
+      const { data, error } = await supabase
         .from('listings')
         .select('*, profiles:seller_id(full_name)')
         .eq('status', 'active')
@@ -62,4 +62,6 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       const matchesCategory = category === 'all' || l.category === category;
       return matchesSearch && matchesCategory;
     });
-    set({ active
+    set({ activeCategory: category, filteredListings: filtered });
+  }
+}));

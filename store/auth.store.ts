@@ -1,7 +1,7 @@
 
-import { create } from 'https://esm.sh/zustand@4.5.2';
-import { UserProfile } from '../types/index';
-import { coreClient } from '../services/supabase/coreClient';
+import { create } from 'zustand';
+import { UserProfile } from '../types';
+import { supabase } from '../services/supabase/client';
 
 interface AuthState {
   user: UserProfile | null;
@@ -18,13 +18,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ loading }),
   sync: async () => {
     try {
-      const { data: { user } } = await coreClient.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         set({ user: null, loading: false });
         return null;
       }
       
-      const { data: profile } = await coreClient
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)

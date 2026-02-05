@@ -1,11 +1,7 @@
 
-import { coreClient as supabase } from './coreClient';
+import { supabase } from './client';
 import { Listing, UserProfile } from '../../types/index';
 
-/**
- * DB Service: All commerce operations are now redirected to the coreClient
- * to prevent Realtime WebSocket poisoning.
- */
 export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +64,7 @@ export const db = {
       product_title: (order.listings as any)?.title,
       image_url: (order.listings as any)?.image_url,
       buyer_name: (order.buyer as any)?.full_name || 'Anonymous Student',
-      amount: order.amount // Ensure field mapping consistency
+      amount: order.amount 
     }));
   },
 

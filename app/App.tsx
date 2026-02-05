@@ -15,7 +15,7 @@ import AddListingModal from '../components/product/AddListingModal';
 import CheckoutPage from '../pages/Checkout/CheckoutPage';
 import ChatBot from '../features/chat/ChatBot';
 import ToastContainer from '../components/ui/ToastContainer';
-import { coreClient } from '../services/supabase/coreClient';
+import { supabase } from '../services/supabase/client';
 import { authApi } from '../features/auth/auth.api';
 import { Listing } from '../types';
 
@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [showAddListing, setShowAddListing] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Core Sync Logic
   const performSync = useCallback(async () => {
     try {
       const u = await sync();
@@ -43,7 +42,7 @@ const App: React.FC = () => {
   useEffect(() => {
     performSync();
 
-    const { data: { subscription } } = coreClient.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
         await performSync();
       } else if (event === 'SIGNED_OUT') {
@@ -57,8 +56,6 @@ const App: React.FC = () => {
 
   const handleNavigate = useCallback((page: string) => {
     const currentUser = useAuthStore.getState().user;
-    
-    // Auth guards for private routes
     if (!currentUser && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setCurrentPage('login');
       return;
@@ -72,7 +69,6 @@ const App: React.FC = () => {
     setCurrentPage('landing');
   };
 
-  // Prevent blank screen with a branded loader
   if (isInitializing || authLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
