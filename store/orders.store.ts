@@ -1,6 +1,6 @@
 
-import { create } from 'https://esm.sh/zustand@4.5.2?deps=react@19.0.0';
-import { coreClient } from '../services/supabase/coreClient';
+import { create } from 'zustand';
+import { supabase } from '../services/supabase/client';
 
 interface OrdersState {
   items: any[];
@@ -25,7 +25,7 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     if (items.length === 0) set({ loading: true });
 
     try {
-      const { data, error } = await coreClient
+      const { data, error } = await supabase
         .from('orders')
         .select(`
           *,

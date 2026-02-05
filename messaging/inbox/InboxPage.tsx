@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { chatClient } from '../../services/supabase/chatClient';
-import { coreClient } from '../../services/supabase/coreClient';
+import { supabase } from '../../services/supabase/client';
 import { useChatStore } from '../chat.store';
 import { UserProfile } from '../../types';
 
@@ -29,10 +28,9 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     let mounted = true;
     
     const fetchInboxes = async () => {
-      // If we already have conversations, don't trigger a global loading state
       if (conversations.length === 0) setLoading(true);
 
-      const { data, error } = await coreClient
+      const { data, error } = await supabase
         .from('conversations')
         .select(`
           *,
@@ -45,7 +43,6 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
       if (mounted) {
         setConversations(data || []);
-        // Set first conversation as active only if none is selected
         if (data && data.length > 0 && !activeConversation) {
           setActiveConversation(data[0]);
         }
@@ -54,25 +51,19 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     };
 
     fetchInboxes();
-
-    return () => {
-      mounted = false;
-      // We do NOT clear the store here anymore to keep data for tab switching
-    };
+    return () => { mounted = false; };
   }, [user.id]);
 
   useEffect(() => {
     if (!activeConversation) return;
 
-    // Load messages from REST client
-    coreClient.from('messages')
+    supabase.from('messages')
       .select('*')
       .eq('conversation_id', activeConversation.id)
       .order('created_at', { ascending: true })
       .then(({ data }) => setMessages(data || []));
 
-    // Connect Realtime
-    const channel = chatClient
+    const channel = supabase
       .channel(`room_${activeConversation.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
@@ -85,7 +76,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       .subscribe();
 
     return () => {
-      chatClient.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [activeConversation?.id]);
 
@@ -99,17 +90,15 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     const content = input;
     setInput('');
     
-    // Optimistically add message to UI for perceived speed
-    const tempId = Math.random().toString();
     addMessage({
-      id: tempId,
+      id: Math.random().toString(),
       conversation_id: activeConversation.id,
       sender_id: user.id,
       content,
       created_at: new Date().toISOString()
     } as any);
 
-    await coreClient.from('messages').insert({
+    await supabase.from('messages').insert({
       conversation_id: activeConversation.id,
       sender_id: user.id,
       content
