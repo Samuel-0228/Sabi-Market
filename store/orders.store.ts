@@ -14,22 +14,21 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   items: [],
   loading: false,
   lastFetched: null,
+  
   fetch: async (userId, force = false) => {
-    const { lastFetched, items, loading: currentLoading } = get();
-    
-    // Prevent double-fetching if already loading
-    if (currentLoading) return;
-
+    const state = get();
     const now = Date.now();
-    // Cache for 15 seconds to avoid repeated hammering of the DB
-    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 15000)) {
+
+    // Cache logic: Only skip if not forced and data is fresh (within 10s)
+    if (state.items.length > 0 && !force && state.lastFetched && (now - state.lastFetched < 10000)) {
       return; 
     }
 
+    // Set loading immediately
     set({ loading: true });
 
     try {
-      // Simplified query to ensure maximum speed
+      // Optimized Query: Using standard relationship hints for faster execution
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -38,10 +37,10 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
           status,
           delivery_info,
           created_at,
-          listing:listings(
+          listings(
             title, 
             image_url, 
-            seller:profiles!listings_seller_id_fkey(full_name)
+            profiles:seller_id(full_name)
           )
         `)
         .eq('buyer_id', userId)
@@ -51,24 +50,24 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       
       const formattedData = (data || []).map(order => ({
         ...order,
-        product_title: (order.listing as any)?.title || 'Market Product',
-        image_url: (order.listing as any)?.image_url,
-        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Seller'
+        product_title: (order.listings as any)?.title || 'Market Product',
+        image_url: (order.listings as any)?.image_url,
+        seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
       }));
 
       set({ 
         items: formattedData,
         lastFetched: now,
-        loading: false // Reset here on success
+        loading: false 
       });
     } catch (e) {
       console.error("Orders store fetch failed:", e);
-      // Ensure we don't leave the user stuck in a spinner on failure
       set({ loading: false });
     } finally {
-      // Safety net for edge case promise resolutions
-      setTimeout(() => set({ loading: false }), 500);
+      // Immediate reset, no artificial timeouts
+      set({ loading: false });
     }
   },
+  
   clear: () => set({ items: [], loading: false, lastFetched: null })
 }));

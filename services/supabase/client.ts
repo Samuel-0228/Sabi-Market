@@ -11,14 +11,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'savvy-unified-v1', // Standardized key
+    storageKey: 'savvy-unified-v1',
     flowType: 'pkce'
   },
   global: {
-    // Add minor timeout to global fetch to prevent infinite hangs at the network level
+    // Optimized timeout: 8s is the sweet spot for perceived performance
     fetch: (input, init) => {
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 15000); // 15s global timeout
+      const id = setTimeout(() => controller.abort(), 8000); 
       return fetch(input, { ...init, signal: controller.signal })
         .finally(() => clearTimeout(id));
     }
