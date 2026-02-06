@@ -5,9 +5,11 @@ import App from './app/App';
 import { LanguageProvider } from './app/LanguageContext';
 import { ThemeProvider } from './app/ThemeContext';
 
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
+// Ensure the root element exists before attempting to mount
+const container = document.getElementById('root');
+
+if (container) {
+  const root = ReactDOM.createRoot(container);
   root.render(
     <React.StrictMode>
       <ThemeProvider>
@@ -17,4 +19,6 @@ if (rootElement) {
       </ThemeProvider>
     </React.StrictMode>
   );
+} else {
+  console.error("Critical Error: Root container not found in index.html");
 }
