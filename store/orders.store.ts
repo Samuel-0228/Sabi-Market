@@ -19,16 +19,18 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     const state = get();
     const now = Date.now();
 
-    // Cache logic: Only skip if not forced and data is fresh (within 10s)
-    if (state.items.length > 0 && !force && state.lastFetched && (now - state.lastFetched < 10000)) {
+    // Prevent hammering the DB - 5s throttle
+    if (state.loading && !force) return;
+    
+    // Cache check
+    if (state.items.length > 0 && !force && state.lastFetched && (now - state.lastFetched < 5000)) {
       return; 
     }
 
-    // Set loading immediately
     set({ loading: true });
 
     try {
-      // Optimized Query: Using standard relationship hints for faster execution
+      // Use the most direct selection to avoid complex join resolution issues
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -37,10 +39,10 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
           status,
           delivery_info,
           created_at,
-          listings(
+          listing:listing_id(
             title, 
             image_url, 
-            profiles:seller_id(full_name)
+            seller:seller_id(full_name)
           )
         `)
         .eq('buyer_id', userId)
@@ -50,9 +52,9 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       
       const formattedData = (data || []).map(order => ({
         ...order,
-        product_title: (order.listings as any)?.title || 'Market Product',
-        image_url: (order.listings as any)?.image_url,
-        seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
+        product_title: (order.listing as any)?.title || 'Market Item',
+        image_url: (order.listing as any)?.image_url,
+        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Student'
       }));
 
       set({ 
@@ -64,8 +66,8 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       console.error("Orders store fetch failed:", e);
       set({ loading: false });
     } finally {
-      // Immediate reset, no artificial timeouts
-      set({ loading: false });
+      // Absolute safety: if the promise resolves but data didn't set, ensure loading is cleared
+      setTimeout(() => set({ loading: false }), 200);
     }
   },
   

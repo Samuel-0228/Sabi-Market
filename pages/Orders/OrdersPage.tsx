@@ -14,10 +14,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const [showSlowMessage, setShowSlowMessage] = useState(false);
 
   useEffect(() => {
-    if (user?.id && user.is_verified) {
+    if (user?.id) {
       fetch(user.id);
     }
-  }, [user?.id, user?.is_verified, fetch]);
+  }, [user?.id, fetch]);
 
   // Monitor loading time to offer a manual refresh if it takes > 4 seconds
   useEffect(() => {
@@ -39,18 +39,6 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
       default: return 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400';
     }
   };
-
-  if (!user.is_verified) {
-    return (
-      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
-        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10 shadow-inner">🏦</div>
-        <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Orders Restricted</h2>
-        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic leading-relaxed">
-          Escrow and transaction history are high-security areas. Please verify your <span className="text-indigo-600 font-bold">@aau.edu.et</span> identity to continue.
-        </p>
-      </div>
-    );
-  }
 
   if (loading && orders.length === 0) {
     return (

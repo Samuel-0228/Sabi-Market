@@ -64,7 +64,7 @@ export const db = {
       .eq('status', 'active')
       .order('created_at', { ascending: false });
     if (error) handleSupabaseError(error, 'getListings');
-    return (data || []).map((l: any) => ({
+    return (data || []).map(l => ({
       ...l,
       seller_name: (l as any).profiles?.full_name || 'Verified Seller'
     }));
@@ -95,7 +95,7 @@ export const db = {
       .order('created_at', { ascending: false });
 
     if (error) handleSupabaseError(error, 'getBuyerOrderItems');
-    return (data || []).map((order: any) => ({
+    return (data || []).map(order => ({
       ...order,
       product_title: (order.listings as any)?.title,
       image_url: (order.listings as any)?.image_url,
@@ -116,7 +116,7 @@ export const db = {
       .eq('listings.seller_id', user.id)
       .order('created_at', { ascending: false });
     if (error) handleSupabaseError(error, 'getSellerOrderItems');
-    return (data || []).map((order: any) => ({
+    return (data || []).map(order => ({
       ...order,
       product_title: (order.listings as any)?.title,
       image_url: (order.listings as any)?.image_url,

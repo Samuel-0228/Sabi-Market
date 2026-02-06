@@ -15,10 +15,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce'
   },
   global: {
-    // Optimized timeout: 8s is the sweet spot for perceived performance
+    // Increased timeout: 20s provides more buffer for multi-stage Auth + DB calls
     fetch: (input, init) => {
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 8000); 
+      const id = setTimeout(() => controller.abort(), 20000); 
       return fetch(input, { ...init, signal: controller.signal })
         .finally(() => clearTimeout(id));
     }

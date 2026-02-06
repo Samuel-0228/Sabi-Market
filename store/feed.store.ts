@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
-import { Listing } from '../types';
-import { supabase } from '../services/supabase/client';
+import { Listing } from '../types/index';
+import { db } from '../services/supabase/db';
 
 interface FeedState {
   listings: Listing[];
@@ -9,7 +9,7 @@ interface FeedState {
   loading: boolean;
   searchQuery: string;
   activeCategory: string;
-  fetch: () => Promise<void>;
+  fetch: (signal?: AbortSignal) => Promise<void>;
   setSearchQuery: (query: string) => void;
   setCategory: (category: string) => void;
 }
@@ -21,25 +21,28 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   searchQuery: '',
   activeCategory: 'all',
   
-  fetch: async () => {
+  fetch: async (signal) => {
     set({ loading: true });
     try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*, profiles:seller_id(full_name)')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+      // Pure request/response fetch via unified DB layer
+      const data = await db.getListings(signal);
       
-      if (error) throw error;
-      const fetchedListings = (data || []).map(l => ({
-        ...l,
-        seller_name: (l as any).profiles?.full_name || 'Verified Seller'
-      }));
+      if (signal?.aborted) return;
       
-      set({ listings: fetchedListings, filteredListings: fetchedListings });
-    } catch (e) {
+      set({ 
+        listings: data, 
+        filteredListings: data,
+        loading: false 
+      });
+      
+      // Re-apply existing filters
+      const { searchQuery, activeCategory } = get();
+      if (searchQuery || activeCategory !== 'all') {
+        get().setSearchQuery(searchQuery);
+      }
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
       console.error("Feed fetch failed", e);
-    } finally {
       set({ loading: false });
     }
   },
@@ -49,7 +52,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     const filtered = listings.filter(l => {
       const matchesSearch = l.title.toLowerCase().includes(query.toLowerCase()) || 
                            l.description.toLowerCase().includes(query.toLowerCase());
-      const matchesCategory = activeCategory === 'all' || l.category === activeCategory;
+      const matchesCategory = activeCategory === 'all' || l.category === query;
       return matchesSearch && matchesCategory;
     });
     set({ searchQuery: query, filteredListings: filtered });

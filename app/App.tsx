@@ -22,21 +22,18 @@ const App: React.FC = () => {
   const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentPage, setCurrentPage] = useState<string>('landing');
+  const [authStep, setAuthStep] = useState<'login' | 'initial-email'>('login');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const syncUser = useCallback(async () => {
     try {
-      // 4-second timeout for the profile sync - better to show "logged out" than infinite spinner
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Auth Timeout')), 4000));
-      const sync = authApi.syncProfile();
-      
-      const profile = await Promise.race([sync, timeout]) as UserProfile | null;
+      const profile = await authApi.syncProfile();
       setUser(profile);
       return profile;
     } catch (e) {
-      console.warn("Auth synchronization delayed or failed. Proceeding in safety mode.");
+      console.error("Auth synchronization failed:", e);
       return null;
     }
   }, []);
@@ -55,6 +52,8 @@ const App: React.FC = () => {
             setCurrentPage('landing');
           }
         }
+      } catch (err) {
+        console.error("App init error:", err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -65,9 +64,11 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (!mounted) return;
       
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         const u = await syncUser();
-        if (u) setCurrentPage('home');
+        if (u && mounted) {
+           setCurrentPage(prev => (['landing', 'auth', 'login', 'register'].includes(prev) ? 'home' : prev));
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -82,7 +83,19 @@ const App: React.FC = () => {
   }, [syncUser]);
 
   const handleNavigate = (page: string) => {
+    if (page === 'login') {
+      setAuthStep('login');
+      setCurrentPage('auth');
+      return;
+    }
+    if (page === 'register') {
+      setAuthStep('initial-email');
+      setCurrentPage('auth');
+      return;
+    }
+
     if (!user && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
+      setAuthStep('login');
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
@@ -105,7 +118,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentPage) {
       case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
-      case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
+      case 'auth': return <Auth initialStep={authStep} onSuccess={() => handleNavigate('home')} />;
       case 'home': return (
         <Home 
           user={user} 
@@ -115,9 +128,9 @@ const App: React.FC = () => {
           onNavigate={handleNavigate}
         />
       );
-      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
-      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
-      case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
+      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('dashboard')} />;
+      case 'messages': return user ? <InboxPage user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('messages')} />;
+      case 'orders': return user ? <OrdersPage user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('orders')} />;
       case 'checkout': return selectedListing ? (
         <Checkout 
           listing={selectedListing} 
@@ -133,14 +146,6 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
       
-      {user && !user.is_verified && (
-        <div className="bg-amber-500 text-white px-6 py-3 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest shadow-lg animate-in slide-in-from-top duration-700 z-[90]">
-          <span className="text-xl">⚠️</span>
-          <span>Verification Required: Please check your AAU email to unlock full marketplace access.</span>
-          <button className="underline ml-4 hover:opacity-80">Resend Link</button>
-        </div>
-      )}
-
       <main className="flex-1">
         {renderContent()}
       </main>
