@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/supabase/db';
-import { Listing, UserProfile } from '../../types/index';
+import { Listing, UserProfile, OrderStatus } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
+import { useUIStore } from '../../store/ui.store';
 
 interface SellerDashboardProps {
   user: UserProfile;
@@ -10,26 +11,25 @@ interface SellerDashboardProps {
 
 const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const { t } = useLanguage();
+  const { addToast } = useUIStore();
   const [data, setData] = useState<{listings: Listing[], orders: any[]}>({ listings: [], orders: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
 
+  const load = async (signal?: AbortSignal) => {
+    try {
+      const result = await db.getSellerDashboardData(user.id, signal);
+      setData(result);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') console.error("Dashboard error", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const controller = new AbortController();
-    
-    const load = async () => {
-      setLoading(true);
-      try {
-        const result = await db.getSellerDashboardData(user.id, controller.signal);
-        setData(result);
-      } catch (err: any) {
-        if (err.name !== 'AbortError') console.error("Dashboard error", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
+    load(controller.signal);
     return () => controller.abort();
   }, [user.id]);
 
@@ -38,6 +38,16 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
     active: data.listings.length,
     pending: data.orders.filter(o => o.status === 'pending').length
   }), [data]);
+
+  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await db.updateOrderStatus(orderId, status);
+      addToast(`Order status updated to ${status}`, "success");
+      load();
+    } catch (err) {
+      addToast("Failed to update status", "error");
+    }
+  };
 
   if (loading) return (
     <div className="h-[80vh] flex flex-col items-center justify-center">
@@ -75,8 +85,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                </div>
             ) : (
               data.listings.map(l => (
-                <div key={l.id} className="group cursor-pointer">
-                  <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-gray-50 dark:bg-white/5">
+                <div key={l.id} className="group">
+                  <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-gray-50 dark:bg-white/5 shadow-inner">
                     <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
                   <p className="font-black dark:text-white truncate">{l.title}</p>
@@ -97,16 +107,29 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                 <div key={o.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-white/5 transition-all hover:border-indigo-500/30">
                   <div className="flex items-center gap-6">
                     <img src={o.image_url} className="w-16 h-16 rounded-2xl object-cover shadow-sm" />
-                    <div>
-                      <p className="font-black dark:text-white text-lg leading-none mb-2">{o.product_title}</p>
+                    <div className="min-w-0">
+                      <p className="font-black dark:text-white text-lg leading-none mb-2 truncate">{o.product_title}</p>
                       <p className="text-xs font-bold text-gray-400">Buyer: <span className="text-indigo-500">{o.buyer_name}</span></p>
                     </div>
                   </div>
-                  <div className="mt-4 md:mt-0 text-left md:text-right">
-                    <p className="text-xl font-black text-indigo-600">{o.amount} ETB</p>
-                    <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${o.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
-                      {o.status}
-                    </span>
+                  <div className="mt-4 md:mt-0 flex flex-col md:items-end gap-3">
+                    <div className="flex items-center gap-4">
+                      <p className="text-xl font-black text-indigo-600">{o.amount} ETB</p>
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
+                        o.status === 'pending' ? 'bg-amber-100 text-amber-600' : 
+                        o.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        {o.status}
+                      </span>
+                    </div>
+                    {o.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <button onClick={() => handleUpdateStatus(o.id, 'accepted')} className="px-4 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">Accept</button>
+                        <button onClick={() => handleUpdateStatus(o.id, 'cancelled')} className="px-4 py-2 bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-lg">Decline</button>
+                      </div>
+                    )}
+                    {o.status === 'accepted' && (
+                      <button onClick={() => handleUpdateStatus(o.id, 'completed')} className="px-4 py-2 bg-green-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">Mark as Delivered</button>
+                    )}
                   </div>
                 </div>
               ))

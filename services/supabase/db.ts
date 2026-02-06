@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import { Listing, UserProfile, Order, OrderItem } from '../../types/index';
+import { Listing, UserProfile, Order, OrderItem, OrderStatus } from '../../types/index';
 
 export const db = {
   // --- USER PROFILE ---
@@ -95,6 +95,14 @@ export const db = {
     if (error) throw error;
   },
 
+  async updateOrderStatus(orderId: string, status: OrderStatus) {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId);
+    if (error) throw error;
+  },
+
   // --- MESSAGING FOUNDATION ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
     const { data: existing } = await supabase
@@ -116,7 +124,6 @@ export const db = {
     return created.id;
   },
 
-  // Added sendMessage method to facilitate chat interactions
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");

@@ -23,7 +23,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Synchronize step with initialStep prop if it changes externally
+  // CRITICAL: Synchronize internal state with parent prop updates
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
