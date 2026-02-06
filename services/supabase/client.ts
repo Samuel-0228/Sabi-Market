@@ -4,22 +4,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://fqkrddoodkawtmcapvyu.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
 
-// Create a single client instance to be used across the entire application
-// Multiple instances competing for the same storageKey can cause auth lockups
+// SINGLE SOURCE OF TRUTH: 
+// This is the ONLY place createClient should be called to avoid the GoTrueClient warning.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'savvy-unified-session',
-    // Flowing auth state across multiple tabs or concurrent requests safely
+    storageKey: 'savvy-unified-v1', // Standardized key
     flowType: 'pkce'
   },
   global: {
-    // Adding minor delay buffer to prevent rapid duplicate requests during initialization
-    // Fix: Explicitly define parameters to avoid spread argument error in TypeScript
+    // Add minor timeout to global fetch to prevent infinite hangs at the network level
     fetch: (input, init) => {
-      return fetch(input, init);
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 15000); // 15s global timeout
+      return fetch(input, { ...init, signal: controller.signal })
+        .finally(() => clearTimeout(id));
     }
   }
 });

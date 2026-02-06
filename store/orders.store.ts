@@ -15,21 +15,29 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   loading: false,
   lastFetched: null,
   fetch: async (userId, force = false) => {
-    const { lastFetched, items } = get();
-    const now = Date.now();
+    const { lastFetched, items, loading: currentLoading } = get();
     
-    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 10000)) {
+    // Prevent double-fetching if already loading
+    if (currentLoading) return;
+
+    const now = Date.now();
+    // Cache for 15 seconds to avoid repeated hammering of the DB
+    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 15000)) {
       return; 
     }
 
     set({ loading: true });
 
     try {
-      // Using explicit joins to avoid issues with multiple relationships to profiles
+      // Simplified query to ensure maximum speed
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          amount,
+          status,
+          delivery_info,
+          created_at,
           listing:listings(
             title, 
             image_url, 
@@ -50,13 +58,16 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
 
       set({ 
         items: formattedData,
-        lastFetched: now
+        lastFetched: now,
+        loading: false // Reset here on success
       });
     } catch (e) {
       console.error("Orders store fetch failed:", e);
-    } finally {
-      // IMPORTANT: Always set loading to false to prevent UI hang
+      // Ensure we don't leave the user stuck in a spinner on failure
       set({ loading: false });
+    } finally {
+      // Safety net for edge case promise resolutions
+      setTimeout(() => set({ loading: false }), 500);
     }
   },
   clear: () => set({ items: [], loading: false, lastFetched: null })

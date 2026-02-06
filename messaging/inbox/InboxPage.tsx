@@ -27,7 +27,6 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // SECURITY POLICY: Only verified users can fetch conversation data
     if (!user.is_verified) {
       setLoading(false);
       return;
@@ -90,6 +89,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
     fetchMessages();
 
+    // Use a unique channel name per conversation to avoid collision
     const channel = supabase
       .channel(`room_${activeConversation.id}`)
       .on('postgres_changes', {
@@ -104,7 +104,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channel); // ABSOLUTELY CRITICAL: Unsubscribe when leaving
     };
   }, [activeConversation?.id, user.is_verified]);
 
@@ -118,16 +118,6 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     const content = input;
     setInput('');
     
-    // Optimistic UI update
-    const tempId = Math.random().toString();
-    addMessage({
-      id: tempId,
-      conversation_id: activeConversation.id,
-      sender_id: user.id,
-      content,
-      created_at: new Date().toISOString()
-    } as any);
-
     try {
       const { error } = await supabase.from('messages').insert({
         conversation_id: activeConversation.id,
@@ -137,22 +127,15 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       if (error) throw error;
     } catch (err) {
       console.error("Send failed:", err);
-      // Fallback: reload messages if send failed
-      setMessages([...messages]);
     }
   };
 
   if (!user.is_verified) {
     return (
-      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
-        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10 shadow-inner">🔒</div>
+      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center">
+        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10">🔒</div>
         <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Inbox Restricted</h2>
-        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic leading-relaxed">
-          For campus safety, only students with a verified <span className="text-indigo-600 font-bold">@aau.edu.et</span> email can access private trade inquiries.
-        </p>
-        <button className="mt-12 btn-hope px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">
-          Check Verification Status
-        </button>
+        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic">Verification required.</p>
       </div>
     );
   }
@@ -165,7 +148,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8 animate-in fade-in duration-500">
+    <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8">
       <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl">
         <div className="p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
           <h2 className="text-2xl font-black dark:text-white tracking-tighter leading-none">Inbox</h2>
