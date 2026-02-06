@@ -1,9 +1,10 @@
 
 import { supabase } from './client';
-import { Listing, UserProfile } from '../../types/index';
+import { Listing, UserProfile, OrderStatus } from '../../types';
 
 export const db = {
-  async getCurrentUser(): Promise<UserProfile | null> {
+  // --- USER & AUTH ---
+  async getCurrentUser(signal?: AbortSignal): Promise<UserProfile | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
@@ -11,87 +12,87 @@ export const db = {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .maybeSingle();
+      .maybeSingle()
+      .abortSignal(signal);
 
     if (error) return null;
-    return profile;
+    return profile as UserProfile;
   },
 
-  async getListings() {
+  // --- MARKETPLACE ---
+  async getListings(signal?: AbortSignal): Promise<Listing[]> {
     const { data, error } = await supabase
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
       .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .abortSignal(signal);
     
     if (error) throw error;
     return (data || []).map(l => ({
       ...l,
-      seller_name: (l as any).profiles?.full_name || 'Verified Seller'
+      seller_name: (l as any).profiles?.full_name || 'AAU Student'
     }));
   },
 
   async createListing(listing: Partial<Listing>) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-
+    if (!user) throw new Error("Authentication required");
+    
     const { error } = await supabase.from('listings').insert({
       ...listing,
       seller_id: user.id,
+      status: 'active',
       created_at: new Date().toISOString()
     });
     if (error) throw error;
   },
 
-  async getSellerOrderItems() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data, error } = await supabase
+  // --- ORDERS & TRADES ---
+  async getOrders(userId: string, role: 'buyer' | 'seller', signal?: AbortSignal) {
+    const query = supabase
       .from('orders')
       .select(`
         *,
-        listings!inner(title, image_url, seller_id),
+        listing:listing_id(title, image_url),
+        seller:profiles!orders_seller_id_fkey(full_name),
         buyer:profiles!orders_buyer_id_fkey(full_name)
       `)
-      .eq('listings.seller_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .abortSignal(signal);
+
+    const { data, error } = await (role === 'buyer' 
+      ? query.eq('buyer_id', userId) 
+      : query.eq('seller_id', userId));
 
     if (error) throw error;
-    
-    return (data || []).map(order => ({
-      ...order,
-      product_title: (order.listings as any)?.title,
-      image_url: (order.listings as any)?.image_url,
-      buyer_name: (order.buyer as any)?.full_name || 'Anonymous Student',
-      amount: order.amount 
+    return (data || []).map(o => ({
+      ...o,
+      product_title: (o.listing as any)?.title || 'Market Item',
+      image_url: (o.listing as any)?.image_url,
+      seller_name: (o.seller as any)?.full_name,
+      buyer_name: (o.buyer as any)?.full_name
     }));
   },
 
-  async getBuyerOrderItems() {
+  async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!user) throw new Error("Unauthorized");
 
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        listings(title, image_url, profiles:seller_id(full_name))
-      `)
-      .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false });
+    const { error } = await supabase.from('orders').insert({
+      buyer_id: user.id,
+      seller_id: listing.seller_id,
+      listing_id: listing.id,
+      amount: amount,
+      status: 'pending',
+      delivery_info: deliveryInfo,
+      created_at: new Date().toISOString()
+    });
 
     if (error) throw error;
-    
-    return (data || []).map(order => ({
-      ...order,
-      product_title: (order.listings as any)?.title,
-      image_url: (order.listings as any)?.image_url,
-      seller_name: (order.listings as any)?.profiles?.full_name || 'Verified Seller'
-    }));
   },
 
-  async updateOrderItemStatus(orderId: string, status: string) {
+  async updateOrderStatus(orderId: string, status: OrderStatus) {
     const { error } = await supabase
       .from('orders')
       .update({ status })
@@ -99,70 +100,44 @@ export const db = {
     if (error) throw error;
   },
 
-  async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-
-    const { error } = await supabase
-      .from('orders')
-      .insert({
-        buyer_id: user.id,
-        listing_id: listing.id,
-        amount: amount,
-        status: 'pending',
-        delivery_info: deliveryInfo,
-        created_at: new Date().toISOString()
-      });
-
-    if (error) throw error;
-  },
-
-  async getOrCreateConversation(listingId: string, sellerId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
-
+  // --- CHAT & MESSAGING ---
+  async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
       .eq('listing_id', listingId)
-      .eq('buyer_id', user.id)
+      .eq('buyer_id', buyerId)
       .maybeSingle();
 
-    if (existing) return (existing as any).id;
+    if (existing) return existing.id;
 
-    const { data: newConv, error } = await supabase
+    const { data: created, error } = await supabase
       .from('conversations')
-      .insert({
-        listing_id: listingId,
-        buyer_id: user.id,
-        seller_id: sellerId
-      })
+      .insert({ listing_id: listingId, buyer_id: buyerId, seller_id: sellerId })
       .select('id')
       .single();
 
     if (error) throw error;
-    return (newConv as any).id;
+    return created.id;
   },
 
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
-
-    const { data, error } = await supabase.from('messages').insert({
+    const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      content
-    }).select().single();
-
+      content,
+      created_at: new Date().toISOString()
+    });
     if (error) throw error;
-    return data;
   },
 
-  async uploadImage(file: File) {
-    const filePath = `listings/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
-    const { error } = await supabase.storage.from('market-assets').upload(filePath, file);
+  async uploadImage(file: File): Promise<string> {
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    const { error } = await supabase.storage.from('market-assets').upload(`listings/${fileName}`, file);
     if (error) throw error;
-    const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
+    const { data } = supabase.storage.from('market-assets').getPublicUrl(`listings/${fileName}`);
     return data.publicUrl;
   }
 };

@@ -4,13 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ሳቪ – Savvy Market | Campus Reimagined</title>
+    <title>ሳቪ – Savvy Market | AAU Student Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Production Polyfill for Browser Environment
+        // This ensures libraries expecting a 'process' object (like Gemini SDK) don't crash.
         window.process = { 
             env: { 
                 NODE_ENV: 'production',
-                API_KEY: '' 
+                API_KEY: '' // Injected by the environment
             },
             cwd: () => '/',
             nextTick: (cb) => setTimeout(cb, 0)
@@ -38,7 +40,7 @@
     <style>
         :root { --bg: #ffffff; --text: #000000; }
         .dark { --bg: #050505; --text: #ffffff; }
-        body { background-color: var(--bg); color: var(--text); transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1); overflow-x: hidden; }
+        body { background-color: var(--bg); color: var(--text); transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1); overflow-x: hidden; min-height: 100vh; }
         .vibrant-mesh { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.22) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.18) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.15) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(245, 158, 11, 0.12) 0px, transparent 50%); opacity: 0.8; }
         .dark .vibrant-mesh { opacity: 0.5; }
         .text-gradient-hope { background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -48,19 +50,16 @@
         .dark .glass { background: rgba(12, 12, 14, 0.7); border: 1px solid rgba(255, 255, 255, 0.05); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
     </style>
-    <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-    "zustand": "https://esm.sh/zustand@4.5.2?deps=react@19.0.0",
-    "recharts": "https://esm.sh/recharts@2.12.7?deps=react@19.0.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.1",
-    "@google/genai": "https://esm.sh/@google/genai@1.3.0",
+    "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
+    "zustand": "https://esm.sh/zustand@^5.0.11",
     "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3"
   }
@@ -71,7 +70,6 @@
 <body>
     <div class="vibrant-mesh"></div>
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

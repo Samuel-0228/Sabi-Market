@@ -1,39 +1,43 @@
 
-import React, { useEffect, useState } from 'react';
-import { db } from '../services/supabaseService';
+import React, { useEffect, useState, useRef } from 'react';
+import { db } from '../services/supabase/db';
 import { Listing, ListingCategory, UserProfile } from '../types';
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../app/LanguageContext';
 
 interface HomeProps {
   user: UserProfile | null;
   onSelectListing: (listing: Listing) => void;
   onAddListing: () => void;
-  onBuyListing?: (listing: Listing) => void;
+  onBuyListing: (listing: Listing) => void;
   onNavigate: (page: string) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyListing, onNavigate }) => {
   const { t } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [filter, setFilter] = useState<ListingCategory | 'all' | 'forYou'>(user?.preferences?.length ? 'forYou' : 'all');
+  const [filter, setFilter] = useState<ListingCategory | 'all' | 'forYou'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [detailItem, setDetailItem] = useState<Listing | null>(null);
 
   useEffect(() => {
-    fetchListings();
-  }, []);
+    const controller = new AbortController();
+    
+    const fetchListings = async () => {
+      try {
+        setLoading(true);
+        const data = await db.getListings(controller.signal);
+        setListings(data);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchListings = async () => {
-    try {
-      const data = await db.getListings();
-      setListings(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchListings();
+    return () => controller.abort();
+  }, []);
 
   const filteredListings = listings.filter(l => {
     const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -44,17 +48,15 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
 
   const handleOpenChat = (listing: Listing) => {
     if (!user) return onNavigate('auth');
-    // Optimistic navigation: go to messages immediately
-    // The Messages component will handle fetching/creating the conversation
     localStorage.setItem('savvy_pending_chat', JSON.stringify({ listingId: listing.id, sellerId: listing.seller_id }));
     onNavigate('messages');
     setDetailItem(null);
   };
 
-  const categories: (ListingCategory | 'all' | 'forYou')[] = ['all', 'forYou', 'course', 'academic_materials', 'goods', 'food'];
+  const categories: (ListingCategory | 'all' | 'forYou')[] = ['all', 'goods', 'course', 'academic_materials', 'food'];
 
   return (
-    <div className="max-w-[1400px] mx-auto px-8 py-16 reveal relative animate-in fade-in duration-700">
+    <div className="max-w-[1400px] mx-auto px-8 py-16 animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-24 gap-12">
         <div className="max-w-3xl">
            <h1 className="text-5xl sm:text-8xl font-black text-black dark:text-white mb-8 tracking-tighter leading-[0.85]">{t('explore')}</h1>
@@ -63,7 +65,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
            </p>
         </div>
         
-        <div className="flex flex-wrap gap-2 bg-white dark:bg-white/5 p-2 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5">
+        <div className="flex flex-wrap gap-2 bg-white dark:bg-white/5 p-2 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5 overflow-x-auto">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -74,7 +76,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
                 : 'text-gray-400 hover:text-black dark:hover:text-white'
               }`}
             >
-              {cat === 'forYou' ? `✨ ${t('forYou')}` : t(cat)}
+              {t(cat)}
             </button>
           ))}
         </div>
@@ -115,7 +117,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
                      </span>
                   </div>
                 </div>
-                <h3 className="text-xl font-black dark:text-white group-hover:text-savvy-primary transition-colors">{listing.title}</h3>
+                <h3 className="text-xl font-black dark:text-white group-hover:text-indigo-600 transition-colors">{listing.title}</h3>
                 <p className="text-lg font-black text-gray-400 mt-2">{listing.price} ETB</p>
               </div>
             ))
@@ -128,8 +130,8 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
       </button>
 
       {detailItem && (
-        <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-5xl rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+        <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={() => setDetailItem(null)}>
+          <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-5xl rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
              <div className="md:w-1/2 overflow-hidden bg-black flex items-center justify-center">
                <img src={detailItem.image_url} className="w-full h-full object-contain" />
              </div>
@@ -156,7 +158,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
                  <button onClick={() => handleOpenChat(detailItem)} className="flex-1 bg-gray-100 dark:bg-white/10 dark:text-white py-6 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
                    {t('chatWithSeller')}
                  </button>
-                 <button onClick={() => { if(onBuyListing) onBuyListing(detailItem); setDetailItem(null); }} className="flex-1 btn-hope py-6 rounded-full font-black text-[11px] uppercase tracking-widest shadow-xl">
+                 <button onClick={() => { onBuyListing(detailItem); setDetailItem(null); }} className="flex-1 btn-hope py-6 rounded-full font-black text-[11px] uppercase tracking-widest shadow-xl">
                    {t('buyNow')}
                  </button>
                </div>

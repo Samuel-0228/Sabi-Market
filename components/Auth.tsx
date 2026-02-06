@@ -1,17 +1,18 @@
 
-import React, { useState } from 'react';
-import { db } from '../services/supabaseService';
+import React, { useState, useEffect } from 'react';
+import { authApi } from '../features/auth/auth.api';
 import { useLanguage } from './LanguageContext';
 
 interface AuthProps {
   onSuccess: () => void;
+  initialStep?: 'login' | 'initial-email';
 }
 
 type AuthStep = 'login' | 'initial-email' | 'details' | 'account' | 'confirmation' | 'emotional-loading';
 
-const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
+const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const { t } = useLanguage();
-  const [step, setStep] = useState<AuthStep>('login');
+  const [step, setStep] = useState<AuthStep>(initialStep);
   const [loadingMessage, setLoadingMessage] = useState('Verifying your identity...');
   const [formData, setFormData] = useState({ 
     email: '', 
@@ -21,6 +22,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // CRITICAL: Synchronize internal state with parent prop updates
+  useEffect(() => {
+    setStep(initialStep);
+  }, [initialStep]);
 
   const runEmotionalLoading = (finalAction: () => void) => {
     setStep('emotional-loading');
@@ -41,10 +47,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     setError('');
     setLoading(true);
     try {
-      await db.login(formData.email, formData.password);
-      // App.tsx handles navigation via onAuthStateChange
+      await authApi.login(formData.email, formData.password);
+      onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Login failed.');
+      setError(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);
     }
   };
@@ -55,7 +61,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     setLoading(true);
     
     try {
-      const result = await db.register(formData.email, formData.password, formData.name, formData.preferences);
+      const result = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
       if (result.needsConfirmation) {
         setStep('confirmation');
       } else {

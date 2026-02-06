@@ -43,7 +43,8 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
         if (pending) {
           localStorage.removeItem('savvy_pending_chat');
           const { listingId, sellerId } = JSON.parse(pending);
-          const cid = await db.getOrCreateConversation(listingId, sellerId);
+          // Fix: Passed user.id as third argument to getOrCreateConversation
+          const cid = await db.getOrCreateConversation(listingId, sellerId, user.id);
           const found = data?.find(c => c.id === cid);
           if (found) setActiveConv(found);
           else {
@@ -135,6 +136,7 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
     setMessages(prev => [...prev, tempMsg]);
 
     try {
+      // Fix: db.sendMessage now exists
       await db.sendMessage(activeConv.id, content);
     } catch (err) {
       setMessages(prev => prev.filter(m => m.id !== tempMsg.id));

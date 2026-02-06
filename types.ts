@@ -1,7 +1,6 @@
 
 export type Role = 'student' | 'admin';
 export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
-// Updated OrderStatus to include all possible states used across components and pages
 export type OrderStatus = 'pending' | 'accepted' | 'shipped' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
 
 export interface UserProfile {
@@ -59,9 +58,13 @@ export interface Order {
   delivery_info: string;
   created_at: string;
   listing_title?: string;
+  image_url?: string;
+  seller_name?: string;
+  buyer_name?: string;
+  product_title?: string;
 }
 
-// Added OrderItem interface to support individual item tracking within orders
+// Added OrderItem interface to resolve import errors in dashboard components
 export interface OrderItem {
   id: string;
   order_id: string;
@@ -76,6 +79,7 @@ export interface OrderItem {
   seller_name?: string;
   image_url?: string;
   delivery_info?: string;
+  amount?: number;
 }
 
 export interface Translation {
