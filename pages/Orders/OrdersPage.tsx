@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useOrdersStore } from '../../store/orders.store';
 import { UserProfile } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
@@ -11,24 +11,13 @@ interface OrdersPageProps {
 const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   const { t } = useLanguage();
   const { items: orders, loading, fetch } = useOrdersStore();
-  const [showSlowMessage, setShowSlowMessage] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
+    // Only attempt fetch if user is verified
+    if (user?.id && user.is_verified) {
       fetch(user.id);
     }
-  }, [user?.id, fetch]);
-
-  // Monitor loading time to offer a manual refresh if it takes > 4 seconds
-  useEffect(() => {
-    let timer: any;
-    if (loading && orders.length === 0) {
-      timer = setTimeout(() => setShowSlowMessage(true), 4000);
-    } else {
-      setShowSlowMessage(false);
-    }
-    return () => clearTimeout(timer);
-  }, [loading, orders.length]);
+  }, [user?.id, user?.is_verified, fetch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -40,49 +29,45 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
     }
   };
 
+  // ACCESS POLICY VIEW: Restriction for unverified users
+  if (!user.is_verified) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
+        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-900/10 rounded-[2.5rem] flex items-center justify-center text-5xl mb-10 shadow-inner">🏦</div>
+        <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Orders Restricted</h2>
+        <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm italic leading-relaxed">
+          Escrow and transaction history are high-security areas. Please verify your <span className="text-indigo-600 font-bold">@aau.edu.et</span> identity to continue.
+        </p>
+        <div className="mt-12 flex gap-4">
+          <button className="btn-hope px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">
+            Verify Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading && orders.length === 0) {
     return (
-      <div className="h-[80vh] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">Syncing Trades...</p>
-        
-        {showSlowMessage && (
-          <div className="mt-8 animate-in slide-in-from-bottom duration-500">
-            <p className="text-xs text-gray-400 italic mb-4">Database response is taking longer than expected...</p>
-            <button 
-              onClick={() => fetch(user.id, true)} 
-              className="px-6 py-3 bg-gray-100 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest dark:text-white hover:bg-indigo-600 hover:text-white transition-all"
-            >
-              Force Refresh
-            </button>
-          </div>
-        )}
+      <div className="h-[80vh] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">Retrieving Orders...</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-20 animate-in fade-in duration-700">
-      <header className="mb-16 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
-        <div>
-          <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter mb-4">{t('myOrders')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium text-lg italic">Track your secure campus exchanges.</p>
-        </div>
-        <button 
-          onClick={() => fetch(user.id, true)}
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest dark:text-white hover:bg-gray-100 transition-all"
-        >
-          <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          {loading ? 'Updating...' : 'Refresh'}
-        </button>
+      <header className="mb-16">
+        <h1 className="text-6xl font-black text-black dark:text-white tracking-tighter mb-4">{t('myOrders')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 font-medium text-lg italic">Track your campus trades and secure exchanges.</p>
       </header>
 
       <div className="space-y-6">
         {orders.length === 0 ? (
           <div className="py-40 text-center opacity-30 flex flex-col items-center">
             <span className="text-6xl mb-6">🛍️</span>
-            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No trade history found</p>
+            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No trade history found yet</p>
           </div>
         ) : (
           orders.map((order) => (
@@ -97,7 +82,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
 
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-black dark:text-white tracking-tight leading-none truncate">{order.product_title}</h3>
+                  <h3 className="text-2xl font-black dark:text-white tracking-tight leading-none">{order.product_title}</h3>
                   <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${getStatusColor(order.status)}`}>
                     {order.status}
                   </span>

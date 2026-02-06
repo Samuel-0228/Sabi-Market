@@ -14,35 +14,26 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   items: [],
   loading: false,
   lastFetched: null,
-  
   fetch: async (userId, force = false) => {
-    const state = get();
+    const { lastFetched, items } = get();
     const now = Date.now();
-
-    // Prevent hammering the DB - 5s throttle
-    if (state.loading && !force) return;
     
-    // Cache check
-    if (state.items.length > 0 && !force && state.lastFetched && (now - state.lastFetched < 5000)) {
+    if (items.length > 0 && !force && lastFetched && (now - lastFetched < 10000)) {
       return; 
     }
 
     set({ loading: true });
 
     try {
-      // Use the most direct selection to avoid complex join resolution issues
+      // Using explicit joins to avoid issues with multiple relationships to profiles
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          id,
-          amount,
-          status,
-          delivery_info,
-          created_at,
-          listing:listing_id(
+          *,
+          listing:listings(
             title, 
             image_url, 
-            seller:seller_id(full_name)
+            seller:profiles!listings_seller_id_fkey(full_name)
           )
         `)
         .eq('buyer_id', userId)
@@ -52,24 +43,21 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
       
       const formattedData = (data || []).map(order => ({
         ...order,
-        product_title: (order.listing as any)?.title || 'Market Item',
+        product_title: (order.listing as any)?.title || 'Market Product',
         image_url: (order.listing as any)?.image_url,
-        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Student'
+        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Seller'
       }));
 
       set({ 
         items: formattedData,
-        lastFetched: now,
-        loading: false 
+        lastFetched: now
       });
     } catch (e) {
       console.error("Orders store fetch failed:", e);
-      set({ loading: false });
     } finally {
-      // Absolute safety: if the promise resolves but data didn't set, ensure loading is cleared
-      setTimeout(() => set({ loading: false }), 200);
+      // IMPORTANT: Always set loading to false to prevent UI hang
+      set({ loading: false });
     }
   },
-  
   clear: () => set({ items: [], loading: false, lastFetched: null })
 }));

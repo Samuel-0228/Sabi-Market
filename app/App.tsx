@@ -22,7 +22,6 @@ const App: React.FC = () => {
   const { t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentPage, setCurrentPage] = useState<string>('landing');
-  const [authStep, setAuthStep] = useState<'login' | 'initial-email'>('login');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,51 +29,34 @@ const App: React.FC = () => {
   const syncUser = useCallback(async () => {
     try {
       const profile = await authApi.syncProfile();
-      if (profile) {
-        setUser(profile);
-      } else {
-        setUser(null);
-      }
+      setUser(profile);
       return profile;
     } catch (e) {
-      console.error("Auth synchronization failed:", e);
-      setUser(null);
+      console.error("Sync failed", e);
       return null;
     }
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
     const init = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const u = await syncUser();
-          if (mounted && u) {
-            const savedPage = localStorage.getItem('savvy_last_page');
-            setCurrentPage(savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage) ? savedPage : 'home');
-          }
+      const u = await syncUser();
+      if (u) {
+        // If coming from a refresh, stay on a sensible page
+        const savedPage = localStorage.getItem('savvy_last_page');
+        if (savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage)) {
+          setCurrentPage(savedPage);
         } else {
-          if (mounted) setCurrentPage('landing');
+          setCurrentPage('home');
         }
-      } catch (err) {
-        console.error("App init error:", err);
-      } finally {
-        if (mounted) setLoading(false);
       }
+      setLoading(false);
     };
-    
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (!mounted) return;
-      
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      if (event === 'SIGNED_IN') {
         const u = await syncUser();
-        if (u && mounted) {
-           setCurrentPage(prev => (['landing', 'auth'].includes(prev) ? 'home' : prev));
-        }
+        if (u) setCurrentPage('home');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -82,35 +64,16 @@ const App: React.FC = () => {
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [syncUser]);
 
   const handleNavigate = (page: string) => {
-    // Explicit handle for login/register from Navbar
-    if (page === 'login') {
-      setAuthStep('login');
-      setCurrentPage('auth');
-      window.scrollTo(0, 0);
-      return;
-    }
-    if (page === 'register') {
-      setAuthStep('initial-email');
-      setCurrentPage('auth');
-      window.scrollTo(0, 0);
-      return;
-    }
-
     if (!user && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
-      setAuthStep('login');
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
       if (user) localStorage.setItem('savvy_last_page', page);
     }
-    window.scrollTo(0, 0);
   };
 
   if (loading) {
@@ -127,8 +90,8 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'landing': return <Landing onGetStarted={() => handleNavigate('register')} />;
-      case 'auth': return <Auth initialStep={authStep} onSuccess={() => handleNavigate('home')} />;
+      case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
+      case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
       case 'home': return (
         <Home 
           user={user} 
@@ -138,9 +101,9 @@ const App: React.FC = () => {
           onNavigate={handleNavigate}
         />
       );
-      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('dashboard')} />;
-      case 'messages': return user ? <InboxPage user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('messages')} />;
-      case 'orders': return user ? <OrdersPage user={user} /> : <Auth initialStep="login" onSuccess={() => handleNavigate('orders')} />;
+      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
+      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
+      case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
       case 'checkout': return selectedListing ? (
         <Checkout 
           listing={selectedListing} 
@@ -148,7 +111,7 @@ const App: React.FC = () => {
           onCancel={() => handleNavigate('home')} 
         />
       ) : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); setCurrentPage('checkout'); }} onNavigate={handleNavigate} />;
-      default: return <Landing onGetStarted={() => handleNavigate('register')} />;
+      default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };
 
@@ -156,6 +119,14 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
       
+      {user && !user.is_verified && (
+        <div className="bg-amber-500 text-white px-6 py-3 flex items-center justify-center gap-4 text-xs font-black uppercase tracking-widest shadow-lg animate-in slide-in-from-top duration-700 z-[90]">
+          <span className="text-xl">⚠️</span>
+          <span>Verification Required: Please check your AAU email to unlock full marketplace access.</span>
+          <button className="underline ml-4 hover:opacity-80">Resend Link</button>
+        </div>
+      )}
+
       <main className="flex-1">
         {renderContent()}
       </main>
