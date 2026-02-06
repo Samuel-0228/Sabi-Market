@@ -36,9 +36,10 @@ export const useFeedStore = create<FeedState>((set, get) => ({
         seller_name: (l as any).profiles?.full_name || 'Verified Seller'
       }));
       
-      set({ listings: fetchedListings, filteredListings: fetchedListings, loading: false });
+      set({ listings: fetchedListings, filteredListings: fetchedListings });
     } catch (e) {
       console.error("Feed fetch failed", e);
+    } finally {
       set({ loading: false });
     }
   },

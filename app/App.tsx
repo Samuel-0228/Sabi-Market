@@ -28,32 +28,47 @@ const App: React.FC = () => {
 
   const syncUser = useCallback(async () => {
     try {
-      const profile = await authApi.syncProfile();
+      // Set a 5-second timeout for the profile sync to prevent infinite hang
+      const syncPromise = authApi.syncProfile();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Sync timeout")), 5000)
+      );
+      
+      const profile = await Promise.race([syncPromise, timeoutPromise]) as UserProfile | null;
       setUser(profile);
       return profile;
     } catch (e) {
-      console.error("Sync failed", e);
+      console.error("Sync failed or timed out", e);
       return null;
     }
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
-      const u = await syncUser();
-      if (u) {
-        // If coming from a refresh, stay on a sensible page
-        const savedPage = localStorage.getItem('savvy_last_page');
-        if (savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage)) {
-          setCurrentPage(savedPage);
-        } else {
-          setCurrentPage('home');
+      try {
+        const u = await syncUser();
+        if (mounted && u) {
+          const savedPage = localStorage.getItem('savvy_last_page');
+          if (savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage)) {
+            setCurrentPage(savedPage);
+          } else {
+            setCurrentPage('home');
+          }
         }
+      } catch (err) {
+        console.error("Critical app init error", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
     };
+    
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (!mounted) return;
+      
       if (event === 'SIGNED_IN') {
         const u = await syncUser();
         if (u) setCurrentPage('home');
@@ -64,7 +79,10 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [syncUser]);
 
   const handleNavigate = (page: string) => {

@@ -118,8 +118,10 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     const content = input;
     setInput('');
     
+    // Optimistic UI update
+    const tempId = Math.random().toString();
     addMessage({
-      id: Math.random().toString(),
+      id: tempId,
       conversation_id: activeConversation.id,
       sender_id: user.id,
       content,
@@ -135,6 +137,8 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       if (error) throw error;
     } catch (err) {
       console.error("Send failed:", err);
+      // Fallback: reload messages if send failed
+      setMessages([...messages]);
     }
   };
 
