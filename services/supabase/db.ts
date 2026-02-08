@@ -109,7 +109,7 @@ export const db = {
       .eq('buyer_id', buyerId)
       .maybeSingle();
 
-    if (existing) return existing.id;
+    if (existing) return (existing as any).id;
 
     const { data: created, error } = await supabase
       .from('conversations')
@@ -118,7 +118,7 @@ export const db = {
       .single();
 
     if (error) throw error;
-    return created.id;
+    return (created as any).id;
   },
 
   async sendMessage(conversationId: string, content: string) {

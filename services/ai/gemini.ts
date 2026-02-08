@@ -35,5 +35,5 @@ export const suggestListingDetails = async (title: string, description: string) 
     },
   });
   
-  return JSON.parse(response.text);
+  return JSON.parse(response.text || '{}');
 };

@@ -1,7 +1,5 @@
 
-import * as React from 'react';
-import { useState, useRef } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import React, { useState, useRef } from 'react';
 import { db, supabase } from '../services/supabaseService';
 import { useLanguage } from './LanguageContext';
 
@@ -26,7 +24,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     contact_phone: ''
   });
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -42,7 +40,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image_url) {
       alert("Please upload a product photo first.");

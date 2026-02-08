@@ -16,6 +16,7 @@ import Checkout from './pages/Checkout/CheckoutPage';
 import Footer from './components/layout/Footer';
 import InboxPage from './messaging/inbox/InboxPage';
 import OrdersPage from './pages/Orders/OrdersPage';
+import ToastContainer from './components/ui/ToastContainer';
 
 const App: React.FC = () => {
   const { t } = useLanguage();
@@ -121,6 +122,7 @@ const App: React.FC = () => {
         <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); handleNavigate('home'); }} />
       )}
       {user && <ChatBot />}
+      <ToastContainer />
     </div>
   );
 };

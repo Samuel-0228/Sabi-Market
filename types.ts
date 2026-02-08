@@ -64,7 +64,6 @@ export interface Order {
   product_title?: string;
 }
 
-// Added OrderItem interface to resolve import errors in dashboard components
 export interface OrderItem {
   id: string;
   order_id: string;

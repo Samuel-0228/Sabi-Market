@@ -1,6 +1,7 @@
+
 {
   "name": "ሳቪ – Savvy Market",
-  "description": "A dedicated e-commerce platform for Addis Ababa University students to buy, sell, and trade goods and services with secure escrow payments and AI-powered assistance.",
+  "description": "A dedicated e-commerce platform for Addis Ababa University students with secure escrow payments and AI-powered assistance.",
   "requestFramePermissions": [
     "camera",
     "microphone"
