@@ -6,7 +6,7 @@ import { useChatStore } from '../../messaging/chat.store';
 import { useFeedStore } from '../../store/feed.store';
 
 export const authApi = {
-  async register(email, password, fullName, preferences) {
+  async register(email: string, password: string, fullName: string, preferences: string[]) {
     const { data, error } = await authService.signUp(email, password, { 
       full_name: fullName, 
       preferences 
@@ -37,7 +37,7 @@ export const authApi = {
     };
   },
 
-  async login(email, password) {
+  async login(email: string, password: string) {
     const { data, error } = await authService.signIn(email, password);
     if (error) throw error;
     return data;

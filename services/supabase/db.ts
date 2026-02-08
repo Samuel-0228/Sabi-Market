@@ -8,12 +8,16 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: profile, error } = await supabase
+    const query = supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
-      .abortSignal(signal);
+      .eq('id', user.id);
+
+    if (signal) {
+      query.abortSignal(signal);
+    }
+
+    const { data: profile, error } = await query.maybeSingle();
 
     if (error) return null;
     return profile as UserProfile;
@@ -21,12 +25,17 @@ export const db = {
 
   // --- MARKETPLACE ---
   async getListings(signal?: AbortSignal): Promise<Listing[]> {
-    const { data, error } = await supabase
+    const query = supabase
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .abortSignal(signal);
+      .order('created_at', { ascending: false });
+    
+    if (signal) {
+      query.abortSignal(signal);
+    }
+
+    const { data, error } = await query;
     
     if (error) throw error;
     return (data || []).map(l => ({
@@ -58,8 +67,11 @@ export const db = {
         seller:profiles!orders_seller_id_fkey(full_name),
         buyer:profiles!orders_buyer_id_fkey(full_name)
       `)
-      .order('created_at', { ascending: false })
-      .abortSignal(signal);
+      .order('created_at', { ascending: false });
+
+    if (signal) {
+      query.abortSignal(signal);
+    }
 
     const { data, error } = await (role === 'buyer' 
       ? query.eq('buyer_id', userId) 

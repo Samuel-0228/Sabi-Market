@@ -2,7 +2,7 @@
 import { supabase } from './client';
 
 export const authService = {
-  async signUp(email, password, metadata) {
+  async signUp(email: string, password: string, metadata: any) {
     return await supabase.auth.signUp({
       email,
       password,
@@ -12,7 +12,7 @@ export const authService = {
       }
     });
   },
-  async signIn(email, password) {
+  async signIn(email: string, password: string) {
     return await supabase.auth.signInWithPassword({ email, password });
   },
   async signOut() {
@@ -21,10 +21,10 @@ export const authService = {
   async getUser() {
     return await supabase.auth.getUser();
   },
-  async getProfile(userId) {
+  async getProfile(userId: string) {
     return await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
   },
-  async upsertProfile(profile) {
+  async upsertProfile(profile: any) {
     return await supabase.from('profiles').upsert(profile);
   }
 };

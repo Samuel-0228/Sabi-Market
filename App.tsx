@@ -5,16 +5,16 @@ import { db } from './services/supabase/db';
 import { Listing, UserProfile } from './types';
 import { useLanguage } from './app/LanguageContext';
 
-import Navbar from './components/layout/Navbar';
+import Navbar from './components/Navbar';
 import Auth from './components/Auth';
-import Home from './pages/Home/Home';
-import Landing from './pages/Home/Landing';
-import SellerDashboard from './pages/Dashboard/SellerDashboard';
+import Home from './components/Home';
+import Landing from './components/Landing';
+import SellerDashboard from './components/SellerDashboard';
 import AddListingModal from './components/product/AddListingModal';
 import ChatBot from './features/chat/ChatBot';
-import Checkout from './pages/Checkout/CheckoutPage';
-import Footer from './components/layout/Footer';
-import InboxPage from './messaging/inbox/InboxPage';
+import Checkout from './components/Checkout';
+import Footer from './components/Footer';
+import MessagesPage from './pages/Messages/MessagesPage';
 import OrdersPage from './pages/Orders/OrdersPage';
 import ToastContainer from './components/ui/ToastContainer';
 
@@ -102,12 +102,12 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'landing': return <Landing onGetStarted={() => handleNavigate('auth')} />;
+      case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
       case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
       case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
-      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
+      case 'messages': return user ? <MessagesPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
       case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
