@@ -23,14 +23,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // CRITICAL: Synchronize internal state with parent prop updates
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
 
   const runEmotionalLoading = (finalAction: () => void) => {
     setStep('emotional-loading');
-    const sequence = ["Securing session...", "AAU Node Sync...", "Finalizing profile..."];
+    const sequence = ["Securing session...", "AAU Node Sync...", "Finalizing profile...", "Launching Market..."];
     let i = 0;
     const interval = setInterval(() => {
       if (i < sequence.length) {
@@ -39,7 +38,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
         clearInterval(interval);
         finalAction();
       }
-    }, 600);
+    }, 500);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -48,7 +47,8 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setLoading(true);
     try {
       await authApi.login(formData.email, formData.password);
-      onSuccess();
+      // Let the App.tsx observer handle redirection, but trigger a nice loading UI first
+      runEmotionalLoading(() => onSuccess());
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);

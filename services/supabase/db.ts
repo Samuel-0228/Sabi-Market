@@ -87,11 +87,15 @@ export const db = {
     }));
   },
 
+  /**
+   * Enhanced createOrder that also notifies the seller via message
+   */
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    const { error } = await supabase.from('orders').insert({
+    // 1. Create the Order
+    const { data: order, error: orderError } = await supabase.from('orders').insert({
       buyer_id: user.id,
       seller_id: listing.seller_id,
       listing_id: listing.id,
@@ -99,9 +103,19 @@ export const db = {
       status: 'pending',
       delivery_info: deliveryInfo,
       created_at: new Date().toISOString()
-    });
+    }).select().single();
 
-    if (error) throw error;
+    if (orderError) throw orderError;
+
+    // 2. Automatically notify the seller via Chat
+    try {
+      const convId = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
+      await this.sendMessage(convId, `🚀 NEW ORDER PLACED!\nItem: ${listing.title}\nPrice: ${amount} ETB\nMeeting Info: ${deliveryInfo}\n\nPlease check your Dashboard to accept this trade!`);
+    } catch (msgErr) {
+      console.warn("Order placed but notification message failed to send", msgErr);
+    }
+
+    return order;
   },
 
   async updateOrderStatus(orderId: string, status: OrderStatus) {
@@ -125,7 +139,12 @@ export const db = {
 
     const { data: created, error } = await supabase
       .from('conversations')
-      .insert({ listing_id: listingId, buyer_id: buyerId, seller_id: sellerId })
+      .insert({ 
+        listing_id: listingId, 
+        buyer_id: buyerId, 
+        seller_id: sellerId,
+        created_at: new Date().toISOString()
+      })
       .select('id')
       .single();
 

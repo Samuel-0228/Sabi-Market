@@ -5,16 +5,16 @@ import { db } from './services/supabase/db';
 import { Listing, UserProfile } from './types';
 import { useLanguage } from './app/LanguageContext';
 
-import Navbar from './components/Navbar';
+import Navbar from './components/layout/Navbar';
 import Auth from './components/Auth';
-import Home from './components/Home';
-import Landing from './components/Landing';
-import SellerDashboard from './components/SellerDashboard';
+import Home from './pages/Home/Home';
+import Landing from './pages/Home/Landing';
+import SellerDashboard from './pages/Dashboard/SellerDashboard';
 import AddListingModal from './components/product/AddListingModal';
 import ChatBot from './features/chat/ChatBot';
-import Checkout from './components/Checkout';
-import Footer from './components/Footer';
-import MessagesPage from './pages/Messages/MessagesPage';
+import Checkout from './pages/Checkout/CheckoutPage';
+import Footer from './components/layout/Footer';
+import InboxPage from './messaging/inbox/InboxPage';
 import OrdersPage from './pages/Orders/OrdersPage';
 import ToastContainer from './components/ui/ToastContainer';
 
@@ -37,6 +37,14 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Watch user state to force redirection when logged in
+  useEffect(() => {
+    if (user && (currentPage === 'auth' || currentPage === 'landing')) {
+      const lastPage = localStorage.getItem('savvy_last_page');
+      setCurrentPage(lastPage && lastPage !== 'landing' ? lastPage : 'home');
+    }
+  }, [user, currentPage]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -44,11 +52,7 @@ const App: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session && mounted) {
-          const u = await syncUser();
-          if (u) {
-            const lastPage = localStorage.getItem('savvy_last_page');
-            setCurrentPage(lastPage && lastPage !== 'landing' ? lastPage : 'home');
-          }
+          await syncUser();
         }
       } catch (e) {
         console.error("Init failed:", e);
@@ -62,9 +66,11 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (!mounted) return;
       
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         const u = await syncUser();
-        if (u) setCurrentPage(p => (['landing', 'auth'].includes(p) ? 'home' : p));
+        if (u) {
+          setCurrentPage(prev => (['landing', 'auth'].includes(prev) ? 'home' : prev));
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setCurrentPage('landing');
@@ -90,7 +96,7 @@ const App: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-black transition-colors duration-500">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
         <div className="relative">
           <div className="w-16 h-16 border-[3px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-[10px]">ሳ</div>
@@ -102,19 +108,19 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentPage) {
-      case 'landing': return <Landing onGetStarted={() => handleNavigate(user ? 'home' : 'auth')} />;
+      case 'landing': return <Landing onGetStarted={() => handleNavigate('auth')} />;
       case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
       case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
-      case 'messages': return user ? <MessagesPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
+      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
       case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white dark:bg-black transition-colors duration-700">
+    <div className="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white dark:bg-[#050505] transition-colors duration-700">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => supabase.auth.signOut()} user={user} />
       <main className="flex-1">{renderContent()}</main>
       <Footer onNavigate={handleNavigate} />
