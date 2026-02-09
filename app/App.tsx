@@ -46,10 +46,8 @@ const App: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety Timeout: If loading takes > 5 seconds, something is stuck. Force clear it.
     const safetyTimeout = setTimeout(() => {
       if (loading && mounted) {
-        console.warn("App initialization timed out. Clearing loading state.");
         setLoading(false);
       }
     }, 5000);
@@ -59,8 +57,6 @@ const App: React.FC = () => {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error("Session fetch error:", sessionError);
-          // Potential LocalStorage corruption - clear it
           localStorage.clear();
         }
 
@@ -105,26 +101,28 @@ const App: React.FC = () => {
     };
   }, [syncUser, loading]);
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = async (page: string) => {
     if (page === 'login') {
       setAuthStep('login');
       setCurrentPage('auth');
-      window.scrollTo(0, 0);
       return;
     }
     if (page === 'register') {
       setAuthStep('initial-email');
       setCurrentPage('auth');
-      window.scrollTo(0, 0);
       return;
     }
 
-    if (!user && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
+    // Check session directly to avoid state lag issues after login
+    const { data: { session } } = await supabase.auth.getSession();
+    const isAuthed = !!session || !!user;
+
+    if (!isAuthed && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setAuthStep('login');
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
-      if (user) {
+      if (isAuthed) {
         try {
           localStorage.setItem('savvy_last_page', page);
         } catch (e) {}
@@ -175,20 +173,14 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white dark:bg-[#050505] transition-colors duration-500">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
-      
-      <main className="flex-1">
-        {renderContent()}
-      </main>
-      
+      <main className="flex-1">{renderContent()}</main>
       <Footer onNavigate={handleNavigate} />
-      
       {showAddListing && (
         <AddListingModal 
           onClose={() => setShowAddListing(false)} 
           onSuccess={() => { setShowAddListing(false); handleNavigate('home'); }} 
         />
       )}
-      
       {user && <ChatBot />}
       <ToastContainer />
     </div>

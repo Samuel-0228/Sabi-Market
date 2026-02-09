@@ -87,14 +87,10 @@ export const db = {
     }));
   },
 
-  /**
-   * Enhanced createOrder that also notifies the seller via message
-   */
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // 1. Create the Order
     const { data: order, error: orderError } = await supabase.from('orders').insert({
       buyer_id: user.id,
       seller_id: listing.seller_id,
@@ -107,12 +103,11 @@ export const db = {
 
     if (orderError) throw orderError;
 
-    // 2. Automatically notify the seller via Chat
     try {
       const convId = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
       await this.sendMessage(convId, `🚀 NEW ORDER PLACED!\n\nItem: ${listing.title}\nPrice: ${amount} ETB\nMeeting Info: ${deliveryInfo}\n\nPlease check your Dashboard to accept this trade!`);
     } catch (msgErr) {
-      console.warn("Order placed but notification message failed to send", msgErr);
+      console.warn("Order notification failed", msgErr);
     }
 
     return order;
@@ -126,7 +121,6 @@ export const db = {
     if (error) throw error;
   },
 
-  // --- CHAT & MESSAGING ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
     const { data: existing } = await supabase
       .from('conversations')
@@ -165,10 +159,23 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-    const { error } = await supabase.storage.from('market-assets').upload(`listings/${fileName}`, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('market-assets').getPublicUrl(`listings/${fileName}`);
+    const ext = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+    const filePath = `listings/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('market-assets')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError);
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
     return data.publicUrl;
   }
 };
