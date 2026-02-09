@@ -12,8 +12,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('savvy-theme');
-    if (saved) return saved as Theme;
+    try {
+      const saved = localStorage.getItem('savvy-theme');
+      if (saved) return saved as Theme;
+    } catch (e) {
+      console.warn("LocalStorage access denied. Using defaults.");
+    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
@@ -26,7 +30,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('dark');
       document.body.classList.remove('dark');
     }
-    localStorage.setItem('savvy-theme', theme);
+    
+    try {
+      localStorage.setItem('savvy-theme', theme);
+    } catch (e) {
+      // Ignore if localStorage is blocked
+    }
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');

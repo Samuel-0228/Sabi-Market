@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './app/App';
 import { LanguageProvider } from './app/LanguageContext';
 import { ThemeProvider } from './app/ThemeContext';
 

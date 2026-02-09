@@ -46,9 +46,24 @@ const App: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
+    // Safety Timeout: If loading takes > 5 seconds, something is stuck. Force clear it.
+    const safetyTimeout = setTimeout(() => {
+      if (loading && mounted) {
+        console.warn("App initialization timed out. Clearing loading state.");
+        setLoading(false);
+      }
+    }, 5000);
+
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Session fetch error:", sessionError);
+          // Potential LocalStorage corruption - clear it
+          localStorage.clear();
+        }
+
         if (session) {
           const u = await syncUser();
           if (mounted && u) {
@@ -62,12 +77,13 @@ const App: React.FC = () => {
         console.error("App init error:", err);
       } finally {
         if (mounted) setLoading(false);
+        clearTimeout(safetyTimeout);
       }
     };
     
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
@@ -85,11 +101,11 @@ const App: React.FC = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
     };
-  }, [syncUser]);
+  }, [syncUser, loading]);
 
   const handleNavigate = (page: string) => {
-    // Explicit handle for login/register from Navbar
     if (page === 'login') {
       setAuthStep('login');
       setCurrentPage('auth');
@@ -108,7 +124,11 @@ const App: React.FC = () => {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
-      if (user) localStorage.setItem('savvy_last_page', page);
+      if (user) {
+        try {
+          localStorage.setItem('savvy_last_page', page);
+        } catch (e) {}
+      }
     }
     window.scrollTo(0, 0);
   };

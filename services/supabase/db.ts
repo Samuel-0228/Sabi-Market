@@ -110,7 +110,7 @@ export const db = {
     // 2. Automatically notify the seller via Chat
     try {
       const convId = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-      await this.sendMessage(convId, `🚀 NEW ORDER PLACED!\nItem: ${listing.title}\nPrice: ${amount} ETB\nMeeting Info: ${deliveryInfo}\n\nPlease check your Dashboard to accept this trade!`);
+      await this.sendMessage(convId, `🚀 NEW ORDER PLACED!\n\nItem: ${listing.title}\nPrice: ${amount} ETB\nMeeting Info: ${deliveryInfo}\n\nPlease check your Dashboard to accept this trade!`);
     } catch (msgErr) {
       console.warn("Order placed but notification message failed to send", msgErr);
     }
