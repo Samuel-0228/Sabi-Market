@@ -36,8 +36,6 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
         setLoadingMessage(sequence[i++]);
       } else {
         clearInterval(interval);
-        // We let the App.tsx listener handle the actual redirection
-        // but calling onSuccess for safety/immediate feedback
         finalAction();
       }
     }, 450);
@@ -49,11 +47,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setLoading(true);
     try {
       await authApi.login(formData.email, formData.password);
-      // App.tsx onAuthStateChange will take it from here,
-      // but we show the emotional loader for UX polish.
-      runEmotionalLoading(() => {
-        onSuccess();
-      });
+      runEmotionalLoading(() => onSuccess());
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);
@@ -70,11 +64,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       if (result.needsConfirmation) {
         setStep('confirmation');
       } else {
-        // App.tsx onAuthStateChange handles the transition to 'home'
-        // Once session is created and profile synced.
-        runEmotionalLoading(() => {
-          onSuccess();
-        });
+        runEmotionalLoading(() => onSuccess());
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed.');

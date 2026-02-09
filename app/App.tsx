@@ -46,23 +46,10 @@ const App: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety Timeout: If loading takes too long, force the app to show something
-    const safetyTimeout = setTimeout(() => {
-      if (loading && mounted) {
-        console.warn("Sync timed out, forcing UI unlock.");
-        setLoading(false);
-      }
-    }, 6000);
-
     const init = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error("Session check error:", sessionError);
-          localStorage.clear();
-        }
-
         if (session) {
           const u = await syncUser();
           if (mounted && u) {
@@ -77,22 +64,17 @@ const App: React.FC = () => {
         console.error("App init error:", err);
       } finally {
         if (mounted) setLoading(false);
-        clearTimeout(safetyTimeout);
       }
     };
     
     init();
 
-    // Listen for Auth Events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
-      console.log("Auth Event:", event);
-
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         const u = await syncUser();
         if (u && mounted) {
-           // Redirect from Auth/Landing to Home on successful login/register
            setCurrentPage(prev => (['landing', 'auth'].includes(prev) ? 'home' : prev));
         }
       } else if (event === 'SIGNED_OUT') {
@@ -105,7 +87,6 @@ const App: React.FC = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
   }, [syncUser]);
 
@@ -121,16 +102,15 @@ const App: React.FC = () => {
       return;
     }
 
-    // Verify auth status before allowing access to internal pages
     const { data: { session } } = await supabase.auth.getSession();
-    const isAuthed = !!session;
+    const isAuthed = !!session || !!user;
 
     if (!isAuthed && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setAuthStep('login');
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
-      if (isAuthed) {
+      if (isAuthed && page !== 'landing' && page !== 'auth') {
         try {
           localStorage.setItem('savvy_last_page', page);
         } catch (e) {}

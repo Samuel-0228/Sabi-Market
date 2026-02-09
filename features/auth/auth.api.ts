@@ -14,21 +14,8 @@ export const authApi = {
     
     if (error) throw error;
 
-    if (data.user) {
-      try {
-        await authService.upsertProfile({
-          id: data.user.id,
-          email: email,
-          full_name: fullName,
-          preferences: preferences,
-          role: 'student',
-          is_verified: email.endsWith('@aau.edu.et'),
-          created_at: new Date().toISOString()
-        });
-      } catch (e) {
-        console.warn("Profile sync skipped or failed during signup.", e);
-      }
-    }
+    // We don't manually upsert here to avoid race conditions with the SQL trigger.
+    // Instead, syncProfile will handle the wait/retry.
     
     return {
       user: data.user,
@@ -45,15 +32,12 @@ export const authApi = {
 
   async logout() {
     try {
-      // Clear all state stores
       useOrdersStore.getState().clear();
       useChatStore.getState().clear();
-      useFeedStore.getState().fetch(); // Refresh feed on next load
-
-      const { error } = await authService.signOut();
-      if (error) throw error;
+      useFeedStore.getState().fetch();
+      await authService.signOut();
     } catch (e) {
-      console.error("Logout failed, clearing local storage as fallback", e);
+      console.error("Logout failed", e);
     } finally {
       localStorage.clear();
       sessionStorage.clear();
@@ -64,9 +48,21 @@ export const authApi = {
     const { data: { user }, error: authError } = await authService.getUser();
     if (authError || !user) return null;
 
-    const { data: profile } = await authService.getProfile(user.id);
+    // Retry logic to wait for the Postgres trigger to create the profile
+    let profile = null;
+    let attempts = 0;
+    while (!profile && attempts < 5) {
+      const { data } = await authService.getProfile(user.id);
+      if (data) {
+        profile = data;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 500));
+      attempts++;
+    }
     
     if (!profile) {
+      // Emergency recovery if trigger fails
       const recoveryProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
@@ -76,13 +72,8 @@ export const authApi = {
         preferences: user.user_metadata?.preferences || [],
         created_at: user.created_at
       };
-      
-      try {
-        await authService.upsertProfile(recoveryProfile);
-        return recoveryProfile;
-      } catch (e) {
-        return recoveryProfile;
-      }
+      await authService.upsertProfile(recoveryProfile);
+      return recoveryProfile;
     }
     
     return profile as UserProfile;

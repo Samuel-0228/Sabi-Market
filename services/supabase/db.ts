@@ -160,12 +160,10 @@ export const db = {
 
   async uploadImage(file: File): Promise<string> {
     const ext = file.name.split('.').pop() || 'png';
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(7);
-    const fileName = `${timestamp}-${randomString}.${ext}`;
+    const cleanName = file.name.split('.')[0].replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${Date.now()}_${cleanName}.${ext}`;
     const filePath = `listings/${fileName}`;
 
-    // Note: Ensure the 'market-assets' bucket is created in Supabase and has public access or appropriate RLS policies
     const { error: uploadError } = await supabase.storage
       .from('market-assets')
       .upload(filePath, file, {
