@@ -159,10 +159,13 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const ext = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+    const ext = file.name.split('.').pop() || 'png';
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(7);
+    const fileName = `${timestamp}-${randomString}.${ext}`;
     const filePath = `listings/${fileName}`;
 
+    // Note: Ensure the 'market-assets' bucket is created in Supabase and has public access or appropriate RLS policies
     const { error: uploadError } = await supabase.storage
       .from('market-assets')
       .upload(filePath, file, {
@@ -171,11 +174,13 @@ export const db = {
       });
 
     if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      throw uploadError;
+      console.error("Supabase Storage Error:", uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
     const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
+    if (!data?.publicUrl) throw new Error("Could not retrieve public URL for uploaded image.");
+    
     return data.publicUrl;
   }
 };

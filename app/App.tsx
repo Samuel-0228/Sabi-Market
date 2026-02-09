@@ -32,10 +32,10 @@ const App: React.FC = () => {
       const profile = await authApi.syncProfile();
       if (profile) {
         setUser(profile);
-      } else {
-        setUser(null);
+        return profile;
       }
-      return profile;
+      setUser(null);
+      return null;
     } catch (e) {
       console.error("Auth synchronization failed:", e);
       setUser(null);
@@ -46,17 +46,20 @@ const App: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
+    // Safety Timeout: If loading takes too long, force the app to show something
     const safetyTimeout = setTimeout(() => {
       if (loading && mounted) {
+        console.warn("Sync timed out, forcing UI unlock.");
         setLoading(false);
       }
-    }, 5000);
+    }, 6000);
 
     const init = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
+          console.error("Session check error:", sessionError);
           localStorage.clear();
         }
 
@@ -64,7 +67,8 @@ const App: React.FC = () => {
           const u = await syncUser();
           if (mounted && u) {
             const savedPage = localStorage.getItem('savvy_last_page');
-            setCurrentPage(savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage) ? savedPage : 'home');
+            const target = (savedPage && ['home', 'dashboard', 'messages', 'orders'].includes(savedPage)) ? savedPage : 'home';
+            setCurrentPage(target);
           }
         } else {
           if (mounted) setCurrentPage('landing');
@@ -79,12 +83,16 @@ const App: React.FC = () => {
     
     init();
 
+    // Listen for Auth Events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      console.log("Auth Event:", event);
+
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         const u = await syncUser();
         if (u && mounted) {
+           // Redirect from Auth/Landing to Home on successful login/register
            setCurrentPage(prev => (['landing', 'auth'].includes(prev) ? 'home' : prev));
         }
       } else if (event === 'SIGNED_OUT') {
@@ -99,7 +107,7 @@ const App: React.FC = () => {
       subscription.unsubscribe();
       clearTimeout(safetyTimeout);
     };
-  }, [syncUser, loading]);
+  }, [syncUser]);
 
   const handleNavigate = async (page: string) => {
     if (page === 'login') {
@@ -113,9 +121,9 @@ const App: React.FC = () => {
       return;
     }
 
-    // Check session directly to avoid state lag issues after login
+    // Verify auth status before allowing access to internal pages
     const { data: { session } } = await supabase.auth.getSession();
-    const isAuthed = !!session || !!user;
+    const isAuthed = !!session;
 
     if (!isAuthed && ['dashboard', 'messages', 'checkout', 'orders', 'home'].includes(page)) {
       setAuthStep('login');
@@ -178,7 +186,7 @@ const App: React.FC = () => {
       {showAddListing && (
         <AddListingModal 
           onClose={() => setShowAddListing(false)} 
-          onSuccess={() => { setShowAddListing(false); handleNavigate('home'); }} 
+          onSuccess={() => { setShowAddListing(false); syncUser(); handleNavigate('home'); }} 
         />
       )}
       {user && <ChatBot />}

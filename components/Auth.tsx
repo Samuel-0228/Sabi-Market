@@ -29,16 +29,18 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   const runEmotionalLoading = (finalAction: () => void) => {
     setStep('emotional-loading');
-    const sequence = ["Securing session...", "AAU Node Sync...", "Finalizing profile...", "Launching Market..."];
+    const sequence = ["Securing session...", "AAU Node Sync...", "Finalizing profile...", "Welcome to Savvy!"];
     let i = 0;
     const interval = setInterval(() => {
       if (i < sequence.length) {
         setLoadingMessage(sequence[i++]);
       } else {
         clearInterval(interval);
+        // We let the App.tsx listener handle the actual redirection
+        // but calling onSuccess for safety/immediate feedback
         finalAction();
       }
-    }, 500);
+    }, 450);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,8 +49,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setLoading(true);
     try {
       await authApi.login(formData.email, formData.password);
-      // Let the App.tsx observer handle redirection, but trigger a nice loading UI first
-      runEmotionalLoading(() => onSuccess());
+      // App.tsx onAuthStateChange will take it from here,
+      // but we show the emotional loader for UX polish.
+      runEmotionalLoading(() => {
+        onSuccess();
+      });
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);
@@ -65,7 +70,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       if (result.needsConfirmation) {
         setStep('confirmation');
       } else {
-        runEmotionalLoading(() => onSuccess());
+        // App.tsx onAuthStateChange handles the transition to 'home'
+        // Once session is created and profile synced.
+        runEmotionalLoading(() => {
+          onSuccess();
+        });
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
@@ -75,9 +84,14 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   if (step === 'emotional-loading') {
     return (
-      <div className="fixed inset-0 z-[200] bg-white dark:bg-black flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
-        <div className="w-20 h-20 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-8"></div>
-        <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">{loadingMessage}</h2>
+      <div className="fixed inset-0 z-[200] bg-white dark:bg-[#050505] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
+        <div className="relative mb-8">
+           <div className="w-20 h-20 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
+           <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-lg">ሳ</div>
+        </div>
+        <h2 className="text-3xl font-black text-black dark:text-white tracking-tighter mb-4 transition-all duration-300">
+          {loadingMessage}
+        </h2>
       </div>
     );
   }
@@ -103,19 +117,24 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-2">
             {step === 'login' ? 'Welcome Back' : 'Create Account'}
           </h2>
+          <p className="text-gray-400 font-medium italic">Savvy Student Marketplace</p>
         </div>
 
-        {error && <div className="bg-red-50 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-100">{error}</div>}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-500/10 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-100 dark:border-red-500/20">
+            {error}
+          </div>
+        )}
 
         {step === 'login' && (
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('email')}</label>
-              <input type="email" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input type="email" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('password')}</label>
-              <input type="password" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input type="password" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
             </div>
             <button type="submit" disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all">
               {loading ? 'Processing...' : t('login')}
@@ -128,7 +147,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           <form onSubmit={(e) => { e.preventDefault(); setStep('details'); }} className="space-y-8">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('email')}</label>
-              <input type="email" required placeholder="yourname@aau.edu.et" className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input type="email" required placeholder="yourname@aau.edu.et" className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
             <button type="submit" className="w-full py-6 rounded-[1.5rem] bg-black dark:bg-white text-white dark:text-black font-black text-sm uppercase tracking-widest shadow-xl">{t('continue')}</button>
             <button type="button" onClick={() => setStep('login')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-2">Back to Login</button>
@@ -141,13 +160,18 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-8 px-2">{t('pickInterests')}</label>
               <div className="grid grid-cols-2 gap-4">
                 {['goods', 'course', 'academic_materials', 'food'].map(id => (
-                  <button key={id} onClick={() => setFormData(p => ({...p, preferences: p.preferences.includes(id) ? p.preferences.filter(x => x !== id) : [...p.preferences, id]}))} className={`p-6 rounded-[1.5rem] border-2 transition-all ${formData.preferences.includes(id) ? 'border-indigo-600 bg-indigo-50' : 'border-gray-50'}`}>
-                    <p className="font-black text-[10px] uppercase tracking-wider">{t(id)}</p>
+                  <button 
+                    key={id} 
+                    type="button"
+                    onClick={() => setFormData(p => ({...p, preferences: p.preferences.includes(id) ? p.preferences.filter(x => x !== id) : [...p.preferences, id]}))} 
+                    className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${formData.preferences.includes(id) ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-50 dark:border-white/5'}`}
+                  >
+                    <p className={`font-black text-[10px] uppercase tracking-wider ${formData.preferences.includes(id) ? 'text-indigo-600' : 'text-gray-400'}`}>{t(id)}</p>
                   </button>
                 ))}
               </div>
             </div>
-            <button onClick={() => setStep('account')} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl">{t('nextStep')}</button>
+            <button onClick={() => setStep('account')} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95">{t('nextStep')}</button>
           </div>
         )}
 
@@ -155,13 +179,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           <form onSubmit={handleRegister} className="space-y-8 animate-in fade-in duration-500">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('fullName')}</label>
-              <input required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <input required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('password')}</label>
-              <input type="password" required minLength={6} className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <input type="password" required minLength={6} className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
             </div>
-            <button type="submit" disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl">
+            <button type="submit" disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all">
               {loading ? 'Creating Account...' : t('finalize')}
             </button>
           </form>

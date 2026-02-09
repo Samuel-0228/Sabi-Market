@@ -17,18 +17,28 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
-  const [formData, setFormData] = useState({ title: '', description: '', price: '', category: 'goods', stock: '1', image_url: '', contact_phone: '' });
+  const [formData, setFormData] = useState({ 
+    title: '', 
+    description: '', 
+    price: '', 
+    category: 'goods', 
+    stock: '1', 
+    image_url: '', 
+    contact_phone: '' 
+  });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     setUploading(true);
     try {
       const publicUrl = await db.uploadImage(file);
       setFormData(prev => ({ ...prev, image_url: publicUrl }));
       addToast("Photo uploaded successfully!", "success");
     } catch (err: any) {
-      addToast("Upload failed. Please try again.", "error");
+      console.error("Upload error:", err);
+      addToast(err.message || "Upload failed. Check storage bucket permissions.", "error");
     } finally {
       setUploading(false);
     }
@@ -60,6 +70,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image_url) return addToast("A photo is required!", "info");
+    
     setLoading(true);
     try {
       await db.createListing({ 
@@ -71,7 +82,8 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
       addToast("Your listing is live!", "success");
       onSuccess();
     } catch (err: any) {
-      addToast("Failed to publish listing.", "error");
+      console.error("Publishing error:", err);
+      addToast("Failed to publish listing: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -83,7 +95,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
         <div className="md:w-[40%] bg-gray-50/50 dark:bg-black/40 p-10 flex flex-col items-center justify-center border-r dark:border-white/5">
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-full aspect-square bg-white dark:bg-white/5 rounded-[2.5rem] shadow-inner border-2 border-dashed border-gray-100 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden cursor-pointer group hover:border-indigo-500 transition-all"
+            className="w-full aspect-square bg-white dark:bg-white/5 rounded-[2.5rem] shadow-inner border-2 border-dashed border-gray-100 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden cursor-pointer group hover:border-indigo-500 transition-all relative"
           >
              {formData.image_url ? (
                <img src={formData.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -95,8 +107,13 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
                   </p>
                </div>
              )}
+             {uploading && (
+               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                 <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+               </div>
+             )}
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
           
           <div className="mt-12 w-full space-y-4">
             <div className="p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/10">
