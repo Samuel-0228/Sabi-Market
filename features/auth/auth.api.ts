@@ -34,17 +34,17 @@ export const authApi = {
     const { data: { user } } = await authService.getUser();
     if (!user) return null;
 
-    // Retry loop to wait for the Postgres trigger to create the profile row
+    // Faster retry loop: 10 attempts at 400ms = 4s total wait max
     let attempts = 0;
-    while (attempts < 8) {
+    while (attempts < 10) {
       const profile = await db.getProfile(user.id);
       if (profile) return profile;
       
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
       attempts++;
     }
 
-    // Fallback if trigger is extremely slow
+    // Fallback if trigger is extremely slow or fails to fire
     const fallback: UserProfile = {
       id: user.id,
       email: user.email || '',
@@ -54,7 +54,13 @@ export const authApi = {
       preferences: user.user_metadata?.preferences || [],
       created_at: new Date().toISOString()
     };
-    await authService.upsertProfile(fallback);
+    
+    try {
+      await authService.upsertProfile(fallback);
+    } catch (e) {
+      console.warn("Silent profile upsert fallback failed", e);
+    }
+    
     return fallback;
   }
 };

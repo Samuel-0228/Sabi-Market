@@ -26,6 +26,7 @@ const App: React.FC = () => {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showBypass, setShowBypass] = useState(false);
 
   const sync = useCallback(async () => {
     try {
@@ -42,24 +43,35 @@ const App: React.FC = () => {
   useEffect(() => {
     let mounted = true;
 
+    // Timeout to show bypass button if it takes more than 3.5 seconds
+    const bypassTimer = setTimeout(() => {
+      if (mounted && loading) setShowBypass(true);
+    }, 3500);
+
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const u = await sync();
-        if (mounted && u) {
-          const last = localStorage.getItem('savvy_last_page');
-          const validPages = ['home', 'dashboard', 'messages', 'orders'];
-          setCurrentPage(last && validPages.includes(last) ? last : 'home');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const u = await sync();
+          if (mounted && u) {
+            const last = localStorage.getItem('savvy_last_page');
+            const validPages = ['home', 'dashboard', 'messages', 'orders'];
+            setCurrentPage(last && validPages.includes(last) ? last : 'home');
+          }
+        } else {
+          if (mounted) setCurrentPage('landing');
         }
-      } else {
+      } catch (e) {
+        console.error("Init error:", e);
         if (mounted) setCurrentPage('landing');
+      } finally {
+        if (mounted) setLoading(false);
       }
-      if (mounted) setLoading(false);
     };
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (!mounted) return;
       
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
@@ -77,8 +89,9 @@ const App: React.FC = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(bypassTimer);
     };
-  }, [sync, currentPage]);
+  }, [sync, currentPage, loading]);
 
   const handleNavigate = async (page: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -102,14 +115,33 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleBypass = () => {
+    setLoading(false);
+    setCurrentPage('home');
+  };
+
   if (loading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] animate-in fade-in duration-700">
         <div className="relative">
-          <div className="w-16 h-16 border-[3px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-[10px]">ሳ</div>
+          <div className="w-20 h-20 border-[3px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-sm">ሳ</div>
         </div>
-        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">ሳቪ – AAU Sync</p>
+        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500 animate-pulse">
+          ሳቪ – AAU Sync
+        </p>
+        <p className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          Establishing Campus Node...
+        </p>
+        
+        {showBypass && (
+          <button 
+            onClick={handleBypass}
+            className="mt-12 px-8 py-4 bg-gray-50 dark:bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] dark:text-white rounded-2xl hover:bg-gray-100 dark:hover:bg-white/10 transition-all animate-in slide-in-from-bottom-4 duration-500"
+          >
+            Stuck? Enter Marketplace
+          </button>
+        )}
       </div>
     );
   }
