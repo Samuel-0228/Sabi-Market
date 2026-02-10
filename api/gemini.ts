@@ -1,58 +1,33 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+export default async function handler(
+  request: VercelRequest,
+  response: VercelResponse,
+) {
+  if (request.method !== 'POST') {
+    return response.status(405).json({ error: 'Method not allowed' });
+  }
 
-  const key = process.env.GENAI_API_KEY;
-  if (!key) return res.status(500).json({ error: 'GenAI key not configured' });
+  const { contents, model, config } = request.body;
 
-  const { type, payload } = req.body || {};
-  if (!type) return res.status(400).json({ error: 'Missing type' });
+  if (!process.env.API_KEY) {
+    return response.status(500).json({ error: 'API_KEY not configured' });
+  }
 
-  const ai = new GoogleGenAI({ apiKey: key });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    if (type === 'chat') {
-      const { history = [], message } = payload || {};
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [...history, { role: 'user', parts: [{ text: message }] }],
-        config: {
-          systemInstruction: 'You are "Savvy Assistant", an expert AI advisor for Addis Ababa University students. Be professional and bilingual (English and Amharic).',
-        }
-      });
-      return res.json({ text: (response as any).text || '' });
-    }
+    const result = await ai.models.generateContent({
+      model: model || 'gemini-3-flash-preview',
+      contents,
+      config: config || {}
+    });
 
-    if (type === 'suggest') {
-      const { title, description } = payload || {};
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Optimize this student marketplace listing:\nTitle: ${title}\nDescription: ${description}`,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              price: { type: Type.NUMBER },
-              category: { type: Type.STRING },
-              description: { type: Type.STRING }
-            },
-            required: ['title', 'price', 'category', 'description']
-          },
-          systemInstruction: 'You are a campus market expert for AAU. Optimize the listing for student engagement.'
-        }
-      });
-
-      const parsed = ((response as any).text && JSON.parse((response as any).text)) || null;
-      return res.json({ result: parsed });
-    }
-
-    return res.status(400).json({ error: 'Unknown type' });
-  } catch (err: any) {
-    console.error('GenAI proxy error', err?.message || err);
-    return res.status(500).json({ error: 'AI backend error' });
+    return response.status(200).json({ text: result.text });
+  } catch (error: any) {
+    console.error('Gemini API Error:', error);
+    return response.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }

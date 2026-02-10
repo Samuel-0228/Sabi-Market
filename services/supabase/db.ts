@@ -72,7 +72,7 @@ export const db = {
     });
   },
 
-  // --- CHAT SYSTEM (Telegram Style) ---
+  // --- CHAT SYSTEM ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
     const { data: existing } = await supabase
       .from('conversations')
@@ -156,9 +156,8 @@ export const db = {
 
     if (error) throw error;
 
-    // Automatic Notification via Chat
     const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-    await this.sendMessage(cid, `🔔 Order Placed! I would like to buy "${listing.title}". Location: ${deliveryInfo}`);
+    await this.sendMessage(cid, `🔔 New Order: "${listing.title}". Location: ${deliveryInfo}`);
 
     return order;
   },
@@ -172,7 +171,7 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const path = `listings/${Date.now()}_${file.name}`;
+    const path = `listings/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
     const { error } = await supabase.storage.from('market-assets').upload(path, file);
     if (error) throw error;
     const { data } = supabase.storage.from('market-assets').getPublicUrl(path);
