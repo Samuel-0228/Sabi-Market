@@ -2,6 +2,17 @@
 import { supabase } from './client';
 import { Listing, UserProfile, OrderStatus, Order, Message } from '../../types';
 
+// Utility for resilient DB interactions
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3): Promise<T> => {
+  try {
+    return await fn();
+  } catch (err) {
+    if (retries <= 0) throw err;
+    await new Promise(r => setTimeout(r, 1000));
+    return withRetry(fn, retries - 1);
+  }
+};
+
 export const db = {
   // --- PROFILES ---
   async getProfile(userId: string): Promise<UserProfile | null> {
@@ -16,13 +27,9 @@ export const db = {
   },
 
   async getCurrentUser(): Promise<UserProfile | null> {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return null;
-      return await this.getProfile(user.id);
-    } catch (err) {
-      return null;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    return this.getProfile(user.id);
   },
 
   // --- MARKETPLACE ---
@@ -31,8 +38,7 @@ export const db = {
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(50); // Performance optimization
+      .order('created_at', { ascending: false });
 
     if (signal) query.abortSignal(signal);
 
@@ -47,18 +53,26 @@ export const db = {
 
   async createListing(listing: Partial<Listing>) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Auth Required");
+    if (!user) throw new Error("Auth required");
     
-    const { error } = await supabase.from('listings').insert({
-      ...listing,
-      seller_id: user.id,
-      status: 'active',
-      created_at: new Date().toISOString()
+    return withRetry(async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .insert({
+          ...listing,
+          seller_id: user.id,
+          status: 'active',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     });
-    if (error) throw error;
   },
 
-  // --- CHAT SYSTEM ---
+  // --- CHAT SYSTEM (Telegram Style) ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
     const { data: existing } = await supabase
       .from('conversations')
@@ -119,7 +133,7 @@ export const db = {
 
     return (data || []).map(o => ({
       ...o,
-      product_title: (o.listing as any)?.title || 'Market Item',
+      product_title: (o.listing as any)?.title,
       image_url: (o.listing as any)?.image_url,
       seller_name: (o.seller as any)?.full_name,
       buyer_name: (o.buyer as any)?.full_name
@@ -130,24 +144,21 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    const { data: order, error: orderError } = await supabase.from('orders').insert({
+    const { data: order, error } = await supabase.from('orders').insert({
       buyer_id: user.id,
       seller_id: listing.seller_id,
       listing_id: listing.id,
-      amount: amount,
+      amount,
       status: 'pending',
       delivery_info: deliveryInfo,
       created_at: new Date().toISOString()
     }).select().single();
 
-    if (orderError) throw orderError;
+    if (error) throw error;
 
-    try {
-      const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-      await this.sendMessage(cid, `👋 Hello! I've placed an order for "${listing.title}". Meetup details: ${deliveryInfo}`);
-    } catch (e) { 
-      console.warn("Notification skipped", e); 
-    }
+    // Automatic Notification via Chat
+    const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
+    await this.sendMessage(cid, `🔔 Order Placed! I would like to buy "${listing.title}". Location: ${deliveryInfo}`);
 
     return order;
   },
@@ -161,17 +172,10 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const ext = file.name.split('.').pop() || 'png';
-    const fileName = `${Date.now()}_savvy.${ext}`;
-    const filePath = `listings/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('market-assets')
-      .upload(filePath, file, { cacheControl: '3600' });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
+    const path = `listings/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('market-assets').upload(path, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from('market-assets').getPublicUrl(path);
     return data.publicUrl;
   }
 };

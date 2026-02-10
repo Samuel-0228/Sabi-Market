@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { chatWithGemini } from '../services/ai/gemini';
+import { chatWithGemini } from '../services/geminiService';
 import { useLanguage } from './LanguageContext';
 
 const ChatBot: React.FC = () => {
