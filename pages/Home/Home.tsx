@@ -87,7 +87,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
           {filteredListings.map(l => (
             <div key={l.id} className="group cursor-pointer" onClick={() => setDetailItem(l)}>
               <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-6 shadow-sm group-hover:shadow-2xl transition-all relative">
-                <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={l.image_url} alt={l.title || 'listing image'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute top-4 left-4">
                   <span className="bg-white/90 dark:bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest dark:text-white">
                     {t(l.category)}
@@ -104,8 +104,8 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
       {detailItem && (
         <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setDetailItem(null)}>
           <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="md:w-1/2 bg-black flex items-center justify-center">
-              <img src={detailItem.image_url} className="max-h-full object-contain" />
+              <div className="md:w-1/2 bg-black flex items-center justify-center">
+              <img src={detailItem.image_url} alt={detailItem.title || 'listing image'} className="max-h-full object-contain" />
             </div>
             <div className="md:w-1/2 p-10 flex flex-col justify-between overflow-y-auto">
               <div>
