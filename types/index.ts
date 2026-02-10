@@ -1,7 +1,7 @@
 
 export type Role = 'student' | 'admin';
 export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
-export type OrderStatus = 'pending' | 'accepted' | 'shipped' | 'completed' | 'disputed' | 'cancelled' | 'paid' | 'delivered';
+export type OrderStatus = 'pending' | 'accepted' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'disputed' | 'paid';
 
 export interface UserProfile {
   id: string;
@@ -42,36 +42,24 @@ export interface Conversation {
   listing_id: string;
   buyer_id: string;
   seller_id: string;
-  last_message?: string;
   created_at: string;
+  last_message?: string;
+  listing?: Partial<Listing>;
+  seller?: Partial<UserProfile>;
+  buyer?: Partial<UserProfile>;
 }
 
 export interface Order {
   id: string;
   buyer_id: string;
+  seller_id: string;
   listing_id: string;
   amount: number;
   status: OrderStatus;
   delivery_info: string;
   created_at: string;
-  listing_title?: string;
+  product_title?: string;
   image_url?: string;
   seller_name?: string;
-}
-
-export interface OrderItem {
-  id: string;
-  order_id: string;
-  seller_id: string;
-  product_id: string;
-  product_title: string;
-  price: number;
-  quantity: number;
-  status: OrderStatus;
-  created_at: string;
   buyer_name?: string;
-  seller_name?: string;
-  image_url?: string;
-  delivery_info?: string;
-  amount?: number;
 }

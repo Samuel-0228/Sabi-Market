@@ -8,181 +8,116 @@ interface AuthProps {
   initialStep?: 'login' | 'initial-email';
 }
 
-type AuthStep = 'login' | 'initial-email' | 'details' | 'account' | 'confirmation' | 'emotional-loading';
+type Step = 'login' | 'initial-email' | 'details' | 'account' | 'syncing';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const { t } = useLanguage();
-  const [step, setStep] = useState<AuthStep>(initialStep);
-  const [loadingMessage, setLoadingMessage] = useState('Verifying your identity...');
-  const [formData, setFormData] = useState({ 
-    email: '', 
-    password: '', 
-    name: '', 
-    preferences: [] as string[] 
-  });
+  const [step, setStep] = useState<Step>(initialStep === 'login' ? 'login' : 'initial-email');
+  const [formData, setFormData] = useState({ email: '', password: '', name: '', preferences: [] as string[] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setStep(initialStep);
+    setStep(initialStep === 'login' ? 'login' : 'initial-email');
   }, [initialStep]);
 
-  const runEmotionalLoading = (finalAction: () => void) => {
-    setStep('emotional-loading');
-    const sequence = ["Securing session...", "AAU Node Sync...", "Finalizing profile...", "Welcome to Savvy!"];
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < sequence.length) {
-        setLoadingMessage(sequence[i++]);
-      } else {
-        clearInterval(interval);
-        finalAction();
-      }
-    }, 450);
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAuth = async (isRegister: boolean) => {
     setError('');
     setLoading(true);
     try {
-      await authApi.login(formData.email, formData.password);
-      runEmotionalLoading(() => onSuccess());
+      if (isRegister) {
+        await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
+      } else {
+        await authApi.login(formData.email, formData.password);
+      }
+      setStep('syncing');
+      // Briefly wait for visual feedback
+      setTimeout(() => onSuccess(), 1500);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || 'Authentication failed');
       setLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    
-    try {
-      const result = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
-      if (result.needsConfirmation) {
-        setStep('confirmation');
-      } else {
-        runEmotionalLoading(() => onSuccess());
-      }
-    } catch (err: any) {
-      setError(err.message || 'Registration failed.');
-      setLoading(false);
-    }
-  };
-
-  if (step === 'emotional-loading') {
+  if (step === 'syncing') {
     return (
-      <div className="fixed inset-0 z-[200] bg-white dark:bg-[#050505] flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-700">
-        <div className="relative mb-8">
-           <div className="w-20 h-20 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin"></div>
-           <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-lg">ሳ</div>
-        </div>
-        <h2 className="text-3xl font-black text-black dark:text-white tracking-tighter mb-4 transition-all duration-300">
-          {loadingMessage}
-        </h2>
-      </div>
-    );
-  }
-
-  if (step === 'confirmation') {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center p-6 animate-in fade-in duration-500">
-        <div className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] rounded-[3rem] p-10 sm:p-16 shadow-2xl border border-indigo-500/10 text-center">
-          <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-5xl mx-auto mb-8">📧</div>
-          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-4">Verify your email</h2>
-          <p className="text-gray-500 mb-10">We've sent a link to {formData.email}. Please confirm to continue.</p>
-          <button onClick={() => setStep('login')} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black uppercase text-sm tracking-widest shadow-xl">Back to Login</button>
-        </div>
+      <div className="h-[80vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+        <div className="w-20 h-20 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin mb-8" />
+        <h2 className="text-3xl font-black dark:text-white tracking-tighter">Preparing your Savvy Node...</h2>
       </div>
     );
   }
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] rounded-[3rem] p-10 sm:p-16 shadow-2xl border border-indigo-500/10 transition-all">
+      <div className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] rounded-[3.5rem] p-10 sm:p-16 shadow-2xl border border-indigo-500/5">
         <div className="text-center mb-12">
           <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-white font-black text-4xl mx-auto mb-8 shadow-xl">ሳ</div>
-          <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter mb-2">
+          <h2 className="text-4xl font-black dark:text-white tracking-tighter">
             {step === 'login' ? 'Welcome Back' : 'Create Account'}
           </h2>
-          <p className="text-gray-400 font-medium italic">Savvy Student Marketplace</p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-500/10 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-100 dark:border-red-500/20">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 dark:bg-red-500/10 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-500/10">{error}</div>}
 
         {step === 'login' && (
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('email')}</label>
-              <input type="email" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('password')}</label>
-              <input type="password" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-            </div>
-            <button type="submit" disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-              {loading ? 'Processing...' : t('login')}
-            </button>
-            <button type="button" onClick={() => setStep('initial-email')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4">New here? Sign up</button>
+          <form onSubmit={(e) => { e.preventDefault(); handleAuth(false); }} className="space-y-6">
+            <Input label="Email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="AAU email" />
+            <Input label="Password" type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            <Button loading={loading}>Sign In</Button>
+            <button type="button" onClick={() => setStep('initial-email')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4 hover:text-indigo-600 transition-colors">Register for free</button>
           </form>
         )}
 
         {step === 'initial-email' && (
-          <form onSubmit={(e) => { e.preventDefault(); setStep('details'); }} className="space-y-8">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('email')}</label>
-              <input type="email" required placeholder="yourname@aau.edu.et" className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-            </div>
-            <button type="submit" className="w-full py-6 rounded-[1.5rem] bg-black dark:bg-white text-white dark:text-black font-black text-sm uppercase tracking-widest shadow-xl">{t('continue')}</button>
-            <button type="button" onClick={() => setStep('login')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-2">Back to Login</button>
+          <form onSubmit={(e) => { e.preventDefault(); setStep('details'); }} className="space-y-6">
+            <Input label="Student Email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="name@aau.edu.et" />
+            <Button>Next Step</Button>
+            <button type="button" onClick={() => setStep('login')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4">Already have an account?</button>
           </form>
         )}
 
         {step === 'details' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-8 px-2">{t('pickInterests')}</label>
-              <div className="grid grid-cols-2 gap-4">
-                {['goods', 'course', 'academic_materials', 'food'].map(id => (
-                  <button 
-                    key={id} 
-                    type="button"
-                    onClick={() => setFormData(p => ({...p, preferences: p.preferences.includes(id) ? p.preferences.filter(x => x !== id) : [...p.preferences, id]}))} 
-                    className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${formData.preferences.includes(id) ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-50 dark:border-white/5'}`}
-                  >
-                    <p className={`font-black text-[10px] uppercase tracking-wider ${formData.preferences.includes(id) ? 'text-indigo-600' : 'text-gray-400'}`}>{t(id)}</p>
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-8 animate-in slide-in-from-right duration-500">
+            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Pick your interests</h4>
+            <div className="grid grid-cols-2 gap-4">
+              {['goods', 'course', 'academic_materials', 'food'].map(cat => (
+                <button 
+                  key={cat} 
+                  onClick={() => setFormData(p => ({...p, preferences: p.preferences.includes(cat) ? p.preferences.filter(x => x !== cat) : [...p.preferences, cat]}))}
+                  className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${formData.preferences.includes(cat) ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-500/5' : 'border-gray-50 dark:border-white/5'}`}
+                >
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${formData.preferences.includes(cat) ? 'text-indigo-600' : 'text-gray-400'}`}>{cat}</span>
+                </button>
+              ))}
             </div>
-            <button onClick={() => setStep('account')} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95">{t('nextStep')}</button>
+            <Button onClick={() => setStep('account')}>Continue</Button>
           </div>
         )}
 
         {step === 'account' && (
-          <form onSubmit={handleRegister} className="space-y-8 animate-in fade-in duration-500">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('fullName')}</label>
-              <input required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('password')}</label>
-              <input type="password" required minLength={6} className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-            </div>
-            <button type="submit" disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-              {loading ? 'Creating Account...' : t('finalize')}
-            </button>
+          <form onSubmit={(e) => { e.preventDefault(); handleAuth(true); }} className="space-y-6">
+            <Input label="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <Input label="Create Password" type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            <Button loading={loading}>Finalize Account</Button>
           </form>
         )}
       </div>
     </div>
   );
 };
+
+const Input = ({ label, ...props }: any) => (
+  <div className="space-y-2">
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>
+    <input required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" {...props} />
+  </div>
+);
+
+const Button = ({ loading, children, ...props }: any) => (
+  <button {...props} disabled={loading} className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black uppercase text-sm tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50">
+    {loading ? 'Processing...' : children}
+  </button>
+);
 
 export default Auth;

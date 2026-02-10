@@ -45,6 +45,9 @@ export interface Conversation {
   seller_id: string;
   last_message?: string;
   created_at: string;
+  listing?: Partial<Listing>;
+  seller?: Partial<UserProfile>;
+  buyer?: Partial<UserProfile>;
 }
 
 export interface Order {

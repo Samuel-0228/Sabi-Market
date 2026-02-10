@@ -1,7 +1,7 @@
 
 export type Role = 'student' | 'admin';
 export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
-export type OrderStatus = 'pending' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
+export type OrderStatus = 'pending' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled' | 'accepted' | 'shipped';
 
 export interface UserProfile {
   id: string;
@@ -37,7 +37,7 @@ export interface Message {
   created_at: string;
 }
 
-// Added missing Conversation interface to fix import error in MessagesPage
+// Updated Conversation interface to include missing properties used in messaging
 export interface Conversation {
   id: string;
   listing_id: string;
@@ -45,6 +45,9 @@ export interface Conversation {
   seller_id: string;
   last_message?: string;
   created_at: string;
+  listing?: Partial<Listing>;
+  seller?: Partial<UserProfile>;
+  buyer?: Partial<UserProfile>;
 }
 
 export interface Order {
