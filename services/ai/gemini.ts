@@ -2,7 +2,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const chatWithGemini = async (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GENAI_API_KEY) || process.env.API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: [...history, { role: 'user', parts: [{ text: message }] }],
@@ -15,7 +16,8 @@ export const chatWithGemini = async (history: { role: 'user' | 'model', parts: {
 };
 
 export const suggestListingDetails = async (title: string, description: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GENAI_API_KEY) || process.env.API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Optimize this student marketplace listing:\nTitle: ${title}\nDescription: ${description}`,

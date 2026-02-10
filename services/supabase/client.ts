@@ -4,8 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const FALLBACK_SUPABASE_URL = 'https://fqkrddoodkawtmcapvyu.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxa3JkZG9vZGthd3RtY2Fwdnl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0OTQzMzIsImV4cCI6MjA4MzA3MDMzMn0.cFX3TVq697b_-9bj_bONzGZivE5JzowVKoSvBkZvttY';
 
-const supabaseUrl = process.env.SUPABASE_URL || FALLBACK_SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
+// Prefer Vite runtime env for client builds, fall back to Node env for SSR/local scripts
+const supabaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || process.env.SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const supabaseAnonKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) || process.env.SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
 
 // resilientFetch: wraps fetch with timeout + retry for transient network errors
 const resilientFetch: typeof fetch = async (input: RequestInfo, init?: RequestInit) => {

@@ -5,7 +5,7 @@ type ChatHistoryPart = { text: string };
 type ChatHistoryItem = { role: 'user' | 'model'; parts: ChatHistoryPart[] };
 
 export const chatWithGemini = async (history: ChatHistoryItem[], message: string): Promise<string> => {
-  const apiKey = process.env.GENAI_API_KEY || process.env.API_KEY;
+  const apiKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GENAI_API_KEY) || process.env.GENAI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     console.error("Gemini API Key is missing. AI features will be disabled.");
     return "I'm sorry, my AI processing unit is currently offline. Please try again in a few minutes.";
