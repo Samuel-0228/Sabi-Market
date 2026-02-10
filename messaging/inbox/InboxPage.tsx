@@ -19,7 +19,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. Initial Inbox Load
+  // 1. Load Conversations (Request/Response)
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -58,20 +58,20 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     return () => { mounted = false; };
   }, [user.id]);
 
-  // 2. Room Subscription
+  // 2. Real-time Subscription (Scoped per Conversation)
   useEffect(() => {
     if (!activeConv) return;
 
     let mounted = true;
     
-    // Fetch History
+    // Fetch initial messages for active room
     supabase.from('messages')
       .select('*')
       .eq('conversation_id', activeConv.id)
       .order('created_at', { ascending: true })
       .then(({ data }) => { if (mounted) setMessages(data || []); });
 
-    // Live Hook
+    // Scoped channel subscription
     const channel = supabase
       .channel(`room_${activeConv.id}`)
       .on('postgres_changes', {
@@ -87,6 +87,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
       })
       .subscribe();
 
+    // STRICT CLEANUP
     return () => { 
       mounted = false; 
       supabase.removeChannel(channel);
@@ -104,22 +105,22 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
     setInput('');
     try {
       await db.sendMessage(activeConv.id, content);
-    } catch (e) { alert("Message failed to send"); }
+    } catch (e) { alert("Network sync failed"); }
   };
 
   if (loading && conversations.length === 0) return (
-    <div className="h-[80vh] flex flex-col items-center justify-center animate-pulse">
+    <div className="h-[80vh] flex flex-col items-center justify-center opacity-40">
       <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
-      <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">Syncing Conversations...</p>
+      <p className="text-[10px] font-black uppercase tracking-widest dark:text-white">Connecting Hub...</p>
     </div>
   );
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8 overflow-hidden animate-in fade-in duration-700">
-      {/* Sidebar */}
+      {/* Sidebar - Conversation List */}
       <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-xl">
         <div className="p-8 bg-gray-50/30 dark:bg-black/20 border-b dark:border-white/5">
-          <h2 className="text-2xl font-black dark:text-white tracking-tighter">Inbox</h2>
+          <h2 className="text-2xl font-black dark:text-white tracking-tighter">Messages</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.map(conv => {
@@ -142,7 +143,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Main Chat */}
+      {/* Main Chat Interface */}
       <div className="flex-1 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-xl">
         {activeConv ? (
           <>
@@ -151,16 +152,19 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
               <div>
                 <h3 className="font-black dark:text-white text-lg tracking-tight leading-none mb-1">{activeConv.listing?.title}</h3>
                 <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-                  Chatting with {activeConv.seller_id === user.id ? activeConv.buyer?.full_name : activeConv.seller?.full_name}
+                  {activeConv.seller_id === user.id ? 'Customer Interaction' : 'Seller Interaction'}
                 </p>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-10 space-y-4" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-10 space-y-4 bg-gray-50/5 dark:bg-black/10" ref={scrollRef}>
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`px-6 py-4 rounded-2xl max-w-[75%] shadow-sm ${m.sender_id === user.id ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-100 dark:bg-[#141414] dark:text-white rounded-bl-none border dark:border-white/5'}`}>
+                  <div className={`px-6 py-4 rounded-2xl max-w-[75%] shadow-sm ${m.sender_id === user.id ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-[#141414] dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5'}`}>
                     <p className="text-sm font-medium leading-relaxed">{m.content}</p>
+                    <span className="text-[8px] font-black uppercase opacity-40 mt-2 block">
+                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -171,7 +175,7 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
                 className="flex-1 bg-gray-50 dark:bg-white/5 p-5 px-8 rounded-2xl dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 font-bold transition-all" 
                 value={input} 
                 onChange={e => setInput(e.target.value)}
-                placeholder="Message your campus trade partner..." 
+                placeholder="Message campus partner..." 
               />
               <button className="bg-black dark:bg-white text-white dark:text-black px-12 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">Send</button>
             </form>
@@ -179,8 +183,8 @@ const InboxPage: React.FC<InboxPageProps> = ({ user }) => {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center opacity-30 text-center">
             <span className="text-6xl mb-6">🤝</span>
-            <h3 className="text-2xl font-black uppercase tracking-tighter dark:text-white">Campus Market Hub</h3>
-            <p className="text-sm font-medium mt-2 italic">Select a conversation to finalize your trade.</p>
+            <h3 className="text-2xl font-black uppercase tracking-tighter dark:text-white">AAU Node Hub</h3>
+            <p className="text-sm font-medium mt-2 italic">Choose a trade conversation to continue.</p>
           </div>
         )}
       </div>

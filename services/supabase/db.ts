@@ -21,7 +21,6 @@ export const db = {
       if (authError || !user) return null;
       return await this.getProfile(user.id);
     } catch (err) {
-      console.error("Failed to fetch current user profile", err);
       return null;
     }
   },
@@ -32,7 +31,8 @@ export const db = {
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
       .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50); // Performance optimization
 
     if (signal) query.abortSignal(signal);
 
@@ -47,7 +47,7 @@ export const db = {
 
   async createListing(listing: Partial<Listing>) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Authentication required to create listings.");
+    if (!user) throw new Error("Auth Required");
     
     const { error } = await supabase.from('listings').insert({
       ...listing,
@@ -86,7 +86,7 @@ export const db = {
 
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized to send messages.");
+    if (!user) throw new Error("Unauthorized");
     
     const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
@@ -128,7 +128,7 @@ export const db = {
 
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized to create orders.");
+    if (!user) throw new Error("Unauthorized");
 
     const { data: order, error: orderError } = await supabase.from('orders').insert({
       buyer_id: user.id,
@@ -142,12 +142,11 @@ export const db = {
 
     if (orderError) throw orderError;
 
-    // Auto-send notification message to start the trade conversation
     try {
       const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-      await this.sendMessage(cid, `👋 Hello! I've placed an order for "${listing.title}". Let's arrange the meeting point: ${deliveryInfo}`);
+      await this.sendMessage(cid, `👋 Hello! I've placed an order for "${listing.title}". Meetup details: ${deliveryInfo}`);
     } catch (e) { 
-      console.warn("Notification message failed but order was placed.", e); 
+      console.warn("Notification skipped", e); 
     }
 
     return order;
@@ -162,24 +161,17 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    // Sanitize filename
     const ext = file.name.split('.').pop() || 'png';
-    const cleanName = file.name.split('.')[0].replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const fileName = `${Date.now()}_${cleanName}.${ext}`;
+    const fileName = `${Date.now()}_savvy.${ext}`;
     const filePath = `listings/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('market-assets')
-      .upload(filePath, file, { 
-        cacheControl: '3600', 
-        upsert: false 
-      });
+      .upload(filePath, file, { cacheControl: '3600' });
 
-    if (uploadError) throw new Error(`Asset upload failed: ${uploadError.message}`);
+    if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
-    if (!data?.publicUrl) throw new Error("Failed to generate public URL for listing asset.");
-    
     return data.publicUrl;
   }
 };

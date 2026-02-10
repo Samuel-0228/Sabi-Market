@@ -25,18 +25,23 @@ export const authApi = {
   },
 
   async logout() {
-    await authService.signOut();
-    localStorage.clear();
-    window.location.reload();
+    try {
+      await authService.signOut();
+    } catch (e) {
+      console.warn("Sign out cleanup:", e);
+    } finally {
+      localStorage.clear();
+      window.location.href = '/';
+    }
   },
 
   async syncProfile(): Promise<UserProfile | null> {
     const { data: { user } } = await authService.getUser();
     if (!user) return null;
 
-    // Faster retry loop: 10 attempts at 400ms = 4s total wait max
+    // Optimized retry loop: 8 attempts at 400ms = 3.2s total max wait
     let attempts = 0;
-    while (attempts < 10) {
+    while (attempts < 8) {
       const profile = await db.getProfile(user.id);
       if (profile) return profile;
       
@@ -44,7 +49,8 @@ export const authApi = {
       attempts++;
     }
 
-    // Fallback if trigger is extremely slow or fails to fire
+    // High-Fidelity Fallback Profile
+    // This allows the user to browse while the server-side row is still processing
     const fallback: UserProfile = {
       id: user.id,
       email: user.email || '',
@@ -55,10 +61,11 @@ export const authApi = {
       created_at: new Date().toISOString()
     };
     
+    // Attempt one last manual sync to DB
     try {
       await authService.upsertProfile(fallback);
     } catch (e) {
-      console.warn("Silent profile upsert fallback failed", e);
+      console.warn("DB Background Sync Delayed:", e);
     }
     
     return fallback;
