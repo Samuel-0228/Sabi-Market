@@ -5,18 +5,23 @@ import { Listing, UserProfile, OrderStatus, Order, Message } from '../../types';
 export const db = {
   // --- PROFILES ---
   async getProfile(userId: string): Promise<UserProfile | null> {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+      
     if (error) return null;
     return data as UserProfile;
   },
 
-  // Added getCurrentUser to match usage in App.tsx and fix property missing error
   async getCurrentUser(): Promise<UserProfile | null> {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) return null;
       return await this.getProfile(user.id);
     } catch (err) {
+      console.error("Failed to fetch current user profile", err);
       return null;
     }
   },
@@ -42,7 +47,7 @@ export const db = {
 
   async createListing(listing: Partial<Listing>) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Auth required");
+    if (!user) throw new Error("Authentication required to create listings.");
     
     const { error } = await supabase.from('listings').insert({
       ...listing,
@@ -81,7 +86,7 @@ export const db = {
 
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) throw new Error("Unauthorized to send messages.");
     
     const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
@@ -123,7 +128,7 @@ export const db = {
 
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) throw new Error("Unauthorized to create orders.");
 
     const { data: order, error: orderError } = await supabase.from('orders').insert({
       buyer_id: user.id,
@@ -137,11 +142,13 @@ export const db = {
 
     if (orderError) throw orderError;
 
-    // Auto-send notification message
+    // Auto-send notification message to start the trade conversation
     try {
       const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-      await this.sendMessage(cid, `Hi! I just placed an order for "${listing.title}". Please confirm the trade! Meeting point: ${deliveryInfo}`);
-    } catch (e) { console.warn("Chat notification failed", e); }
+      await this.sendMessage(cid, `👋 Hello! I've placed an order for "${listing.title}". Let's arrange the meeting point: ${deliveryInfo}`);
+    } catch (e) { 
+      console.warn("Notification message failed but order was placed.", e); 
+    }
 
     return order;
   },
@@ -155,16 +162,24 @@ export const db = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const fileName = `${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
+    // Sanitize filename
+    const ext = file.name.split('.').pop() || 'png';
+    const cleanName = file.name.split('.')[0].replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${Date.now()}_${cleanName}.${ext}`;
     const filePath = `listings/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('market-assets')
-      .upload(filePath, file, { cacheControl: '3600', upsert: false });
+      .upload(filePath, file, { 
+        cacheControl: '3600', 
+        upsert: false 
+      });
 
-    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+    if (uploadError) throw new Error(`Asset upload failed: ${uploadError.message}`);
 
     const { data } = supabase.storage.from('market-assets').getPublicUrl(filePath);
+    if (!data?.publicUrl) throw new Error("Failed to generate public URL for listing asset.");
+    
     return data.publicUrl;
   }
 };
