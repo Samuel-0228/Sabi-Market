@@ -1,22 +1,19 @@
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useAuthStore } from '../features/auth/auth.store';
 import { useLanguage } from './LanguageContext';
-import { supabase } from '../services/supabase/client';
-import { authApi } from '../features/auth/auth.api';
-import { useAuthStore } from '../store/auth.store';
+import { supabase } from '../shared/lib/supabase';
 import { Listing } from '../types';
 
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
-import Home from '../pages/Home/Home';
+import FeedPage from '../features/feed/FeedPage';
 import Auth from '../components/Auth';
-import ChatBot from '../features/chat/ChatBot';
+import ChatRoom from '../messaging/inbox/InboxPage'; 
 import ToastContainer from '../components/ui/ToastContainer';
 
-// Performance: Lazy load pages
 const SellerDashboard = lazy(() => import('../pages/Dashboard/SellerDashboard'));
-const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
 const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
 const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
 const AddListingModal = lazy(() => import('../components/product/AddListingModal'));
@@ -24,103 +21,81 @@ const AddListingModal = lazy(() => import('../components/product/AddListingModal
 const App: React.FC = () => {
   const { t } = useLanguage();
   const { user, initialized, sync } = useAuthStore();
-  const [currentPage, setCurrentPage] = useState<string>('landing');
+  const [currentPage, setCurrentPage] = useState('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [showAddListing, setShowAddListing] = useState(false);
-  
+  const [showAdd, setShowAdd] = useState(false);
+
   useEffect(() => {
-    let mounted = true;
+    sync();
     
-    const init = async () => {
-      await sync();
-      if (mounted) {
-        const last = localStorage.getItem('savvy_last_page');
-        if (last && !['landing', 'auth'].includes(last)) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) setCurrentPage(last);
-        }
-      }
-    };
-
-    init();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (!mounted) return;
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-        await sync();
-      } else if (event === 'SIGNED_OUT') {
-        useAuthStore.getState().setUser(null);
+      if (event === 'SIGNED_IN') sync();
+      if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
-        localStorage.removeItem('savvy_last_page');
+        useAuthStore.getState().setUser(null);
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [sync]);
 
-  const handleNavigate = async (page: string) => {
-    // Optimization: Check for session directly to avoid redirect loops during profile hydration
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session && !user && ['home', 'dashboard', 'messages', 'orders', 'checkout'].includes(page)) {
+  const navigate = (page: string) => {
+    if (!user && !['landing', 'auth'].includes(page)) {
       setCurrentPage('auth');
-      return;
-    }
-    
-    setCurrentPage(page);
-    if (session && !['landing', 'auth'].includes(page)) {
-      localStorage.setItem('savvy_last_page', page);
+    } else {
+      setCurrentPage(page);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleForceInitialize = () => {
+    // Mandatory bypass logic to cutout loading if it hangs
+    useAuthStore.setState({ initialized: true, loading: false });
+  };
+
   if (!initialized) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
-        <div className="relative">
-          <div className="w-16 h-16 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-[10px]">ሳ</div>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] p-6 text-center">
+        <div className="relative mb-10">
+          <div className="w-20 h-20 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-lg">ሳ</div>
         </div>
-        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 animate-pulse">Syncing Campus Data...</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 animate-pulse mb-12">Syncing Node Space...</p>
+        
+        {/* Mandatory Bypass Button */}
+        <button 
+          onClick={handleForceInitialize}
+          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 hover:border-indigo-600/30 transition-all active:scale-95"
+        >
+          System Override: Enter Marketplace
+        </button>
       </div>
     );
   }
 
-  const renderContent = () => {
+  const render = () => {
     switch (currentPage) {
-      case 'landing': return <Landing onGetStarted={() => handleNavigate('auth')} />;
-      case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
-      case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
-      case 'dashboard': return user ? <SellerDashboard user={user} /> : <Landing onGetStarted={() => handleNavigate('auth')} />;
-      case 'messages': return user ? <InboxPage user={user} /> : <Landing onGetStarted={() => handleNavigate('auth')} />;
-      case 'orders': return user ? <OrdersPage user={user} /> : <Landing onGetStarted={() => handleNavigate('auth')} />;
-      case 'checkout': return (user && selectedListing) ? <Checkout listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
-      default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
+      case 'landing': return <Landing onGetStarted={() => navigate('auth')} />;
+      case 'auth': return <Auth onSuccess={() => navigate('home')} />;
+      case 'home': return <FeedPage onSelect={(l) => { setSelectedListing(l); }} onAdd={() => setShowAdd(true)} />;
+      case 'dashboard': return <SellerDashboard user={user!} />;
+      case 'messages': return <ChatRoom user={user!} />;
+      case 'orders': return <OrdersPage user={user!} />;
+      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => navigate('orders')} onCancel={() => navigate('home')} /> : null;
+      default: return <Landing onGetStarted={() => navigate('auth')} />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white transition-colors duration-500">
-      <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
-      <main className="flex-1 overflow-x-hidden">
-        <Suspense fallback={
-          <div className="h-[60vh] flex items-center justify-center">
-            <div className="w-10 h-10 border-2 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
-          </div>
-        }>
-          {renderContent()}
+    <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white">
+      <Navbar onNavigate={navigate} currentPage={currentPage} onLogout={() => supabase.auth.signOut()} user={user} />
+      <main className="flex-1">
+        <Suspense fallback={<div className="h-screen flex items-center justify-center opacity-20">Loading...</div>}>
+          {render()}
         </Suspense>
       </main>
-      <Footer onNavigate={handleNavigate} />
-      {showAddListing && user && (
-        <Suspense fallback={null}>
-          <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); sync(); handleNavigate('home'); }} />
-        </Suspense>
-      )}
-      {user && <ChatBot />}
+      <Footer onNavigate={navigate} />
+      {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); navigate('home'); }} />}
       <ToastContainer />
     </div>
   );

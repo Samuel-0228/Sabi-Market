@@ -83,15 +83,29 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     }
   };
 
+  const handleBypassSync = () => {
+    // Mandatory bypass to prevent getting stuck during auth sync
+    useAuthStore.setState({ initialized: true, loading: false });
+    onSuccess();
+  };
+
   if (step === 'syncing') {
     return (
-      <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+      <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500 p-6">
         <div className="relative mb-10">
           <div className="w-24 h-24 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600">ሳ</div>
         </div>
         <h2 className="text-3xl font-black dark:text-white tracking-tighter">Synchronizing Node...</h2>
-        <p className="mt-4 text-gray-400 font-medium italic">Establishing Secure Connection</p>
+        <p className="mt-4 text-gray-400 font-medium italic mb-10">Establishing Secure Connection</p>
+        
+        {/* Mandatory Bypass Button */}
+        <button 
+          onClick={handleBypassSync}
+          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 hover:border-indigo-600/30 transition-all active:scale-95"
+        >
+          Bypass Sync & Proceed
+        </button>
       </div>
     );
   }
