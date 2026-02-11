@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { db, supabase } from '../services/supabaseService';
 import { Conversation, Message, UserProfile } from '../types';
