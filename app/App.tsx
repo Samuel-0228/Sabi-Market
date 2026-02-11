@@ -28,7 +28,6 @@ const App: React.FC = () => {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
   
-  // 1. Single source of truth for auth hydration on mount/reload
   useEffect(() => {
     let mounted = true;
     
@@ -36,7 +35,6 @@ const App: React.FC = () => {
       await sync();
       if (mounted) {
         const last = localStorage.getItem('savvy_last_page');
-        // Only restore last page if user is logged in
         if (last && !['landing', 'auth'].includes(last)) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) setCurrentPage(last);
@@ -46,7 +44,6 @@ const App: React.FC = () => {
 
     init();
 
-    // 2. Listen for auth changes to sync state globally
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (!mounted) return;
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
@@ -64,23 +61,29 @@ const App: React.FC = () => {
     };
   }, [sync]);
 
-  const handleNavigate = (page: string) => {
-    if (!user && ['home', 'dashboard', 'messages', 'orders', 'checkout'].includes(page)) {
+  const handleNavigate = async (page: string) => {
+    // Optimization: Check for session directly to avoid redirect loops during profile hydration
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session && !user && ['home', 'dashboard', 'messages', 'orders', 'checkout'].includes(page)) {
       setCurrentPage('auth');
       return;
     }
+    
     setCurrentPage(page);
-    if (user && !['landing', 'auth'].includes(page)) {
+    if (session && !['landing', 'auth'].includes(page)) {
       localStorage.setItem('savvy_last_page', page);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 3. Prevent infinite loading by providing a clear fallback until auth is ready
   if (!initialized) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
-        <div className="w-16 h-16 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="relative">
+          <div className="w-16 h-16 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600 text-[10px]">ሳ</div>
+        </div>
         <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 animate-pulse">Syncing Campus Data...</p>
       </div>
     );

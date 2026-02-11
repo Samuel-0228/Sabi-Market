@@ -2,8 +2,9 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { authApi } from '../features/auth/auth.api';
 import { useLanguage } from '../app/LanguageContext';
+import { useAuthStore } from '../store/auth.store';
 
-// Fix: Use type intersection to ensure all HTML attributes are properly inherited and recognized by the compiler.
+// Fix: Use type intersection to ensure all HTML attributes are properly inherited
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
 };
@@ -13,7 +14,6 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: React.ReactNode;
 };
 
-// Fix: Helper components using the updated prop types to avoid missing standard HTML attribute errors.
 const Input = ({ label, ...props }: InputProps) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>
@@ -44,6 +44,7 @@ type Step = 'login' | 'initial-email' | 'details' | 'account' | 'syncing';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const { t } = useLanguage();
+  const { sync } = useAuthStore();
   const [step, setStep] = useState<Step>(initialStep === 'login' ? 'login' : 'initial-email');
   const [formData, setFormData] = useState({ 
     email: '', 
@@ -67,8 +68,15 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       } else {
         await authApi.login(formData.email, formData.password);
       }
+      
+      // Step: Synchronizing
       setStep('syncing');
-      setTimeout(() => onSuccess(), 1000);
+      
+      // CRITICAL: Wait for the global store to recognize the new user session and profile
+      await sync();
+      
+      // Small delay for visual feedback of "Syncing"
+      setTimeout(() => onSuccess(), 800);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
       setLoading(false);
@@ -77,10 +85,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   if (step === 'syncing') {
     return (
-      <div className="h-[80vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
-        <div className="w-20 h-20 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin mb-8" />
+      <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500">
+        <div className="relative mb-10">
+          <div className="w-24 h-24 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600">ሳ</div>
+        </div>
         <h2 className="text-3xl font-black dark:text-white tracking-tighter">Synchronizing Node...</h2>
-        <p className="mt-4 text-gray-400 font-medium italic">Entering Savvy Node Space</p>
+        <p className="mt-4 text-gray-400 font-medium italic">Establishing Secure Connection</p>
       </div>
     );
   }
