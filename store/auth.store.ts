@@ -6,6 +6,7 @@ import { supabase } from '../services/supabase/client';
 interface AuthState {
   user: UserProfile | null;
   loading: boolean;
+  initialized: boolean;
   setUser: (user: UserProfile | null) => void;
   setLoading: (loading: boolean) => void;
   sync: () => Promise<UserProfile | null>;
@@ -14,36 +15,40 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
-  setUser: (user) => set({ user, loading: false }),
+  initialized: false,
+  setUser: (user) => set({ user, loading: false, initialized: true }),
   setLoading: (loading) => set({ loading }),
   sync: async () => {
+    set({ loading: true });
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        set({ user: null, loading: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        set({ user: null, loading: false, initialized: true });
         return null;
       }
       
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .maybeSingle();
       
+      // Resilient profile recovery
       const finalUser: UserProfile = (profile as UserProfile) || { 
-        id: user.id, 
-        email: user.email || '', 
-        full_name: user.user_metadata?.full_name || 'Student',
+        id: session.user.id, 
+        email: session.user.email || '', 
+        full_name: session.user.user_metadata?.full_name || 'Student',
         role: 'student',
-        is_verified: user.email?.endsWith('@aau.edu.et') || false,
-        created_at: user.created_at
+        is_verified: session.user.email?.endsWith('@aau.edu.et') || false,
+        created_at: session.user.created_at
       };
       
-      set({ user: finalUser, loading: false });
+      set({ user: finalUser, loading: false, initialized: true });
       return finalUser;
     } catch (e) {
       console.error("Auth sync failed", e);
-      set({ user: null, loading: false });
+      set({ user: null, loading: false, initialized: true });
       return null;
     }
   }

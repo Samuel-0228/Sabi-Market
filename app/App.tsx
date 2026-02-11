@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useLanguage } from './LanguageContext';
 import { supabase } from '../services/supabase/client';
 import { authApi } from '../features/auth/auth.api';
-import { Listing, UserProfile } from '../types';
+import { useAuthStore } from '../store/auth.store';
+import { Listing } from '../types';
 
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -13,7 +14,7 @@ import Auth from '../components/Auth';
 import ChatBot from '../features/chat/ChatBot';
 import ToastContainer from '../components/ui/ToastContainer';
 
-// Performance Fix: Lazy load non-critical pages to shrink initial bundle
+// Performance: Lazy load pages
 const SellerDashboard = lazy(() => import('../pages/Dashboard/SellerDashboard'));
 const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
 const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
@@ -22,46 +23,38 @@ const AddListingModal = lazy(() => import('../components/product/AddListingModal
 
 const App: React.FC = () => {
   const { t } = useLanguage();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user, initialized, sync } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAddListing, setShowAddListing] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
   
-  const syncUser = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      const profile = await authApi.syncProfile();
-      setUser(profile);
-      return profile;
-    } catch (e) {
-      return null;
-    }
-  }, []);
-
+  // 1. Single source of truth for auth hydration on mount/reload
   useEffect(() => {
     let mounted = true;
-
+    
     const init = async () => {
-      await syncUser();
+      await sync();
       if (mounted) {
-        setIsInitializing(false);
         const last = localStorage.getItem('savvy_last_page');
-        if (last && !['landing', 'auth'].includes(last)) setCurrentPage(last);
+        // Only restore last page if user is logged in
+        if (last && !['landing', 'auth'].includes(last)) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) setCurrentPage(last);
+        }
       }
     };
 
     init();
 
+    // 2. Listen for auth changes to sync state globally
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (!mounted) return;
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        await syncUser();
-        setCurrentPage(prev => (['landing', 'auth'].includes(prev) ? 'home' : prev));
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+        await sync();
       } else if (event === 'SIGNED_OUT') {
-        setUser(null);
+        useAuthStore.getState().setUser(null);
         setCurrentPage('landing');
+        localStorage.removeItem('savvy_last_page');
       }
     });
 
@@ -69,10 +62,10 @@ const App: React.FC = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [syncUser]);
+  }, [sync]);
 
   const handleNavigate = (page: string) => {
-    if (!user && ['home', 'dashboard', 'messages', 'orders'].includes(page)) {
+    if (!user && ['home', 'dashboard', 'messages', 'orders', 'checkout'].includes(page)) {
       setCurrentPage('auth');
       return;
     }
@@ -83,11 +76,12 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isInitializing) {
+  // 3. Prevent infinite loading by providing a clear fallback until auth is ready
+  if (!initialized) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505]">
         <div className="w-16 h-16 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin" />
-        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 animate-pulse">Establishing Connection...</p>
+        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 animate-pulse">Syncing Campus Data...</p>
       </div>
     );
   }
@@ -106,7 +100,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white transition-colors duration-500">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
       <main className="flex-1 overflow-x-hidden">
         <Suspense fallback={
@@ -120,7 +114,7 @@ const App: React.FC = () => {
       <Footer onNavigate={handleNavigate} />
       {showAddListing && user && (
         <Suspense fallback={null}>
-          <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); handleNavigate('home'); }} />
+          <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); sync(); handleNavigate('home'); }} />
         </Suspense>
       )}
       {user && <ChatBot />}

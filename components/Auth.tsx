@@ -3,17 +3,17 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { authApi } from '../features/auth/auth.api';
 import { useLanguage } from '../app/LanguageContext';
 
-// Fix: Define interfaces at the top and explicitly include props that the compiler might be missing due to strict typing or React version differences.
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+// Fix: Use type intersection to ensure all HTML attributes are properly inherited and recognized by the compiler.
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
-}
+};
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean;
   children?: React.ReactNode;
-}
+};
 
-// Fix: Define helper components before the main Auth component to avoid hoisting issues and ensure types are recognized during component usage.
+// Fix: Helper components using the updated prop types to avoid missing standard HTML attribute errors.
 const Input = ({ label, ...props }: InputProps) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>

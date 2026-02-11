@@ -73,7 +73,8 @@ export const db = {
   },
 
   // --- CHAT SYSTEM ---
-  async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string) {
+  async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string): Promise<string> {
+    // Check if conversation already exists between this buyer and this listing
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
@@ -83,6 +84,7 @@ export const db = {
 
     if (existing) return (existing as any).id;
 
+    // Create new conversation
     const { data: created, error } = await supabase
       .from('conversations')
       .insert({ 
@@ -94,7 +96,10 @@ export const db = {
       .select('id')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Conversation creation error:", error);
+      throw error;
+    }
     return (created as any).id;
   },
 
@@ -156,8 +161,9 @@ export const db = {
 
     if (error) throw error;
 
+    // Notify seller via trade chat
     const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-    await this.sendMessage(cid, `🔔 New Order: "${listing.title}". Location: ${deliveryInfo}`);
+    await this.sendMessage(cid, `🔔 New Trade Request: "${listing.title}". Suggested Meeting: ${deliveryInfo}`);
 
     return order;
   },
