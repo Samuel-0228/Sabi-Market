@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabase/client';
@@ -10,6 +9,7 @@ interface AuthState {
   setUser: (user: UserProfile | null) => void;
   setLoading: (loading: boolean) => void;
   sync: () => Promise<UserProfile | null>;
+  forceInitialize: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -18,6 +18,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialized: false,
   setUser: (user) => set({ user, loading: false, initialized: true }),
   setLoading: (loading) => set({ loading }),
+  forceInitialize: () => set({ initialized: true, loading: false }),
   sync: async () => {
     set({ loading: true });
     try {
@@ -28,13 +29,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         return null;
       }
       
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
       
-      // Resilient profile recovery
       const finalUser: UserProfile = (profile as UserProfile) || { 
         id: session.user.id, 
         email: session.user.email || '', 

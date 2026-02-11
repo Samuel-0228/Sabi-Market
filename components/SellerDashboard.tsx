@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/supabaseService';
 import { Listing, OrderItem, UserProfile } from '../types';
@@ -31,7 +30,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
       setListings(myListings);
       setOrders(myOrders);
 
-      const totalSales = myOrders.reduce((acc, o: OrderItem) => acc + (o.status === 'completed' ? (o.price || 0) : 0), 0);
+      const totalSales = myOrders.reduce((acc: number, o: OrderItem) => acc + (o.status === 'completed' ? (o.price || 0) : 0), 0);
       setStats({
         totalSales,
         activeListings: myListings.length,

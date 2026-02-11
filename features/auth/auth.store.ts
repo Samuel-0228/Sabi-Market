@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { UserProfile } from '../../types';
 import { supabase } from '../../shared/lib/supabase';

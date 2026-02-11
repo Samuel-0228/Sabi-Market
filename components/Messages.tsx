@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db, supabase } from '../services/supabaseService';
 import { Conversation, Message, UserProfile } from '../types';
@@ -51,7 +50,7 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
   useEffect(() => {
     const subscription = supabase
       .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
         const msg = payload.new as Message;
         if (activeConv && msg.conversation_id === activeConv.id) {
           setMessages(prev => [...prev, msg]);
