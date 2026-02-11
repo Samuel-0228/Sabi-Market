@@ -63,7 +63,7 @@ const App: React.FC = () => {
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string) => {
       if (!mounted) return;
       
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {

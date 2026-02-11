@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/supabase/db';
-import { Listing, UserProfile, OrderStatus } from '../../types/index';
+import { Listing, UserProfile, OrderStatus, Order } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
 import { useUIStore } from '../../store/ui.store';
 
@@ -37,7 +37,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   }, [user.id]);
 
   const stats = useMemo(() => ({
-    revenue: data.orders.reduce((acc, o) => acc + (o.status === 'completed' ? parseFloat(o.amount) : 0), 0),
+    revenue: data.orders.reduce((acc: number, o: any) => acc + (o.status === 'completed' ? parseFloat(o.amount) : 0), 0),
     active: data.listings.length,
     pending: data.orders.filter(o => o.status === 'pending').length
   }), [data]);
