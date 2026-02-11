@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { useFeedStore } from '../../store/feed.store';
 import { Listing, UserProfile } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
@@ -12,21 +12,36 @@ interface HomeProps {
   onNavigate: (p: string) => void;
 }
 
+// Performance: Memoized Listing Item to prevent unnecessary re-renders in large feeds
+const ListingItem = memo(({ l, onClick, t }: { l: Listing; onClick: () => void; t: any }) => (
+  <div className="group cursor-pointer" onClick={onClick}>
+    <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-6 shadow-sm group-hover:shadow-2xl transition-all relative">
+      <img 
+        src={l.image_url} 
+        loading="lazy"
+        decoding="async"
+        alt={l.title}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+      />
+      <div className="absolute top-4 left-4">
+        <span className="bg-white/90 dark:bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest dark:text-white">
+          {t(l.category)}
+        </span>
+      </div>
+    </div>
+    <h3 className="text-xl font-black dark:text-white group-hover:text-indigo-600 transition-colors">{l.title}</h3>
+    <p className="font-bold text-gray-400">{l.price} ETB</p>
+  </div>
+));
+
 const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyListing, onNavigate }) => {
   const { t } = useLanguage();
   const { filteredListings, loading, fetch, setSearchQuery, searchQuery, setCategory, activeCategory } = useFeedStore();
   const [detailItem, setDetailItem] = useState<Listing | null>(null);
   
-  // Ref to track the current abort controller
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   useEffect(() => {
     const controller = new AbortController();
-    abortControllerRef.current = controller;
-    
     fetch(controller.signal);
-    
-    // STRICT CLEANUP: Abort fetching on navigation
     return () => controller.abort();
   }, [fetch]);
 
@@ -85,18 +100,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
           {filteredListings.map(l => (
-            <div key={l.id} className="group cursor-pointer" onClick={() => setDetailItem(l)}>
-              <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-6 shadow-sm group-hover:shadow-2xl transition-all relative">
-                <img src={l.image_url} alt={l.title || 'listing image'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-white/90 dark:bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest dark:text-white">
-                    {t(l.category)}
-                  </span>
-                </div>
-              </div>
-              <h3 className="text-xl font-black dark:text-white group-hover:text-indigo-600 transition-colors">{l.title}</h3>
-              <p className="font-bold text-gray-400">{l.price} ETB</p>
-            </div>
+            <ListingItem key={l.id} l={l} onClick={() => setDetailItem(l)} t={t} />
           ))}
         </div>
       )}
@@ -104,8 +108,8 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
       {detailItem && (
         <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setDetailItem(null)}>
           <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
-              <div className="md:w-1/2 bg-black flex items-center justify-center">
-              <img src={detailItem.image_url} alt={detailItem.title || 'listing image'} className="max-h-full object-contain" />
+            <div className="md:w-1/2 bg-black flex items-center justify-center">
+              <img src={detailItem.image_url} decoding="async" className="max-h-full object-contain" />
             </div>
             <div className="md:w-1/2 p-10 flex flex-col justify-between overflow-y-auto">
               <div>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useLanguage } from './LanguageContext';
 import { supabase } from '../services/supabase/client';
 import { authApi } from '../features/auth/auth.api';
@@ -9,14 +9,16 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Landing from '../pages/Home/Landing';
 import Home from '../pages/Home/Home';
-import SellerDashboard from '../pages/Dashboard/SellerDashboard';
-import InboxPage from '../messaging/inbox/InboxPage';
-import OrdersPage from '../pages/Orders/OrdersPage';
-import Checkout from '../pages/Checkout/CheckoutPage';
 import Auth from '../components/Auth';
-import AddListingModal from '../components/product/AddListingModal';
 import ChatBot from '../features/chat/ChatBot';
 import ToastContainer from '../components/ui/ToastContainer';
+
+// Performance Fix: Lazy load non-critical pages to shrink initial bundle
+const SellerDashboard = lazy(() => import('../pages/Dashboard/SellerDashboard'));
+const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
+const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
+const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
+const AddListingModal = lazy(() => import('../components/product/AddListingModal'));
 
 const App: React.FC = () => {
   const { t } = useLanguage();
@@ -106,10 +108,20 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} onLogout={() => authApi.logout()} user={user} />
-      <main className="flex-1 overflow-x-hidden">{renderContent()}</main>
+      <main className="flex-1 overflow-x-hidden">
+        <Suspense fallback={
+          <div className="h-[60vh] flex items-center justify-center">
+            <div className="w-10 h-10 border-2 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        }>
+          {renderContent()}
+        </Suspense>
+      </main>
       <Footer onNavigate={handleNavigate} />
       {showAddListing && user && (
-        <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); handleNavigate('home'); }} />
+        <Suspense fallback={null}>
+          <AddListingModal onClose={() => setShowAddListing(false)} onSuccess={() => { setShowAddListing(false); syncUser(); handleNavigate('home'); }} />
+        </Suspense>
       )}
       {user && <ChatBot />}
       <ToastContainer />

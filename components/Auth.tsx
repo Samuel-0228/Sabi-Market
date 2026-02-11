@@ -3,6 +3,38 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { authApi } from '../features/auth/auth.api';
 import { useLanguage } from '../app/LanguageContext';
 
+// Fix: Define interfaces at the top and explicitly include props that the compiler might be missing due to strict typing or React version differences.
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+}
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  loading?: boolean;
+  children?: React.ReactNode;
+}
+
+// Fix: Define helper components before the main Auth component to avoid hoisting issues and ensure types are recognized during component usage.
+const Input = ({ label, ...props }: InputProps) => (
+  <div className="space-y-2">
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>
+    <input 
+      required 
+      className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-gray-400" 
+      {...props} 
+    />
+  </div>
+);
+
+const Button = ({ loading, children, ...props }: ButtonProps) => (
+  <button 
+    {...props} 
+    disabled={loading} 
+    className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50"
+  >
+    {loading ? 'Initializing...' : children}
+  </button>
+);
+
 interface AuthProps {
   onSuccess: () => void;
   initialStep?: 'login' | 'initial-email';
@@ -167,34 +199,5 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     </div>
   );
 };
-
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-}
-
-const Input = ({ label, ...props }: InputProps) => (
-  <div className="space-y-2">
-    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>
-    <input 
-      required 
-      className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-gray-400" 
-      {...props} 
-    />
-  </div>
-);
-
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  loading?: boolean;
-}
-
-const Button = ({ loading, children, ...props }: ButtonProps) => (
-  <button 
-    {...props} 
-    disabled={loading} 
-    className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50"
-  >
-    {loading ? 'Initializing...' : children}
-  </button>
-);
 
 export default Auth;

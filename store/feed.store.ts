@@ -9,6 +9,7 @@ interface FeedState {
   loading: boolean;
   searchQuery: string;
   activeCategory: string;
+  lastFetched: number;
   fetch: (signal?: AbortSignal) => Promise<void>;
   setSearchQuery: (query: string) => void;
   setCategory: (category: string) => void;
@@ -20,11 +21,17 @@ export const useFeedStore = create<FeedState>((set, get) => ({
   loading: false,
   searchQuery: '',
   activeCategory: 'all',
+  lastFetched: 0,
   
   fetch: async (signal) => {
+    const { lastFetched, listings } = get();
+    // Cache check: If we fetched less than 30 seconds ago, don't re-fetch
+    if (listings.length > 0 && Date.now() - lastFetched < 30000) {
+      return;
+    }
+
     set({ loading: true });
     try {
-      // Pure request/response fetch via unified DB layer
       const data = await db.getListings(signal);
       
       if (signal?.aborted) return;
@@ -32,10 +39,10 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       set({ 
         listings: data, 
         filteredListings: data,
-        loading: false 
+        loading: false,
+        lastFetched: Date.now()
       });
       
-      // Re-apply existing filters
       const { searchQuery, activeCategory } = get();
       if (searchQuery || activeCategory !== 'all') {
         get().setSearchQuery(searchQuery);
@@ -52,7 +59,7 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     const filtered = listings.filter(l => {
       const matchesSearch = l.title.toLowerCase().includes(query.toLowerCase()) || 
                            l.description.toLowerCase().includes(query.toLowerCase());
-      const matchesCategory = activeCategory === 'all' || l.category === query;
+      const matchesCategory = activeCategory === 'all' || l.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
     set({ searchQuery: query, filteredListings: filtered });
