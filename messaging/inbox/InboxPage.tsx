@@ -28,7 +28,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         if (!mounted) return;
         if (error) throw error;
 
-        let currentConversations = data || [];
+        let currentConversations: Conversation[] = data || [];
         setConversations(currentConversations);
 
         // Check for cross-page navigation triggers (from Home Detail)
@@ -38,7 +38,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           const { listingId, seller_id } = JSON.parse(pending);
           
           const cid = await db.getOrCreateConversation(listingId, seller_id, user.id);
-          const existing = currentConversations.find(c => c.id === cid);
+          const existing = currentConversations.find((c: Conversation) => c.id === cid);
           
           if (existing) {
             setActiveConv(existing);
@@ -67,7 +67,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
 
     fetchInbox();
     return () => { mounted = false; };
-  }, [user.id, activeConv]);
+  }, [user.id]);
 
   // 2. Realtime Subscription: Telegram-style live updates
   useEffect(() => {
@@ -80,7 +80,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
       .select('*')
       .eq('conversation_id', activeConv.id)
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (mounted) setMessages(data || []); });
+      .then(({ data }: { data: Message[] | null }) => { if (mounted) setMessages(data || []); });
 
     // Create a robust realtime channel
     const channel = supabase
@@ -90,9 +90,9 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         schema: 'public', 
         table: 'messages', 
         filter: `conversation_id=eq.${activeConv.id}` 
-      }, (payload) => {
+      }, (payload: { new: Message }) => {
         if (!mounted) return;
-        const newMsg = payload.new as Message;
+        const newMsg = payload.new;
         
         setMessages(prev => {
           // Check if this message was already added optimistically
@@ -104,7 +104,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           return [...prev, newMsg];
         });
       })
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') console.debug("Chat online");
       });
 

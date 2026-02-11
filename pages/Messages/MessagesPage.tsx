@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../services/supabase/db';
 import { supabase } from '../../services/supabase/client';
-import { UserProfile } from '../../types/index';
+import { UserProfile, Conversation, Message } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
 
 interface MessagesProps {
@@ -45,7 +45,7 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
           const { listingId, sellerId } = JSON.parse(pending);
           // Fix: Passed user.id as third argument to getOrCreateConversation
           const cid = await db.getOrCreateConversation(listingId, sellerId, user.id);
-          const found = data?.find(c => c.id === cid);
+          const found = data?.find((c: any) => c.id === cid);
           if (found) setActiveConv(found);
           else {
             const { data: fresh } = await supabase
@@ -82,7 +82,7 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
       .select('*')
       .eq('conversation_id', activeConv.id)
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (mounted) setMessages(data || []); });
+      .then(({ data }: { data: Message[] | null }) => { if (mounted) setMessages(data || []); });
 
     // SUBSCRIPTION with proper cleanup
     const channel = supabase
@@ -92,10 +92,10 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
         schema: 'public',
         table: 'messages',
         filter: `conversation_id=eq.${activeConv.id}`
-      }, (payload) => {
+      }, (payload: { new: Message }) => {
         if (!mounted) return;
-        const newMsg = payload.new as any;
-        setMessages(current => {
+        const newMsg = payload.new;
+        setMessages((current: any[]) => {
           if (current.find(m => m.id === newMsg.id)) return current;
           const optIdx = current.findIndex(m => m.temp && m.content === newMsg.content);
           if (optIdx !== -1) {

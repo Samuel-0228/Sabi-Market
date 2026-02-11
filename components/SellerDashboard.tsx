@@ -31,7 +31,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
       setListings(myListings);
       setOrders(myOrders);
 
-      const totalSales = myOrders.reduce((acc, o) => acc + (o.status === 'completed' ? o.price : 0), 0);
+      const totalSales = myOrders.reduce((acc, o: OrderItem) => acc + (o.status === 'completed' ? (o.price || 0) : 0), 0);
       setStats({
         totalSales,
         activeListings: myListings.length,
@@ -113,7 +113,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{new Date(order.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-black text-black dark:text-white text-sm">{order.price} ETB</p>
+                    <p className="font-black text-black dark:text-white text-sm">{order.price || order.amount} ETB</p>
                     <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">{order.status}</span>
                   </div>
                 </div>

@@ -50,11 +50,11 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
 
       if (error) throw error;
       
-      const formattedData = (data || []).map(order => ({
+      const formattedData = (data || []).map((order: any) => ({
         ...order,
-        product_title: (order.listing as any)?.title || 'Market Item',
-        image_url: (order.listing as any)?.image_url,
-        seller_name: (order.listing as any)?.seller?.full_name || 'Verified Student'
+        product_title: order.listing?.title || 'Market Item',
+        image_url: order.listing?.image_url,
+        seller_name: order.listing?.seller?.full_name || 'Verified Student'
       }));
 
       set({ 

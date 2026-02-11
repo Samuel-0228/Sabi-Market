@@ -45,9 +45,9 @@ export const db = {
     const { data, error } = await query;
     if (error) throw error;
     
-    return (data || []).map(l => ({
+    return (data || []).map((l: any) => ({
       ...l,
-      seller_name: (l as any).profiles?.full_name || 'AAU Student'
+      seller_name: l.profiles?.full_name || 'AAU Student'
     }));
   },
 
@@ -136,12 +136,12 @@ export const db = {
 
     if (error) throw error;
 
-    return (data || []).map(o => ({
+    return (data || []).map((o: any) => ({
       ...o,
-      product_title: (o.listing as any)?.title,
-      image_url: (o.listing as any)?.image_url,
-      seller_name: (o.seller as any)?.full_name,
-      buyer_name: (o.buyer as any)?.full_name
+      product_title: o.listing?.title,
+      image_url: o.listing?.image_url,
+      seller_name: o.seller?.full_name,
+      buyer_name: o.buyer?.full_name
     }));
   },
 

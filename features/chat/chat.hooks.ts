@@ -7,6 +7,7 @@ export const useChatRoom = (conversationId: string | undefined) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch initial message history
   const fetchMessages = useCallback(async () => {
     if (!conversationId) return;
     setLoading(true);
@@ -32,8 +33,8 @@ export const useChatRoom = (conversationId: string | undefined) => {
         schema: 'public',
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
-      }, (payload) => {
-        const newMsg = payload.new as Message;
+      }, (payload: { new: Message }) => {
+        const newMsg = payload.new;
         setMessages(prev => {
           if (prev.find(m => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
@@ -44,6 +45,7 @@ export const useChatRoom = (conversationId: string | undefined) => {
     return () => {
       supabase.removeChannel(channel);
     };
+    // Fix: Updated dependency from fetchHistory (undefined) to fetchMessages
   }, [conversationId, fetchMessages]);
 
   const sendMessage = async (senderId: string, content: string) => {
