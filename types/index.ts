@@ -63,10 +63,3 @@ export interface Order {
   seller_name?: string;
   buyer_name?: string;
 }
-
-export interface Translation {
-  [key: string]: {
-    en: string;
-    am: string;
-  };
-}

@@ -4,35 +4,17 @@ import { authApi } from '../features/auth/auth.api';
 import { useLanguage } from '../app/LanguageContext';
 import { useAuthStore } from '../store/auth.store';
 
-// Fix: Use type intersection to ensure all HTML attributes are properly inherited
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
-};
-
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  loading?: boolean;
-  children?: React.ReactNode;
-};
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { label: string; };
 
 const Input = ({ label, ...props }: InputProps) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{label}</label>
     <input 
       required 
-      className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-gray-400" 
+      className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-2xl px-6 py-5 outline-none dark:text-white font-bold focus:ring-2 focus:ring-indigo-600 transition-all" 
       {...props} 
     />
   </div>
-);
-
-const Button = ({ loading, children, ...props }: ButtonProps) => (
-  <button 
-    {...props} 
-    disabled={loading} 
-    className="w-full py-6 rounded-[1.5rem] bg-indigo-600 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50"
-  >
-    {loading ? 'Initializing...' : children}
-  </button>
 );
 
 interface AuthProps {
@@ -43,21 +25,11 @@ interface AuthProps {
 type Step = 'login' | 'initial-email' | 'details' | 'account' | 'syncing';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
-  const { t } = useLanguage();
-  const { sync } = useAuthStore();
+  const { sync, forceInitialize } = useAuthStore();
   const [step, setStep] = useState<Step>(initialStep === 'login' ? 'login' : 'initial-email');
-  const [formData, setFormData] = useState({ 
-    email: '', 
-    password: '', 
-    name: '', 
-    preferences: [] as string[] 
-  });
+  const [formData, setFormData] = useState({ email: '', password: '', name: '', preferences: [] as string[] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setStep(initialStep === 'login' ? 'login' : 'initial-email');
-  }, [initialStep]);
 
   const handleAuth = async (isRegister: boolean) => {
     setError('');
@@ -68,43 +40,31 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       } else {
         await authApi.login(formData.email, formData.password);
       }
-      
-      // Step: Synchronizing
       setStep('syncing');
-      
-      // CRITICAL: Wait for the global store to recognize the new user session and profile
       await sync();
-      
-      // Small delay for visual feedback of "Syncing"
       setTimeout(() => onSuccess(), 800);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Auth failure.');
       setLoading(false);
     }
   };
 
-  const handleBypassSync = () => {
-    // Mandatory bypass to prevent getting stuck during auth sync
-    useAuthStore.setState({ initialized: true, loading: false });
+  const handleManualBypass = () => {
+    forceInitialize();
     onSuccess();
   };
 
   if (step === 'syncing') {
     return (
-      <div className="h-[70vh] flex flex-col items-center justify-center text-center animate-in fade-in duration-500 p-6">
-        <div className="relative mb-10">
-          <div className="w-24 h-24 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center font-black text-indigo-600">ሳ</div>
-        </div>
-        <h2 className="text-3xl font-black dark:text-white tracking-tighter">Synchronizing Node...</h2>
-        <p className="mt-4 text-gray-400 font-medium italic mb-10">Establishing Secure Connection</p>
-        
-        {/* Mandatory Bypass Button */}
+      <div className="h-[70vh] flex flex-col items-center justify-center text-center p-10">
+        <div className="w-24 h-24 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin mb-10" />
+        <h2 className="text-3xl font-black dark:text-white tracking-tighter">Initializing Identity...</h2>
+        <p className="mt-4 text-gray-400 font-medium italic mb-10">Building secure trade connection</p>
         <button 
-          onClick={handleBypassSync}
-          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 hover:border-indigo-600/30 transition-all active:scale-95"
+          onClick={handleManualBypass}
+          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all"
         >
-          Bypass Sync & Proceed
+          Cutout Loading & Enter Feed
         </button>
       </div>
     );
@@ -114,110 +74,30 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     <div className="min-h-[80vh] flex items-center justify-center p-6 animate-in slide-in-from-bottom-8 duration-700">
       <div className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] rounded-[3.5rem] p-10 sm:p-16 shadow-2xl border border-indigo-500/5">
         <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-white font-black text-4xl mx-auto mb-8 shadow-xl transform hover:rotate-6 transition-transform">ሳ</div>
-          <h2 className="text-4xl font-black dark:text-white tracking-tighter">
-            {step === 'login' ? 'Welcome Back' : 'Join the Node'}
-          </h2>
-          <p className="mt-2 text-gray-400 font-medium italic">AAU Exclusive Marketplace</p>
+          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-white font-black text-4xl mx-auto mb-8 shadow-xl">ሳ</div>
+          <h2 className="text-4xl font-black dark:text-white tracking-tighter">{step === 'login' ? 'Welcome' : 'Join'}</h2>
         </div>
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-500/10 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-500/10 animate-in shake">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-500/10">{error}</div>}
 
-        {step === 'login' && (
+        {step === 'login' ? (
           <form onSubmit={(e: FormEvent) => { e.preventDefault(); handleAuth(false); }} className="space-y-6">
-            <Input 
-              label="Student Email" 
-              type="email" 
-              value={formData.email} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
-              placeholder="name@aau.edu.et" 
-            />
-            <Input 
-              label="Access Code" 
-              type="password" 
-              value={formData.password} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
-            />
-            <Button loading={loading}>Sign In</Button>
-            <button 
-              type="button" 
-              onClick={() => setStep('initial-email')} 
-              className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4 hover:text-indigo-600 transition-colors"
-            >
-              First time here? Register
+            <Input label="Student Email" type="email" value={formData.email} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} />
+            <Input label="Access Code" type="password" value={formData.password} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} />
+            <button disabled={loading} className="w-full py-6 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">
+              {loading ? 'Validating...' : 'Enter Marketplace'}
             </button>
+            <button type="button" onClick={() => setStep('initial-email')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4">New here? Register</button>
           </form>
-        )}
-
-        {step === 'initial-email' && (
-          <form onSubmit={(e: FormEvent) => { e.preventDefault(); setStep('details'); }} className="space-y-6">
-            <Input 
-              label="Academic Email" 
-              type="email" 
-              value={formData.email} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
-              placeholder="Required: @aau.edu.et" 
-            />
-            <Button>Next Step</Button>
-            <button 
-              type="button" 
-              onClick={() => setStep('login')} 
-              className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4 hover:text-indigo-600 transition-colors"
-            >
-              Already a member? Sign In
-            </button>
-          </form>
-        )}
-
-        {step === 'details' && (
-          <div className="space-y-8 animate-in slide-in-from-right duration-500">
-            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Configure Interests</h4>
-            <div className="grid grid-cols-2 gap-4">
-              {['goods', 'course', 'academic_materials', 'food'].map(cat => (
-                <button 
-                  key={cat} 
-                  type="button"
-                  onClick={() => setFormData(p => ({
-                    ...p, 
-                    preferences: p.preferences.includes(cat) 
-                      ? p.preferences.filter(x => x !== cat) 
-                      : [...p.preferences, cat]
-                  }))}
-                  className={`p-6 rounded-[1.5rem] border-2 transition-all text-left group ${
-                    formData.preferences.includes(cat) 
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-500/5' 
-                      : 'border-gray-50 dark:border-white/5'
-                  }`}
-                >
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${
-                    formData.preferences.includes(cat) ? 'text-indigo-600' : 'text-gray-400'
-                  }`}>{cat.replace('_', ' ')}</span>
-                </button>
-              ))}
-            </div>
-            <Button onClick={() => setStep('account')}>Continue Setup</Button>
-          </div>
-        )}
-
-        {step === 'account' && (
+        ) : (
           <form onSubmit={(e: FormEvent) => { e.preventDefault(); handleAuth(true); }} className="space-y-6">
-            <Input 
-              label="Student Name" 
-              value={formData.name} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, name: e.target.value})} 
-              placeholder="Full Name"
-            />
-            <Input 
-              label="Create Access Code" 
-              type="password" 
-              value={formData.password} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
-            />
-            <Button loading={loading}>Finalize Identity</Button>
+            <Input label="Full Name" value={formData.name} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, name: e.target.value})} />
+            <Input label="AAU Email" type="email" value={formData.email} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} />
+            <Input label="Create Password" type="password" value={formData.password} onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} />
+            <button disabled={loading} className="w-full py-6 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">
+              {loading ? 'Creating...' : 'Finalize Profile'}
+            </button>
+            <button type="button" onClick={() => setStep('login')} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest py-4">Already a member? Login</button>
           </form>
         )}
       </div>
