@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { UserProfile } from '../../types';
 import { supabase } from '../../shared/lib/supabase';
+import { authApi } from './auth.api';
 
 interface AuthState {
   user: UserProfile | null;
@@ -20,6 +21,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   sync: async () => {
     set({ loading: true });
     try {
+      // Small buffer for session persistence
+      await new Promise(r => setTimeout(r, 200));
+      
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -27,24 +31,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         return null;
       }
       
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      const profile = await authApi.syncProfile();
       
-      const finalUser: UserProfile = (profile as UserProfile) || { 
-        id: session.user.id, 
-        email: session.user.email || '', 
-        full_name: session.user.user_metadata?.full_name || 'Savvy Student',
-        role: 'student',
-        is_verified: session.user.email?.endsWith('@aau.edu.et') || false,
-        created_at: session.user.created_at
-      };
-      
-      set({ user: finalUser, loading: false, initialized: true });
-      return finalUser;
+      if (profile) {
+        set({ user: profile, loading: false, initialized: true });
+        return profile;
+      }
+
+      set({ user: null, loading: false, initialized: true });
+      return null;
     } catch (e) {
+      console.error("Auth sync failed", e);
       set({ user: null, loading: false, initialized: true });
       return null;
     }

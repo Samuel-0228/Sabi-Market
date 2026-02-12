@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://fqkrddoodkawtmcapvyu.supabase.co';
@@ -9,7 +8,7 @@ export const supabase: any = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'savvy-market-auth-v3',
+    storageKey: 'savvy-unified-v1', // Matched with services/supabase/client.ts
     flowType: 'pkce'
   },
   global: {

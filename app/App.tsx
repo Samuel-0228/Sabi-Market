@@ -25,11 +25,16 @@ const App: React.FC = () => {
   const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
-    sync();
+    sync().then((u) => {
+      if (u) setCurrentPage('home');
+    });
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-        sync();
+        const u = await sync();
+        if (u && (currentPage === 'auth' || currentPage === 'landing')) {
+          setCurrentPage('home');
+        }
       }
       if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
@@ -62,14 +67,17 @@ const App: React.FC = () => {
           onClick={forceInitialize}
           className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 hover:border-indigo-600/30 transition-all active:scale-95"
         >
-          System Override: Enter App Manually
+          System Override
         </button>
       </div>
     );
   }
 
   const render = () => {
-    switch (currentPage) {
+    // If authenticated, default to home if trying to access landing/auth directly
+    const effectivePage = (user && (currentPage === 'landing' || currentPage === 'auth')) ? 'home' : currentPage;
+
+    switch (effectivePage) {
       case 'landing': return <Landing onGetStarted={() => navigate('auth')} />;
       case 'auth': return <Auth onSuccess={() => navigate('home')} />;
       case 'home': return <FeedPage onSelectListing={(l: Listing) => { setSelectedListing(l); }} onAddListing={() => setShowAdd(true)} onBuyListing={(l: Listing) => { setSelectedListing(l); navigate('checkout'); }} />;
@@ -85,7 +93,7 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white">
       <Navbar onNavigate={navigate} currentPage={currentPage} onLogout={() => supabase.auth.signOut()} user={user} />
       <main className="flex-1">
-        <Suspense fallback={<div className="h-screen flex items-center justify-center opacity-20">Loading Application Frame...</div>}>
+        <Suspense fallback={<div className="h-screen flex items-center justify-center opacity-20 text-[10px] font-black uppercase tracking-widest">Loading Application Frame...</div>}>
           {render()}
         </Suspense>
       </main>

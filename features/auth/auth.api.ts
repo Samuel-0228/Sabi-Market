@@ -1,6 +1,7 @@
 import { authService } from '../../services/supabase/auth';
 import { UserProfile } from '../../types';
 import { db } from '../../services/supabase/db';
+import { supabase } from '../../services/supabase/client';
 
 export const authApi = {
   async register(email: string, password: string, fullName: string, preferences: string[]) {
@@ -8,7 +9,9 @@ export const authApi = {
       full_name: fullName, 
       preferences 
     });
+    
     if (error) throw error;
+    if (!data.user) throw new Error("Registration failed to create a user.");
     
     return {
       user: data.user,
@@ -20,6 +23,7 @@ export const authApi = {
   async login(email: string, password: string) {
     const { data, error } = await authService.signIn(email, password);
     if (error) throw error;
+    if (!data.session) throw new Error("Login failed: No session established.");
     return data;
   },
 
@@ -30,40 +34,55 @@ export const authApi = {
       console.warn("Sign out cleanup:", e);
     } finally {
       localStorage.clear();
-      window.location.href = '/';
+      window.location.reload();
     }
   },
 
   async syncProfile(): Promise<UserProfile | null> {
-    const { data: { user } } = await authService.getUser();
-    if (!user) return null;
+    // Attempt to get user from session first to be faster
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    if (!user) {
+      const { data: { user: authUser } } = await authService.getUser();
+      if (!authUser) return null;
+    }
 
-    // Optimized retry loop to wait for the SQL trigger to create the profile row
+    const userId = user?.id || (await authService.getUser()).data.user?.id;
+    if (!userId) return null;
+
+    // Retry fetching the profile to account for SQL trigger delay
     let attempts = 0;
+    let profile = null;
+    
     while (attempts < 5) {
-      const profile = await db.getProfile(user.id);
-      if (profile) return profile;
-      
-      await new Promise(r => setTimeout(r, 500));
+      const { data } = await authService.getProfile(userId);
+      if (data) {
+        profile = data as UserProfile;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 800)); // Slightly longer wait for SQL triggers
       attempts++;
     }
 
-    // High-Fidelity Fallback Profile if trigger is delayed
+    if (profile) return profile;
+
+    // High-Fidelity Fallback if trigger hasn't finished
+    const authData = user || (await authService.getUser()).data.user;
     const fallback: UserProfile = {
-      id: user.id,
-      email: user.email || '',
-      full_name: user.user_metadata?.full_name || 'Savvy Student',
+      id: userId,
+      email: authData?.email || '',
+      full_name: authData?.user_metadata?.full_name || 'Savvy Student',
       role: 'student',
-      is_verified: user.email?.endsWith('@aau.edu.et') || false,
-      preferences: user.user_metadata?.preferences || [],
-      created_at: new Date().toISOString()
+      is_verified: authData?.email?.endsWith('@aau.edu.et') || false,
+      preferences: authData?.user_metadata?.preferences || [],
+      created_at: authData?.created_at || new Date().toISOString()
     };
     
-    // Attempt manual sync to DB
     try {
       await authService.upsertProfile(fallback);
     } catch (e) {
-      console.warn("DB Background Sync Delayed:", e);
+      console.warn("Manual profile sync failed:", e);
     }
     
     return fallback;

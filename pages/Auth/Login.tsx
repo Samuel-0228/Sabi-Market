@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { authApi } from '../../features/auth/auth.api';
 import { useLanguage } from '../../app/LanguageContext';
-import { useAuthStore } from '../../store/auth.store';
 
 interface LoginProps {
   onSuccess: () => void;
@@ -11,7 +10,6 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onSuccess, onSwitch }) => {
   const { t } = useLanguage();
-  const { sync } = useAuthStore();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,15 +20,6 @@ const Login: React.FC<LoginProps> = ({ onSuccess, onSwitch }) => {
     setLoading(true);
     try {
       await authApi.login(formData.email, formData.password);
-
-      // ensure profile is synced before entering app
-      const user = await sync();
-      if (!user) {
-        setError('Unable to initialize profile. Please check your credentials or try again.');
-        setLoading(false);
-        return;
-      }
-
       onSuccess();
     } catch (err: any) {
       setError(err.message || 'Login failed.');

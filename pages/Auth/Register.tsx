@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { authApi } from '../../features/auth/auth.api';
 import { useLanguage } from '../../app/LanguageContext';
-import { useAuthStore } from '../../store/auth.store';
 
 interface RegisterProps {
   onSuccess: () => void;
@@ -11,7 +10,6 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
   const { t } = useLanguage();
-  const { sync } = useAuthStore();
   const [formData, setFormData] = useState({ email: '', password: '', fullName: '', preferences: [] as string[] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,22 +27,12 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onSwitch }) => {
         formData.fullName, 
         formData.preferences
       );
-      // If email confirmation is required, show success and don't auto-enter app
-      if (result && (result as any).needsConfirmation) {
-        setSuccess(true);
-        setLoading(false);
-        return;
-      }
-
-      // Otherwise ensure profile sync before navigating
+      
       setSuccess(true);
-      const user = await sync();
-      if (user) {
-        setTimeout(() => onSuccess(), 800);
-      } else {
-        setError('Registration succeeded but profile initialization failed. Please try logging in.');
-        setLoading(false);
-      }
+      // Brief delay to show success state before navigating
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
 
     } catch (err: any) {
       console.error("Registration Error:", err);

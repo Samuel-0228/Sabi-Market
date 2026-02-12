@@ -1,8 +1,6 @@
-
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { authApi } from '../features/auth/auth.api';
-import { useLanguage } from '../app/LanguageContext';
-import { useAuthStore } from '../store/auth.store';
+import { useAuthStore } from '../features/auth/auth.store';
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { label: string; };
 
@@ -22,7 +20,7 @@ interface AuthProps {
   initialStep?: 'login' | 'initial-email';
 }
 
-type Step = 'login' | 'initial-email' | 'details' | 'account' | 'syncing';
+type Step = 'login' | 'initial-email' | 'syncing';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const { sync, forceInitialize } = useAuthStore();
@@ -36,32 +34,24 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setLoading(true);
     try {
       if (isRegister) {
-        const res = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
-
-        // If registration requires email confirmation (no session), do not enter app
-        if (res && (res as any).needsConfirmation) {
-          setLoading(false);
-          setStep('account');
-          setError('Please check your email to confirm your account before signing in.');
-          return;
-        }
+        await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
       } else {
         await authApi.login(formData.email, formData.password);
       }
-
+      
+      // If we reach here, Supabase auth was successful
       setStep('syncing');
-      const user = await sync();
-      if (!user) {
-        setError('Unable to initialize your profile. Please try logging in again.');
-        setLoading(false);
-        setStep('login');
-        return;
+      const profile = await sync();
+      
+      if (profile) {
+        onSuccess();
+      } else {
+        throw new Error("Identity sync failed. Please try again.");
       }
-
-      setTimeout(() => onSuccess(), 800);
     } catch (err: any) {
-      setError(err.message || 'Auth failure.');
+      setError(err.message || 'Authentication failed. Please check your credentials.');
       setLoading(false);
+      setStep(isRegister ? 'initial-email' : 'login');
     }
   };
 
@@ -80,7 +70,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           onClick={handleManualBypass}
           className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all"
         >
-          Cutout Loading & Enter Feed
+          System Override
         </button>
       </div>
     );

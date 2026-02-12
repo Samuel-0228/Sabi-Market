@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/supabase/db';
-import { Listing, UserProfile, OrderStatus, Order } from '../../types/index';
+import { Listing, UserProfile, OrderStatus } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
 import { useUIStore } from '../../store/ui.store';
 
