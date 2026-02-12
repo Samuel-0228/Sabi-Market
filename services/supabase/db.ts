@@ -29,7 +29,7 @@ export const db = {
   async getCurrentUser(): Promise<UserProfile | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    return db.getProfile(user.id);
+    return this.getProfile(user.id);
   },
 
   // --- MARKETPLACE ---
@@ -74,35 +74,33 @@ export const db = {
 
   // --- CHAT SYSTEM ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string): Promise<string> {
-    try {
-      // Check if conversation already exists
-      const { data: existing, error: findError } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('listing_id', listingId)
-        .eq('buyer_id', buyerId)
-        .maybeSingle();
+    // Check if conversation already exists between this buyer and this listing
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('listing_id', listingId)
+      .eq('buyer_id', buyerId)
+      .maybeSingle();
 
-      if (existing) return existing.id;
+    if (existing) return (existing as any).id;
 
-      // Create new conversation if not found
-      const { data: created, error: createError } = await supabase
-        .from('conversations')
-        .insert({ 
-          listing_id: listingId, 
-          buyer_id: buyerId, 
-          seller_id: sellerId,
-          created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
+    // Create new conversation
+    const { data: created, error } = await supabase
+      .from('conversations')
+      .insert({ 
+        listing_id: listingId, 
+        buyer_id: buyerId, 
+        seller_id: sellerId,
+        created_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
 
-      if (createError) throw createError;
-      return created.id;
-    } catch (err) {
-      console.error("Critical error in getOrCreateConversation:", err);
-      throw err;
+    if (error) {
+      console.error("Conversation creation error:", error);
+      throw error;
     }
+    return (created as any).id;
   },
 
   async sendMessage(conversationId: string, content: string) {
@@ -149,37 +147,23 @@ export const db = {
 
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized access. Please login.");
-
-    // Prevent self-trading which might be blocked by DB constraints/RLS
-    if (user.id === listing.seller_id) {
-      throw new Error("You cannot purchase your own listing.");
-    }
+    if (!user) throw new Error("Unauthorized");
 
     const { data: order, error } = await supabase.from('orders').insert({
       buyer_id: user.id,
       seller_id: listing.seller_id,
       listing_id: listing.id,
       amount,
-      commission: 0, // Ensure commission field is populated
       status: 'pending',
       delivery_info: deliveryInfo,
       created_at: new Date().toISOString()
     }).select().single();
 
-    if (error) {
-      console.error("Order insertion failed:", error);
-      throw new Error(error.message || "Failed to create trade record.");
-    }
+    if (error) throw error;
 
-    try {
-      // Notify seller via trade chat automatically
-      const cid = await db.getOrCreateConversation(listing.id, listing.seller_id, user.id);
-      await db.sendMessage(cid, `🔔 New Trade Request: "${listing.title}". Suggested Meeting: ${deliveryInfo}`);
-    } catch (chatErr) {
-      console.warn("Order created, but automated chat notification failed:", chatErr);
-      // We don't throw here because the order itself was successful
-    }
+    // Notify seller via trade chat
+    const cid = await this.getOrCreateConversation(listing.id, listing.seller_id, user.id);
+    await this.sendMessage(cid, `🔔 New Trade Request: "${listing.title}". Suggested Meeting: ${deliveryInfo}`);
 
     return order;
   },
