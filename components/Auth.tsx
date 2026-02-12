@@ -1,4 +1,6 @@
+
 import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
 
@@ -16,18 +18,24 @@ const Input = ({ label, ...props }: InputProps) => (
 );
 
 interface AuthProps {
-  onSuccess: () => void;
+  onSuccess?: () => void;
   initialStep?: 'login' | 'initial-email';
 }
 
 type Step = 'login' | 'initial-email' | 'syncing';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { sync, forceInitialize } = useAuthStore();
+  
   const [step, setStep] = useState<Step>(initialStep === 'login' ? 'login' : 'initial-email');
   const [formData, setFormData] = useState({ email: '', password: '', name: '', preferences: [] as string[] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Where to go after login?
+  const from = (location.state as any)?.from?.pathname || '/marketplace';
 
   const handleAuth = async (isRegister: boolean) => {
     setError('');
@@ -39,19 +47,17 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
         await authApi.login(formData.email, formData.password);
       }
       
-      // Proceed to syncing view
       setStep('syncing');
-      
       const profile = await sync();
       
       if (profile) {
-        onSuccess();
+        if (onSuccess) onSuccess();
+        navigate(from, { replace: true });
       } else {
-        setError("Sync partially failed. Retrying...");
-        setTimeout(() => onSuccess(), 1000); // Attempt navigation anyway to break loops
+        throw new Error("Identity verification timed out. Overriding safety node...");
       }
     } catch (err: any) {
-      console.error("Auth Component Error:", err);
+      console.error("Auth Error:", err);
       setError(err.message || 'Authentication failed. Please check your credentials.');
       setLoading(false);
       setStep(isRegister ? 'initial-email' : 'login');
@@ -60,7 +66,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   const handleManualBypass = () => {
     forceInitialize();
-    onSuccess();
+    navigate(from, { replace: true });
   };
 
   if (step === 'syncing') {

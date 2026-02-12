@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { UserProfile } from '../../types';
 import { supabase } from '../../shared/lib/supabase';
@@ -21,9 +22,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   sync: async () => {
     set({ loading: true });
     try {
-      // Allow session to settle
-      await new Promise(r => setTimeout(r, 300));
-      
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -38,7 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return profile;
       }
 
-      // If session exists but profile fetch failed, use a very minimal fallback
+      // Minimal fallback so app isn't broken
       const minimalUser: UserProfile = {
         id: session.user.id,
         email: session.user.email || '',

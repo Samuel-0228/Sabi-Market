@@ -1,12 +1,9 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../app/LanguageContext';
 
-interface LandingProps {
-  onGetStarted: () => void;
-}
-
-const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
+const Landing: React.FC = () => {
   const { t } = useLanguage();
 
   return (
@@ -26,12 +23,18 @@ const Landing: React.FC<LandingProps> = ({ onGetStarted }) => {
               {t('landingSubtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-8">
-              <button 
-                onClick={onGetStarted}
-                className="btn-hope px-16 py-8 rounded-[3rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
+              <Link 
+                to="/auth"
+                className="btn-hope px-16 py-8 rounded-[3rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all text-center"
               >
                 {t('getStarted')}
-              </button>
+              </Link>
+              <Link 
+                to="/marketplace"
+                className="px-16 py-8 rounded-[3rem] bg-white/5 border border-black/10 dark:border-white/10 text-black dark:text-white font-black text-sm uppercase tracking-[0.2em] hover:bg-black/5 dark:hover:bg-white/10 transition-all text-center"
+              >
+                Explore Market
+              </Link>
             </div>
           </div>
         </div>

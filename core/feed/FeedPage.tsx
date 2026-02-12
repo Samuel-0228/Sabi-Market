@@ -1,18 +1,15 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFeedStore } from '../../store/feed.store';
 import { useLanguage } from '../../app/LanguageContext';
 import { Listing } from '../../types';
+import AddListingModal from '../../components/product/AddListingModal';
 
-interface FeedPageProps {
-  onSelectListing: (l: Listing) => void;
-  onBuyListing: (l: Listing) => void;
-  onAddListing: () => void;
-}
-
-const FeedPage: React.FC<FeedPageProps> = ({ onSelectListing, onBuyListing, onAddListing }) => {
+const FeedPage: React.FC = () => {
   const { t } = useLanguage();
   const { filteredListings, loading, fetch, setSearchQuery, searchQuery, setCategory, activeCategory } = useFeedStore();
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -63,7 +60,7 @@ const FeedPage: React.FC<FeedPageProps> = ({ onSelectListing, onBuyListing, onAd
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
           {filteredListings.map(l => (
-            <div key={l.id} className="group cursor-pointer" onClick={() => onSelectListing(l)}>
+            <div key={l.id} className="group cursor-pointer" onClick={() => setSelectedListing(l)}>
               <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-5 shadow-sm group-hover:shadow-2xl transition-all relative">
                 <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
                 <div className="absolute top-4 left-4">
@@ -84,17 +81,13 @@ const FeedPage: React.FC<FeedPageProps> = ({ onSelectListing, onBuyListing, onAd
               </div>
             </div>
           ))}
-          {filteredListings.length === 0 && (
-             <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center">
-                <span className="text-6xl mb-6">🏜️</span>
-                <p className="font-black uppercase tracking-[0.2em] dark:text-white">No items match your search</p>
-             </div>
-          )}
         </div>
       )}
 
+      {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); fetch(); }} />}
+
       <button 
-        onClick={onAddListing} 
+        onClick={() => setShowAdd(true)} 
         className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40 btn-hope px-12 py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center gap-4"
       >
         <span>+</span> {t('startSelling')}

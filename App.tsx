@@ -1,19 +1,21 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './services/supabase/client';
 import { db } from './services/supabase/db';
 import { Listing, UserProfile } from './types';
 import { useLanguage } from './app/LanguageContext';
 
-import Navbar from './components/layout/Navbar';
+// Use the old components that support direct props for the state-based App version
+import Navbar from './components/Navbar';
 import Auth from './components/Auth';
-import Home from './pages/Home/Home';
-import Landing from './pages/Home/Landing';
-import SellerDashboard from './pages/Dashboard/SellerDashboard';
-import AddListingModal from './components/product/AddListingModal';
-import ChatBot from './features/chat/ChatBot';
-import Checkout from './pages/Checkout/CheckoutPage';
-import Footer from './components/layout/Footer';
-import InboxPage from './messaging/inbox/InboxPage';
+import Home from './components/Home';
+import Landing from './components/Landing';
+import SellerDashboard from './components/SellerDashboard';
+import AddListingModal from './components/AddListingModal';
+import ChatBot from './components/ChatBot';
+import Checkout from './components/Checkout';
+import Footer from './components/Footer';
+import Messages from './components/Messages';
 import OrdersPage from './pages/Orders/OrdersPage';
 import ToastContainer from './components/ui/ToastContainer';
 
@@ -112,7 +114,7 @@ const App: React.FC = () => {
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
       case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
-      case 'messages': return user ? <InboxPage user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
+      case 'messages': return user ? <Messages user={user} /> : <Auth onSuccess={() => handleNavigate('messages')} />;
       case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => handleNavigate('orders')} onCancel={() => handleNavigate('home')} /> : <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       default: return <Landing onGetStarted={() => handleNavigate('auth')} />;
     }

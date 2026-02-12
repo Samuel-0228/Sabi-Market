@@ -1,58 +1,58 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useAuthStore } from '../features/auth/auth.store';
-import { useLanguage } from './LanguageContext';
-import { supabase } from '../shared/lib/supabase';
-import { Listing } from '../types';
 
+import React, { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../features/auth/auth.store';
+import { supabase } from '../shared/lib/supabase';
+
+// Layout Components
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import ToastContainer from '../components/ui/ToastContainer';
+import ChatBot from '../features/chat/ChatBot';
+
+// Page Components
 import Landing from '../pages/Home/Landing';
 import FeedPage from '../core/feed/FeedPage';
 import Auth from '../components/Auth';
-import ChatRoom from '../messaging/inbox/InboxPage'; 
-import ToastContainer from '../components/ui/ToastContainer';
 
+// Lazy Loaded Pages
 const SellerDashboard = lazy(() => import('../pages/Dashboard/SellerDashboard'));
 const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
 const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
-const AddListingModal = lazy(() => import('../components/product/AddListingModal'));
+const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
 
-const App: React.FC = () => {
-  const { t } = useLanguage();
+// Protected Route Wrapper
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, initialized } = useAuthStore();
+  const location = useLocation();
+
+  if (!initialized) return null; // Wait for auth sync
+
+  if (!user) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const AppRoutes: React.FC = () => {
   const { user, initialized, sync, forceInitialize } = useAuthStore();
-  const [currentPage, setCurrentPage] = useState('landing');
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    sync().then((u) => {
-      if (u) setCurrentPage('home');
-    });
+    sync();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
-        const u = await sync();
-        if (u && (currentPage === 'auth' || currentPage === 'landing')) {
-          setCurrentPage('home');
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (['SIGNED_IN', 'USER_UPDATED', 'TOKEN_REFRESHED'].includes(event)) {
+        await sync();
       }
       if (event === 'SIGNED_OUT') {
-        setCurrentPage('landing');
         useAuthStore.getState().setUser(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [sync]);
-
-  const navigate = (page: string) => {
-    if (!user && !['landing', 'auth'].includes(page)) {
-      setCurrentPage('auth');
-    } else {
-      setCurrentPage(page);
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   if (!initialized) {
     return (
@@ -73,35 +73,60 @@ const App: React.FC = () => {
     );
   }
 
-  const render = () => {
-    // If authenticated, default to home if trying to access landing/auth directly
-    const effectivePage = (user && (currentPage === 'landing' || currentPage === 'auth')) ? 'home' : currentPage;
-
-    switch (effectivePage) {
-      case 'landing': return <Landing onGetStarted={() => navigate('auth')} />;
-      case 'auth': return <Auth onSuccess={() => navigate('home')} />;
-      case 'home': return <FeedPage onSelectListing={(l: Listing) => { setSelectedListing(l); }} onAddListing={() => setShowAdd(true)} onBuyListing={(l: Listing) => { setSelectedListing(l); navigate('checkout'); }} />;
-      case 'dashboard': return <SellerDashboard user={user!} />;
-      case 'messages': return <ChatRoom user={user!} />;
-      case 'orders': return <OrdersPage user={user!} />;
-      case 'checkout': return selectedListing ? <Checkout listing={selectedListing} onSuccess={() => navigate('orders')} onCancel={() => navigate('home')} /> : null;
-      default: return <Landing onGetStarted={() => navigate('auth')} />;
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white">
-      <Navbar onNavigate={navigate} currentPage={currentPage} onLogout={() => supabase.auth.signOut()} user={user} />
+      <Navbar />
       <main className="flex-1">
-        <Suspense fallback={<div className="h-screen flex items-center justify-center opacity-20 text-[10px] font-black uppercase tracking-widest">Loading Application Frame...</div>}>
-          {render()}
+        <Suspense fallback={
+          <div className="h-[60vh] flex items-center justify-center opacity-20 text-[10px] font-black uppercase tracking-widest">
+            Loading Application Frame...
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={user ? <Navigate to="/marketplace" replace /> : <Landing />} />
+            <Route path="/auth" element={<Auth onSuccess={() => {}} />} />
+            <Route path="/marketplace" element={<FeedPage />} />
+            
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <SellerDashboard user={user!} />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/inbox" element={
+              <ProtectedRoute>
+                <InboxPage user={user!} />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/orders" element={
+              <ProtectedRoute>
+                <OrdersPage user={user!} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/checkout" element={
+              <ProtectedRoute>
+                <Checkout listing={null as any} onSuccess={() => {}} onCancel={() => {}} />
+              </ProtectedRoute>
+            } />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Suspense>
       </main>
-      <Footer onNavigate={navigate} />
-      {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); navigate('home'); }} />}
+      <Footer onNavigate={(path) => navigate(path)} />
+      {user && <ChatBot />}
       <ToastContainer />
     </div>
   );
 };
+
+const App: React.FC = () => (
+  <BrowserRouter>
+    <AppRoutes />
+  </BrowserRouter>
+);
 
 export default App;
