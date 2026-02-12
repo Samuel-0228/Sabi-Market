@@ -36,12 +36,28 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setLoading(true);
     try {
       if (isRegister) {
-        await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
+        const res = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
+
+        // If registration requires email confirmation (no session), do not enter app
+        if (res && (res as any).needsConfirmation) {
+          setLoading(false);
+          setStep('account');
+          setError('Please check your email to confirm your account before signing in.');
+          return;
+        }
       } else {
         await authApi.login(formData.email, formData.password);
       }
+
       setStep('syncing');
-      await sync();
+      const user = await sync();
+      if (!user) {
+        setError('Unable to initialize your profile. Please try logging in again.');
+        setLoading(false);
+        setStep('login');
+        return;
+      }
+
       setTimeout(() => onSuccess(), 800);
     } catch (err: any) {
       setError(err.message || 'Auth failure.');
