@@ -78,7 +78,7 @@ const Navbar: React.FC = () => {
             <NavLink
               key={item.id}
               to={item.path}
-              className={({ isActive }) => `
+              className={({ isActive }: { isActive: boolean }) => `
                 relative px-5 py-2.5 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all group/btn
                 ${isActive 
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
