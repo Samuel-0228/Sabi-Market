@@ -2,6 +2,7 @@
 import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../features/auth/auth.store';
+import { useUIStore } from '../store/ui.store';
 import { supabase } from '../shared/lib/supabase';
 
 // Layout Components
@@ -20,13 +21,14 @@ const SellerDashboard = lazy(() => import('../pages/Dashboard/SellerDashboard'))
 const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
 const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
 const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
+const ProductDetailsPage = lazy(() => import('../pages/Product/ProductDetailsPage'));
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, initialized } = useAuthStore();
   const location = useLocation();
 
-  if (!initialized) return null; // Wait for auth sync
+  if (!initialized) return null;
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
@@ -37,6 +39,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppRoutes: React.FC = () => {
   const { user, initialized, sync, forceInitialize } = useAuthStore();
+  const { addToast } = useUIStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +57,27 @@ const AppRoutes: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [sync]);
 
+  // Seller Notification Listener
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('order-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'orders',
+        filter: `seller_id=eq.${user.id}`
+      }, (payload: any) => {
+        addToast("🔔 New Trade Request received!", "success");
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, addToast]);
+
   if (!initialized) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] p-10 text-center">
@@ -65,7 +89,7 @@ const AppRoutes: React.FC = () => {
         
         <button 
           onClick={forceInitialize}
-          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 hover:border-indigo-600/30 transition-all active:scale-95"
+          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all active:scale-95"
         >
           System Override
         </button>
@@ -86,6 +110,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/" element={user ? <Navigate to="/marketplace" replace /> : <Landing />} />
             <Route path="/auth" element={<Auth onSuccess={() => {}} />} />
             <Route path="/marketplace" element={<FeedPage />} />
+            <Route path="/product/:id" element={<ProductDetailsPage />} />
             
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -107,11 +132,10 @@ const AppRoutes: React.FC = () => {
 
             <Route path="/checkout" element={
               <ProtectedRoute>
-                <Checkout listing={null as any} onSuccess={() => {}} onCancel={() => {}} />
+                <CheckoutWrapper />
               </ProtectedRoute>
             } />
 
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
@@ -120,6 +144,23 @@ const AppRoutes: React.FC = () => {
       {user && <ChatBot />}
       <ToastContainer />
     </div>
+  );
+};
+
+// Helper component to extract listing from state for Checkout
+const CheckoutWrapper: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const listing = location.state?.listing;
+
+  if (!listing) return <Navigate to="/marketplace" replace />;
+
+  return (
+    <Checkout 
+      listing={listing} 
+      onSuccess={() => navigate('/orders')} 
+      onCancel={() => navigate(-1)} 
+    />
   );
 };
 

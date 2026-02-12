@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFeedStore } from '../../store/feed.store';
 import { useLanguage } from '../../app/LanguageContext';
 import { Listing } from '../../types';
@@ -7,8 +8,8 @@ import AddListingModal from '../../components/product/AddListingModal';
 
 const FeedPage: React.FC = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { filteredListings, loading, fetch, setSearchQuery, searchQuery, setCategory, activeCategory } = useFeedStore();
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
@@ -16,6 +17,10 @@ const FeedPage: React.FC = () => {
   }, [fetch]);
 
   const categories = ['all', 'goods', 'course', 'academic_materials', 'food'];
+
+  const handleProductClick = (listing: Listing) => {
+    navigate(`/product/${listing.id}`);
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-8 py-10 animate-in fade-in duration-700">
@@ -60,7 +65,7 @@ const FeedPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
           {filteredListings.map(l => (
-            <div key={l.id} className="group cursor-pointer" onClick={() => setSelectedListing(l)}>
+            <div key={l.id} className="group cursor-pointer" onClick={() => handleProductClick(l)}>
               <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-5 shadow-sm group-hover:shadow-2xl transition-all relative">
                 <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
                 <div className="absolute top-4 left-4">
