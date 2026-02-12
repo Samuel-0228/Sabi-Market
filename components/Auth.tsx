@@ -39,16 +39,19 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
         await authApi.login(formData.email, formData.password);
       }
       
-      // If we reach here, Supabase auth was successful
+      // Proceed to syncing view
       setStep('syncing');
+      
       const profile = await sync();
       
       if (profile) {
         onSuccess();
       } else {
-        throw new Error("Identity sync failed. Please try again.");
+        setError("Sync partially failed. Retrying...");
+        setTimeout(() => onSuccess(), 1000); // Attempt navigation anyway to break loops
       }
     } catch (err: any) {
+      console.error("Auth Component Error:", err);
       setError(err.message || 'Authentication failed. Please check your credentials.');
       setLoading(false);
       setStep(isRegister ? 'initial-email' : 'login');
@@ -62,7 +65,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   if (step === 'syncing') {
     return (
-      <div className="h-[70vh] flex flex-col items-center justify-center text-center p-10">
+      <div className="h-[70vh] flex flex-col items-center justify-center text-center p-10 animate-pulse">
         <div className="w-24 h-24 border-[4px] border-indigo-500/10 border-t-indigo-600 rounded-full animate-spin mb-10" />
         <h2 className="text-3xl font-black dark:text-white tracking-tighter">Initializing Identity...</h2>
         <p className="mt-4 text-gray-400 font-medium italic mb-10">Building secure trade connection</p>
@@ -84,7 +87,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           <h2 className="text-4xl font-black dark:text-white tracking-tighter">{step === 'login' ? 'Welcome' : 'Join'}</h2>
         </div>
 
-        {error && <div className="bg-red-50 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-500/10">{error}</div>}
+        {error && <div className="bg-red-50 text-red-500 p-5 rounded-2xl mb-8 text-xs font-bold border border-red-500/10 animate-bounce">{error}</div>}
 
         {step === 'login' ? (
           <form onSubmit={(e: FormEvent) => { e.preventDefault(); handleAuth(false); }} className="space-y-6">

@@ -8,7 +8,7 @@ export const supabase: any = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'savvy-unified-v1', // Matched with services/supabase/client.ts
+    storageKey: 'savvy-market-session',
     flowType: 'pkce'
   },
   global: {

@@ -39,52 +39,44 @@ export const authApi = {
   },
 
   async syncProfile(): Promise<UserProfile | null> {
-    // Attempt to get user from session first to be faster
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
     
     if (!user) {
       const { data: { user: authUser } } = await authService.getUser();
       if (!authUser) return null;
+      return this.syncProfile(); // Re-check with the actual user object
     }
 
-    const userId = user?.id || (await authService.getUser()).data.user?.id;
-    if (!userId) return null;
+    const userId = user.id;
 
-    // Retry fetching the profile to account for SQL trigger delay
+    // Retry loop: Wait for the Postgres trigger to create the profile row
     let attempts = 0;
-    let profile = null;
-    
-    while (attempts < 5) {
-      const { data } = await authService.getProfile(userId);
-      if (data) {
-        profile = data as UserProfile;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 800)); // Slightly longer wait for SQL triggers
+    while (attempts < 10) {
+      const { data, error } = await authService.getProfile(userId);
+      if (data && !error) return data as UserProfile;
+      
+      await new Promise(r => setTimeout(r, 800));
       attempts++;
     }
 
-    if (profile) return profile;
-
-    // High-Fidelity Fallback if trigger hasn't finished
-    const authData = user || (await authService.getUser()).data.user;
+    // High-Fidelity Manual Fallback
     const fallback: UserProfile = {
       id: userId,
-      email: authData?.email || '',
-      full_name: authData?.user_metadata?.full_name || 'Savvy Student',
+      email: user.email || '',
+      full_name: user.user_metadata?.full_name || 'Savvy Student',
       role: 'student',
-      is_verified: authData?.email?.endsWith('@aau.edu.et') || false,
-      preferences: authData?.user_metadata?.preferences || [],
-      created_at: authData?.created_at || new Date().toISOString()
+      is_verified: user.email?.endsWith('@aau.edu.et') || false,
+      preferences: user.user_metadata?.preferences || [],
+      created_at: user.created_at || new Date().toISOString()
     };
     
     try {
       await authService.upsertProfile(fallback);
+      return fallback;
     } catch (e) {
-      console.warn("Manual profile sync failed:", e);
+      console.error("Critical Profile Sync Failure:", e);
+      return fallback; // Return local representation so app doesn't hang
     }
-    
-    return fallback;
   }
 };

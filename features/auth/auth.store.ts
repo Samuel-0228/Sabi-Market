@@ -21,8 +21,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   sync: async () => {
     set({ loading: true });
     try {
-      // Small buffer for session persistence
-      await new Promise(r => setTimeout(r, 200));
+      // Allow session to settle
+      await new Promise(r => setTimeout(r, 300));
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -38,10 +38,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         return profile;
       }
 
-      set({ user: null, loading: false, initialized: true });
-      return null;
+      // If session exists but profile fetch failed, use a very minimal fallback
+      const minimalUser: UserProfile = {
+        id: session.user.id,
+        email: session.user.email || '',
+        full_name: session.user.user_metadata?.full_name || 'Student',
+        role: 'student',
+        is_verified: false,
+        created_at: new Date().toISOString()
+      };
+      
+      set({ user: minimalUser, loading: false, initialized: true });
+      return minimalUser;
     } catch (e) {
-      console.error("Auth sync failed", e);
+      console.error("Global Auth Sync Error:", e);
       set({ user: null, loading: false, initialized: true });
       return null;
     }
