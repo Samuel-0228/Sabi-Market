@@ -1,4 +1,3 @@
-
 import { authService } from '../../services/supabase/auth';
 import { UserProfile } from '../../types';
 import { db } from '../../services/supabase/db';
@@ -39,18 +38,17 @@ export const authApi = {
     const { data: { user } } = await authService.getUser();
     if (!user) return null;
 
-    // Optimized retry loop: 8 attempts at 400ms = 3.2s total max wait
+    // Optimized retry loop to wait for the SQL trigger to create the profile row
     let attempts = 0;
-    while (attempts < 8) {
+    while (attempts < 5) {
       const profile = await db.getProfile(user.id);
       if (profile) return profile;
       
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 500));
       attempts++;
     }
 
-    // High-Fidelity Fallback Profile
-    // This allows the user to browse while the server-side row is still processing
+    // High-Fidelity Fallback Profile if trigger is delayed
     const fallback: UserProfile = {
       id: user.id,
       email: user.email || '',
@@ -61,7 +59,7 @@ export const authApi = {
       created_at: new Date().toISOString()
     };
     
-    // Attempt one last manual sync to DB
+    // Attempt manual sync to DB
     try {
       await authService.upsertProfile(fallback);
     } catch (e) {

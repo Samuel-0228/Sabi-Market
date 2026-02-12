@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { db, supabase } from '../services/supabaseService';
 import { Conversation, Message, UserProfile } from '../types';
@@ -123,7 +122,6 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8 animate-in fade-in duration-700">
-      {/* Sidebar */}
       <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl">
         <div className="p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
           <h2 className="text-2xl font-black dark:text-white tracking-tighter leading-none">Inbox</h2>
@@ -166,7 +164,6 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Main Viewport */}
       <div className="flex-1 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] flex flex-col border border-gray-100 dark:border-white/5 overflow-hidden shadow-2xl relative">
         {activeConv ? (
           <>

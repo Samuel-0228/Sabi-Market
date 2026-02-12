@@ -28,7 +28,9 @@ const App: React.FC = () => {
     sync();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') sync();
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+        sync();
+      }
       if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
         useAuthStore.getState().setUser(null);
