@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/supabaseService';
 import { Listing, OrderItem, UserProfile } from '../types';
@@ -25,17 +24,17 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const loadData = async () => {
     try {
       const allListings = await db.getListings();
-      const myListings = allListings.filter(l => l.seller_id === user.id);
+      const myListings = allListings.filter((l: Listing) => l.seller_id === user.id);
       const myOrders = await db.getSellerOrderItems();
 
       setListings(myListings);
       setOrders(myOrders);
 
-      const totalSales = myOrders.reduce((acc: number, o: OrderItem) => acc + (o.status === 'completed' ? (o.price || 0) : 0), 0);
+      const totalSales = myOrders.reduce((acc: number, o: any) => acc + (o.status === 'completed' ? (o.price || 0) : 0), 0);
       setStats({
         totalSales,
         activeListings: myListings.length,
-        pendingOrders: myOrders.filter(o => o.status === 'pending').length
+        pendingOrders: myOrders.filter((o: any) => o.status === 'pending').length
       });
     } catch (err) {
       console.error("Dashboard load failed", err);
@@ -64,7 +63,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
           { label: t('revenue'), val: stats.totalSales, unit: 'ETB', color: 'text-indigo-600' },
           { label: t('activeItems'), val: stats.activeListings, unit: t('items'), color: 'text-black dark:text-white' },
           { label: t('unresolved'), val: stats.pendingOrders, unit: t('orders'), color: 'text-pink-600' },
-        ].map((s, i) => (
+        ].map((s: any, i: number) => (
           <div key={i} className="bg-white dark:bg-[#0c0c0e] p-10 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{s.label}</p>
             <div className="flex items-baseline gap-2">
@@ -106,7 +105,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                 <p className="font-bold text-xs uppercase tracking-widest dark:text-white">No history yet</p>
               </div>
             ) : (
-              orders.map(order => (
+              orders.map((order: any) => (
                 <div key={order.id} className="flex items-center justify-between py-4 border-b border-gray-50 dark:border-white/5 last:border-0">
                   <div className="min-w-0">
                     <p className="font-bold text-black dark:text-white text-sm truncate">{order.product_title}</p>

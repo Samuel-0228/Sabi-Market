@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuthStore } from '../features/auth/auth.store';
 import { useLanguage } from './LanguageContext';
@@ -28,8 +27,8 @@ const App: React.FC = () => {
   useEffect(() => {
     sync();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string) => {
-      if (event === 'SIGNED_IN') sync();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') sync();
       if (event === 'SIGNED_OUT') {
         setCurrentPage('landing');
         useAuthStore.getState().setUser(null);

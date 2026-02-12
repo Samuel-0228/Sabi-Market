@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/supabase/db';
 import { Listing, UserProfile, OrderStatus, Order } from '../../types/index';
@@ -19,7 +18,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const load = async (signal?: AbortSignal) => {
     try {
       const [listings, orders] = await Promise.all([
-        db.getListings(signal).then(all => all.filter(l => l.seller_id === user.id)),
+        db.getListings(signal).then(all => all.filter((l: Listing) => l.seller_id === user.id)),
         db.getOrders(user.id, 'seller', signal)
       ]);
       setData({ listings, orders });
@@ -39,7 +38,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const stats = useMemo(() => ({
     revenue: data.orders.reduce((acc: number, o: any) => acc + (o.status === 'completed' ? parseFloat(o.amount) : 0), 0),
     active: data.listings.length,
-    pending: data.orders.filter(o => o.status === 'pending').length
+    pending: data.orders.filter((o: any) => o.status === 'pending').length
   }), [data]);
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
@@ -81,7 +80,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
       <div className="bg-white dark:bg-[#0c0c0e] p-10 rounded-[3rem] border border-gray-100 dark:border-white/5 shadow-xl">
         {activeTab === 'inventory' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {data.listings.map(l => (
+            {data.listings.map((l: Listing) => (
               <div key={l.id} className="group">
                 <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-gray-50 dark:bg-white/5 shadow-inner">
                   <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -93,7 +92,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {data.orders.map(o => (
+            {data.orders.map((o: any) => (
               <div key={o.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-white/5">
                 <div className="flex items-center gap-6">
                   <img src={o.image_url} className="w-16 h-16 rounded-2xl object-cover" />

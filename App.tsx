@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './services/supabase/client';
 import { db } from './services/supabase/db';
@@ -63,7 +62,7 @@ const App: React.FC = () => {
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       if (!mounted) return;
       
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
