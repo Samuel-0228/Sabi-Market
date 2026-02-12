@@ -1,6 +1,6 @@
+
 import { authService } from '../../services/supabase/auth';
 import { UserProfile } from '../../types';
-import { db } from '../../services/supabase/db';
 import { supabase } from '../../services/supabase/client';
 
 export const authApi = {
@@ -43,24 +43,30 @@ export const authApi = {
     const user = session?.user;
     
     if (!user) {
+      // Immediate re-check if the session call returned null but might still be hydrating
       const { data: { user: authUser } } = await authService.getUser();
       if (!authUser) return null;
-      return this.syncProfile(); // Re-check with the actual user object
+      // Use the authUser directly to save a recursive call
+      return this._fetchProfileWithRetries(authUser);
     }
 
-    const userId = user.id;
+    return this._fetchProfileWithRetries(user);
+  },
 
-    // Retry loop: Wait for the Postgres trigger to create the profile row
+  async _fetchProfileWithRetries(user: any): Promise<UserProfile> {
+    const userId = user.id;
     let attempts = 0;
-    while (attempts < 10) {
+    const maxAttempts = 6; // Reduced attempts for faster feedback
+
+    while (attempts < maxAttempts) {
       const { data, error } = await authService.getProfile(userId);
       if (data && !error) return data as UserProfile;
       
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 600));
       attempts++;
     }
 
-    // High-Fidelity Manual Fallback
+    // High-Fidelity Manual Fallback: Ensure user data is returned even if DB fetch fails
     const fallback: UserProfile = {
       id: userId,
       email: user.email || '',
@@ -72,11 +78,11 @@ export const authApi = {
     };
     
     try {
-      await authService.upsertProfile(fallback);
+      // Fire-and-forget upsert to try and heal the database state
+      authService.upsertProfile(fallback).catch(e => console.warn("Background profile heal failed:", e));
       return fallback;
     } catch (e) {
-      console.error("Critical Profile Sync Failure:", e);
-      return fallback; // Return local representation so app doesn't hang
+      return fallback;
     }
   }
 };

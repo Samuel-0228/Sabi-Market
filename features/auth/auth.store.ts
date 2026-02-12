@@ -21,37 +21,52 @@ export const useAuthStore = create<AuthState>((set) => ({
   forceInitialize: () => set({ initialized: true, loading: false }),
   sync: async () => {
     set({ loading: true });
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        set({ user: null, loading: false, initialized: true });
+    
+    // Safety Race: Ensure the sync never takes longer than 6 seconds
+    const timeoutPromise = new Promise<null>((resolve) => 
+      setTimeout(() => {
+        console.warn("Auth sync timed out, forcing initialization fallback");
+        resolve(null);
+      }, 6000)
+    );
+
+    const syncPromise = (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          return null;
+        }
+        
+        const profile = await authApi.syncProfile();
+        
+        if (profile) {
+          return profile;
+        }
+
+        // Minimal fallback profile if session exists but database profile is missing
+        return {
+          id: session.user.id,
+          email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name || 'Student',
+          role: 'student',
+          is_verified: session.user.email?.endsWith('@aau.edu.et') || false,
+          created_at: session.user.created_at || new Date().toISOString()
+        } as UserProfile;
+      } catch (e) {
+        console.error("Auth sync internal error:", e);
         return null;
       }
-      
-      const profile = await authApi.syncProfile();
-      
-      if (profile) {
-        set({ user: profile, loading: false, initialized: true });
-        return profile;
-      }
+    })();
 
-      // Minimal fallback so app isn't broken
-      const minimalUser: UserProfile = {
-        id: session.user.id,
-        email: session.user.email || '',
-        full_name: session.user.user_metadata?.full_name || 'Student',
-        role: 'student',
-        is_verified: false,
-        created_at: new Date().toISOString()
-      };
-      
-      set({ user: minimalUser, loading: false, initialized: true });
-      return minimalUser;
-    } catch (e) {
-      console.error("Global Auth Sync Error:", e);
-      set({ user: null, loading: false, initialized: true });
-      return null;
-    }
+    const result = await Promise.race([syncPromise, timeoutPromise]);
+    
+    set({ 
+      user: result, 
+      loading: false, 
+      initialized: true 
+    });
+    
+    return result;
   }
 }));
