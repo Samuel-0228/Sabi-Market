@@ -109,6 +109,8 @@ const App: React.FC = () => {
     switch (currentPage) {
       case 'landing': return <Landing onGetStarted={() => handleNavigate('auth')} />;
       case 'auth': return <Auth onSuccess={() => handleNavigate('home')} />;
+      case 'login': return <Auth initialStep="login" onSuccess={() => handleNavigate('home')} />;
+      case 'register': return <Auth initialStep="initial-email" onSuccess={() => handleNavigate('home')} />;
       case 'home': return <Home user={user} onSelectListing={setSelectedListing} onAddListing={() => setShowAddListing(true)} onBuyListing={(l) => { setSelectedListing(l); handleNavigate('checkout'); }} onNavigate={handleNavigate} />;
       case 'dashboard': return user ? <SellerDashboard user={user} /> : <Auth onSuccess={() => handleNavigate('dashboard')} />;
       case 'orders': return user ? <OrdersPage user={user} /> : <Auth onSuccess={() => handleNavigate('orders')} />;
