@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { UserProfile, Message, Conversation } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
@@ -31,20 +31,22 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         let currentConversations: Conversation[] = data || [];
         setConversations(currentConversations);
 
-        // Check for cross-page navigation triggers (from Home Detail)
+        // Check for cross-page navigation triggers
         const pending = localStorage.getItem('savvy_pending_chat');
         if (pending) {
           localStorage.removeItem('savvy_pending_chat');
-          const { listingId, seller_id } = JSON.parse(pending);
+          const { listingId, sellerId } = JSON.parse(pending);
           
-          const cid = await db.getOrCreateConversation(listingId, seller_id, user.id);
+          if (!listingId || !sellerId) return;
+
+          const cid = await db.getOrCreateConversation(listingId, sellerId, user.id);
           const existing = currentConversations.find((c: Conversation) => c.id === cid);
           
           if (existing) {
             setActiveConv(existing);
           } else {
             // Fetch the freshly created conversation details
-            const { data: fresh } = await supabase
+            const { data: fresh, error: freshError } = await supabase
               .from('conversations')
               .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
               .eq('id', cid)
@@ -59,7 +61,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           setActiveConv(currentConversations[0]);
         }
       } catch (err) {
-        console.error("Failed to load inbox:", err);
+        console.error("Failed to sync inbox messages:", err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -69,7 +71,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
     return () => { mounted = false; };
   }, [user.id]);
 
-  // 2. Realtime Subscription: Telegram-style live updates
+  // 2. Realtime Subscription
   useEffect(() => {
     if (!activeConv) return;
     
@@ -95,18 +97,20 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         const newMsg = payload.new;
         
         setMessages(prev => {
-          // Check if this message was already added optimistically
-          const exists = prev.find(m => m.id === newMsg.id || (m.pending && m.content === newMsg.content && m.sender_id === newMsg.sender_id));
-          if (exists) {
-            // Replace the pending message with the real one to remove the "pending" style
-            return prev.map(m => (m.pending && m.content === newMsg.content ? newMsg : m));
+          const exists = prev.find(m => m.id === newMsg.id);
+          if (exists) return prev;
+          
+          // Replace pending version if it exists
+          const pendingIdx = prev.findIndex(m => m.pending && m.content === newMsg.content && m.sender_id === newMsg.sender_id);
+          if (pendingIdx !== -1) {
+            const next = [...prev];
+            next[pendingIdx] = newMsg;
+            return next;
           }
           return [...prev, newMsg];
         });
       })
-      .subscribe((status: string) => {
-        if (status === 'SUBSCRIBED') console.debug("Chat online");
-      });
+      .subscribe();
 
     return () => { 
       mounted = false; 
@@ -114,14 +118,13 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
     };
   }, [activeConv?.id]);
 
-  // 3. Scroll to bottom on new messages
+  // 3. Scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // 4. Optimistic Message Sending
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !activeConv) return;
@@ -141,17 +144,11 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
     setMessages(prev => [...prev, optimisticMsg]);
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: activeConv.id,
-        sender_id: user.id,
-        content: content
-      });
-      
-      if (error) throw error;
+      await db.sendMessage(activeConv.id, content);
     } catch (e) {
-      console.error("Failed to sync message");
+      console.error("Message delivery failed");
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
-      alert("Message failed to send. Check connection.");
+      alert("Failed to send message. Check your connection.");
     }
   };
 
@@ -164,7 +161,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8 animate-in fade-in duration-500">
-      {/* Sidebar: Active Conversations */}
+      {/* Sidebar */}
       <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border dark:border-white/5 flex flex-col overflow-hidden shadow-xl">
         <div className="p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
           <h2 className="text-2xl font-black dark:text-white tracking-tighter leading-none">Inbox.</h2>
@@ -196,7 +193,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         </div>
       </div>
 
-      {/* Main Chat Interface */}
+      {/* Chat Interface */}
       <div className="flex-1 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border dark:border-white/5 flex flex-col overflow-hidden shadow-2xl relative">
         {activeConv ? (
           <>
@@ -220,11 +217,6 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-10 space-y-6 bg-gray-50/5 dark:bg-black/5" ref={scrollRef}>
-              {messages.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center opacity-10">
-                   <p className="text-sm font-black uppercase tracking-[0.3em]">Discuss delivery & meetup</p>
-                </div>
-              )}
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
                   <div className={`p-4 px-6 rounded-[1.8rem] max-w-[70%] shadow-sm transition-all duration-300 ${
@@ -236,7 +228,6 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
                     <p className="text-sm font-medium leading-relaxed">{m.content}</p>
                     <div className="flex items-center gap-2 mt-2 opacity-40">
                        <span className="text-[8px] font-black uppercase">{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                       {m.pending && <span className="text-[8px] animate-pulse">⏳</span>}
                     </div>
                   </div>
                 </div>
@@ -245,7 +236,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
 
             <form onSubmit={handleSend} className="p-8 border-t dark:border-white/5 flex gap-4 bg-white dark:bg-[#0c0c0e]">
               <input 
-                className="flex-1 bg-gray-50 dark:bg-white/5 p-5 px-8 rounded-2xl dark:text-white font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all placeholder:text-gray-400" 
+                className="flex-1 bg-gray-50 dark:bg-white/5 p-5 px-8 rounded-2xl dark:text-white font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all" 
                 value={input} 
                 onChange={e => setInput(e.target.value)} 
                 placeholder="Negotiate or arrange meetup..." 
@@ -260,12 +251,6 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           </div>
         )}
       </div>
-      
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.1); border-radius: 10px; }
-      `}</style>
     </div>
   );
 };

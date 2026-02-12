@@ -31,7 +31,10 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
       addToast("Trade request sent! Check 'My Orders'.", "success");
       onSuccess();
     } catch (err: any) {
-      addToast("Trade failed. Please try again.", "error");
+      console.error("Checkout Failure:", err);
+      const errorMsg = err.message || "Trade failed. Please try again.";
+      addToast(errorMsg, "error");
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }

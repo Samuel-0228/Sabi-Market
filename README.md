@@ -121,8 +121,8 @@ Session hydration is handled before rendering protected routes.
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd savvy-market
+git clone https://github.com/Samuel-0228/Sabi-Market
+cd sabi-market
 ```
 
 ---

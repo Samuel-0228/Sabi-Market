@@ -5,7 +5,6 @@ import { supabase } from '../../shared/lib/supabase';
 import { Listing } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { useAuthStore } from '../../features/auth/auth.store';
-import { db } from '../../services/supabase/db';
 
 const ProductDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +30,7 @@ const ProductDetailsPage: React.FC = () => {
           seller_name: data.profiles?.full_name || 'Verified Seller'
         });
       } catch (err) {
-        console.error("Failed to load listing:", err);
+        console.error("Failed to load listing details:", err);
       } finally {
         setLoading(false);
       }
@@ -44,9 +43,15 @@ const ProductDetailsPage: React.FC = () => {
     if (!user) return navigate('/auth');
     if (!listing) return;
 
+    if (user.id === listing.seller_id) {
+      alert("This is your own product.");
+      return;
+    }
+
+    // Set standard keys for Inbox pickup
     localStorage.setItem('savvy_pending_chat', JSON.stringify({ 
       listingId: listing.id, 
-      seller_id: listing.seller_id 
+      sellerId: listing.seller_id 
     }));
     navigate('/inbox');
   };
@@ -54,6 +59,12 @@ const ProductDetailsPage: React.FC = () => {
   const handleBuyNow = () => {
     if (!user) return navigate('/auth');
     if (!listing) return;
+    
+    if (user.id === listing.seller_id) {
+      alert("You cannot buy your own item.");
+      return;
+    }
+    
     navigate('/checkout', { state: { listing } });
   };
 
