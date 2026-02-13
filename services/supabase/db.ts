@@ -163,7 +163,6 @@ export const db = {
       seller_id: listing.seller_id,
       listing_id: listing.id,
       amount,
-      commission: 0,
       status: 'pending',
       delivery_info: deliveryInfo,
       created_at: new Date().toISOString()
