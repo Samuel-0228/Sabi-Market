@@ -15,7 +15,6 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'online' | 'offline'>('connecting');
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> to resolve type error in browser environment
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 1. Initial Load: Fetch conversations and handle deep-links
@@ -82,7 +81,9 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
       .select('*')
       .eq('conversation_id', activeConv.id)
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (mounted) setMessages(data || []); });
+      .then(({ data }: { data: Message[] | null }) => { 
+        if (mounted) setMessages(data || []); 
+      });
 
     // Setup Realtime Channel
     const channel = supabase.channel(`live_trade_${activeConv.id}`, {
