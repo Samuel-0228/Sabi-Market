@@ -39,114 +39,87 @@ const ProductDetailsPage: React.FC = () => {
     fetchListing();
   }, [id]);
 
-  const handleContactSeller = async () => {
-    if (!user) return navigate('/auth');
-    if (!listing) return;
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-savvy-bg dark:bg-savvy-dark">
+      <div className="w-16 h-16 border-2 border-savvy-accent border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-    if (user.id === listing.seller_id) {
-      alert("This is your own product.");
-      return;
-    }
-
-    // Set standard keys for Inbox pickup
-    localStorage.setItem('savvy_pending_chat', JSON.stringify({ 
-      listingId: listing.id, 
-      sellerId: listing.seller_id 
-    }));
-    navigate('/inbox');
-  };
-
-  const handleBuyNow = () => {
-    if (!user) return navigate('/auth');
-    if (!listing) return;
-    
-    if (user.id === listing.seller_id) {
-      alert("You cannot buy your own item.");
-      return;
-    }
-    
-    navigate('/checkout', { state: { listing } });
-  };
-
-  if (loading) {
-    return (
-      <div className="h-[70vh] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-[3px] border-indigo-600/10 border-t-indigo-600 rounded-full animate-spin mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Inspecting Quality...</p>
-      </div>
-    );
-  }
-
-  if (!listing) {
-    return (
-      <div className="h-[70vh] flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-black mb-4">Item not found.</h2>
-        <button onClick={() => navigate('/marketplace')} className="text-indigo-600 font-bold underline">Return to Market</button>
-      </div>
-    );
-  }
+  if (!listing) return (
+    <div className="h-screen w-full flex flex-col items-center justify-center dark:text-white">
+      <h2 className="text-4xl font-black mb-8">ITEM NOT FOUND.</h2>
+      <button onClick={() => navigate('/marketplace')} className="text-savvy-accent uppercase font-black tracking-widest border-b-2 border-savvy-accent pb-2">BACK TO MARKET</button>
+    </div>
+  );
 
   return (
-    <div className="max-w-[1200px] mx-auto px-8 py-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-        {/* Left: Product Image */}
-        <div className="aspect-[4/5] rounded-[3rem] overflow-hidden bg-gray-50 dark:bg-white/5 shadow-2xl group">
+    <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen">
+      <div className="flex flex-col lg:flex-row h-full">
+        {/* Left: Fixed Image Frame */}
+        <div className="w-full lg:w-1/2 h-[60vh] lg:h-screen lg:fixed lg:left-0 lg:top-0 bg-gray-100 dark:bg-white/5 overflow-hidden">
           <img 
             src={listing.image_url} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s]" 
+            className="w-full h-full object-cover transition-transform duration-[5s] hover:scale-110" 
             alt={listing.title} 
           />
         </div>
 
-        {/* Right: Details */}
-        <div className="flex flex-col">
-          <div className="flex-1">
-            <div className="mb-10">
-              <span className="bg-indigo-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest">
-                {t(listing.category)}
-              </span>
-              <h1 className="text-5xl font-black dark:text-white tracking-tighter mt-6 leading-tight">
-                {listing.title}
-              </h1>
-              <p className="text-4xl font-black text-indigo-600 mt-4">{listing.price} ETB</p>
-            </div>
+        {/* Right: Architectural Content */}
+        <div className="w-full lg:w-1/2 lg:ml-auto px-10 py-32 lg:py-48 flex flex-col">
+          <div className="max-w-2xl mx-auto w-full reveal">
+            <p className="text-[10px] font-black uppercase tracking-[0.5em] text-savvy-accent mb-12">Product ID: {listing.id.slice(0, 8)}</p>
+            
+            <h1 className="text-7xl md:text-[9rem] font-black tracking-tighter uppercase leading-[0.8] mb-12 dark:text-white">
+              {listing.title.split(' ').map((word, i) => (
+                <React.Fragment key={i}>{word} <br /></React.Fragment>
+              ))}
+            </h1>
 
-            <div className="space-y-10">
-              <div className="p-8 bg-gray-50 dark:bg-white/5 rounded-[2rem] border dark:border-white/5">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Seller Information</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-xl">
-                    {listing.seller_name?.[0]}
-                  </div>
-                  <div>
-                    <p className="text-lg font-black dark:text-white leading-none mb-1">{listing.seller_name}</p>
-                    <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Verified AAU Student</span>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-12 mb-20">
+              <div className="reveal delay-1">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">Current Valuation</p>
+                <p className="text-5xl font-black dark:text-white tracking-tighter">{listing.price} <span className="text-sm font-bold uppercase text-gray-400">ETB</span></p>
               </div>
-
-              <div>
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Product Story</h3>
-                <p className="text-lg text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
-                  {listing.description}
-                </p>
+              <div className="reveal delay-2">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">Origin Campus</p>
+                <p className="text-2xl font-black dark:text-white uppercase tracking-widest">AAU - 6 KILO</p>
               </div>
             </div>
-          </div>
 
-          <div className="mt-16 flex gap-6">
-            <button 
-              onClick={handleContactSeller}
-              className="flex-1 py-6 rounded-2xl bg-gray-100 dark:bg-white/5 text-black dark:text-white font-black uppercase text-xs tracking-widest hover:bg-indigo-600 hover:text-white transition-all duration-300"
-            >
-              {t('chatWithSeller')}
-            </button>
-            <button 
-              onClick={handleBuyNow}
-              className="flex-1 py-6 rounded-2xl btn-hope font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
-            >
-              {t('buyNow')}
-            </button>
+            <div className="reveal delay-3 mb-24">
+              <h3 className="text-[9px] font-black text-savvy-accent uppercase tracking-[0.4em] mb-8">The Product Narrative</h3>
+              <p className="text-2xl font-medium leading-relaxed dark:text-gray-300 italic font-serif max-w-lg">
+                "{listing.description}"
+              </p>
+            </div>
+
+            <div className="reveal delay-4 p-12 bg-white dark:bg-white/5 rounded-[4rem] tibico-border flex items-center justify-between mb-32">
+               <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-black text-2xl">
+                   {listing.seller_name?.[0]}
+                 </div>
+                 <div>
+                   <p className="text-xs font-black uppercase tracking-widest dark:text-white">{listing.seller_name}</p>
+                   <p className="text-[9px] font-bold text-green-500 uppercase tracking-widest">AAU Certified Merchant</p>
+                 </div>
+               </div>
+               <button onClick={() => navigate('/inbox')} className="text-[10px] font-black uppercase tracking-widest border-b border-black dark:border-white pb-2 hover:opacity-50 transition-opacity dark:text-white">INQUIRE</button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 mb-20 reveal delay-4">
+              <button 
+                onClick={() => navigate('/checkout', { state: { listing } })}
+                className="btn-premium px-16 py-8 rounded-full font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl flex-1"
+              >
+                ACQUIRE NOW
+              </button>
+              <button 
+                onClick={() => navigate(-1)}
+                className="px-16 py-8 rounded-full border-2 border-black/10 dark:border-white/10 font-black text-[11px] uppercase tracking-[0.4em] dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
+              >
+                RETURN
+              </button>
+            </div>
           </div>
         </div>
       </div>
