@@ -85,7 +85,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           onClick={handleManualBypass}
           className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all active:scale-95"
         >
-          System Override
+          stuck? click here to get access fast
         </button>
       </div>
     );
@@ -116,7 +116,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
               placeholder="name@aau.edu.et"
             />
             <Input 
-              label="Access Code" 
+              label="Password" 
               type="password" 
               value={formData.password} 
               onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
