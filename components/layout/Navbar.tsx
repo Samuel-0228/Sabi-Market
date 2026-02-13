@@ -18,13 +18,13 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[100] px-8 py-8 flex items-center justify-between mix-blend-difference pointer-events-none">
+    <nav className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 py-4 md:py-8 flex items-center justify-between mix-blend-difference pointer-events-none">
       <div className="pointer-events-auto">
-        <Link to="/" className="group flex items-center gap-4">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-black font-black text-xl shadow-2xl transition-transform group-hover:rotate-12">
+        <Link to="/" className="group flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-black font-black text-lg md:text-xl shadow-2xl transition-transform group-hover:rotate-12">
             ሳ
           </div>
-          <span className="text-white font-black tracking-[0.3em] uppercase text-[10px] hidden sm:block">
+          <span className="text-white font-black tracking-[0.3em] uppercase text-[8px] md:text-[10px] hidden sm:block">
             {t('appName')}
           </span>
         </Link>
@@ -46,16 +46,21 @@ const Navbar: React.FC = () => {
         )}
       </div>
 
-      <div className="flex pointer-events-auto items-center gap-6 text-white">
-        <button onClick={toggleTheme} className="text-[10px] font-black uppercase tracking-widest">{theme === 'light' ? 'NIGHT' : 'DAY'}</button>
-        <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="text-[10px] font-black uppercase tracking-widest">{lang === 'en' ? 'አማ' : 'EN'}</button>
+      <div className="flex pointer-events-auto items-center gap-3 md:gap-6 text-white">
+        <button onClick={toggleTheme} className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">{theme === 'light' ? 'NIGHT' : 'DAY'}</button>
+        <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">{lang === 'en' ? 'አማ' : 'EN'}</button>
         
         {user ? (
-          <button onClick={handleLogout} className="bg-white text-black px-6 py-3 rounded-full text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
-            EXIT
-          </button>
+          <div className="flex items-center gap-3">
+            <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
+               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 10 01-2-2V6a2 2 10 012-2h14a2 2 10 012 2v8a2 2 10 01-2 2h-5l-5 5v-5z"/></svg>
+            </Link>
+            <button onClick={handleLogout} className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
+              EXIT
+            </button>
+          </div>
         ) : (
-          <Link to="/auth" className="bg-white text-black px-8 py-3 rounded-full text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
+          <Link to="/auth" className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
             JOIN
           </Link>
         )}
