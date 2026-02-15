@@ -74,7 +74,7 @@ export const db = {
   // --- CHAT SYSTEM ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string): Promise<string> {
     try {
-      // Logic for deterministic lookup: Ensure we check both buyer-seller combinations just in case
+      // Logic for deterministic lookup
       const { data: existing, error: findError } = await supabase
         .from('conversations')
         .select('id')
@@ -120,11 +120,24 @@ export const db = {
   },
 
   async deleteConversation(conversationId: string) {
-    const { error } = await supabase
+    // 1. Manually delete all messages associated with this conversation
+    // to prevent foreign key constraint violations if Cascade Delete is not set in DB
+    const { error: msgError } = await supabase
+      .from('messages')
+      .delete()
+      .eq('conversation_id', conversationId);
+    
+    if (msgError) {
+      console.warn("Error clearing messages during conversation deletion:", msgError);
+    }
+
+    // 2. Delete the conversation record itself
+    const { error: convError } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId);
-    if (error) throw error;
+      
+    if (convError) throw convError;
   },
 
   // --- ORDERS ---
@@ -160,7 +173,6 @@ export const db = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized access. Please login.");
 
-    // Prevent self-trading
     if (user.id === listing.seller_id) {
       throw new Error("You cannot purchase your own listing.");
     }
@@ -178,7 +190,6 @@ export const db = {
     if (error) throw error;
 
     try {
-      // Notify seller via trade chat automatically
       const cid = await db.getOrCreateConversation(listing.id, listing.seller_id, user.id);
       await db.sendMessage(cid, `🔔 New Trade Request: "${listing.title}". Suggested Meeting: ${deliveryInfo}`);
     } catch (chatErr) {
