@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../services/supabase/client';
 import { UserProfile, Message, Conversation } from '../../types';
@@ -82,6 +81,24 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
     setView('chat');
   };
 
+  const handleDeleteConv = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) return;
+
+    try {
+      await db.deleteConversation(conversationId);
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      if (activeConv?.id === conversationId) {
+        setActiveConv(null);
+        setMessages([]);
+        setView('list');
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation:", err);
+      alert("Error deleting conversation.");
+    }
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !activeConv) return;
@@ -106,19 +123,30 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         <div className={`w-full lg:w-[350px] flex flex-col gap-4 overflow-y-auto pr-2 scrollbar-hide ${view === 'chat' && 'hidden lg:flex'}`}>
           <h2 className="text-3xl font-black uppercase tracking-tighter dark:text-white mb-4">Inbox</h2>
           {conversations.map(c => (
-            <button 
+            <div 
               key={c.id} 
-              onClick={() => handleSelectConv(c)}
-              className={`p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 ${
-                activeConv?.id === c.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white dark:bg-white/5 dark:text-white'
-              }`}
+              className="relative group"
             >
-              <img src={c.listing?.image_url} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="img" />
-              <div className="min-w-0">
-                <p className="text-[7px] font-black uppercase tracking-widest opacity-60 truncate">{c.listing?.title}</p>
-                <p className="text-sm font-black truncate uppercase tracking-tight">{c.seller_id === user.id ? c.buyer?.full_name : c.seller?.full_name}</p>
-              </div>
-            </button>
+              <button 
+                onClick={() => handleSelectConv(c)}
+                className={`w-full p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 ${
+                  activeConv?.id === c.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white dark:bg-white/5 dark:text-white'
+                }`}
+              >
+                <img src={c.listing?.image_url} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="img" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[7px] font-black uppercase tracking-widest opacity-60 truncate">{c.listing?.title}</p>
+                  <p className="text-sm font-black truncate uppercase tracking-tight">{c.seller_id === user.id ? c.buyer?.full_name : c.seller?.full_name}</p>
+                </div>
+                <button 
+                  onClick={(e) => handleDeleteConv(e, c.id)}
+                  className="p-2 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:text-red-500 transition-all"
+                  title="Delete Conversation"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </button>
+            </div>
           ))}
           {conversations.length === 0 && <p className="text-gray-400 text-xs italic">No messages found.</p>}
         </div>

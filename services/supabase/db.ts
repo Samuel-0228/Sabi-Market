@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { Listing, UserProfile, OrderStatus, Order, Message } from '../../types';
 
@@ -118,6 +117,14 @@ export const db = {
 
     if (error) throw error;
     return data;
+  },
+
+  async deleteConversation(conversationId: string) {
+    const { error } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+    if (error) throw error;
   },
 
   // --- ORDERS ---
