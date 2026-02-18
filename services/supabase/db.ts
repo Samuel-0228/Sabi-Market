@@ -74,7 +74,6 @@ export const db = {
   // --- CHAT SYSTEM ---
   async getOrCreateConversation(listingId: string, sellerId: string, buyerId: string): Promise<string> {
     try {
-      // Logic for deterministic lookup
       const { data: existing, error: findError } = await supabase
         .from('conversations')
         .select('id')
@@ -84,7 +83,6 @@ export const db = {
 
       if (existing) return existing.id;
 
-      // Create new conversation if not found
       const { data: created, error: createError } = await supabase
         .from('conversations')
         .insert({ 
@@ -104,12 +102,12 @@ export const db = {
     }
   },
 
-  async sendMessage(conversationId: string, content: string) {
+  async sendMessage(conversation_id: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
     
     const { data, error } = await supabase.from('messages').insert({
-      conversation_id: conversationId,
+      conversation_id,
       sender_id: user.id,
       content,
       created_at: new Date().toISOString()
@@ -119,25 +117,21 @@ export const db = {
     return data;
   },
 
+  /**
+   * Permanently removes the conversation from the database.
+   * Requires 'ON DELETE CASCADE' on the 'messages' table fkey for 'conversation_id'
+   * to ensure all associated messages are wiped automatically.
+   */
   async deleteConversation(conversationId: string) {
-    // 1. Manually delete all messages associated with this conversation
-    // to prevent foreign key constraint violations if Cascade Delete is not set in DB
-    const { error: msgError } = await supabase
-      .from('messages')
-      .delete()
-      .eq('conversation_id', conversationId);
-    
-    if (msgError) {
-      console.warn("Error clearing messages during conversation deletion:", msgError);
-    }
-
-    // 2. Delete the conversation record itself
-    const { error: convError } = await supabase
+    const { error } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId);
       
-    if (convError) throw convError;
+    if (error) {
+      console.error("Database deletion failed:", error);
+      throw new Error("Could not delete conversation. Please try again.");
+    }
   },
 
   // --- ORDERS ---
