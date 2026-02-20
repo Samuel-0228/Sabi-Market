@@ -119,30 +119,49 @@ export const db = {
 
   /**
    * Permanently removes the conversation from the database for both participants.
-   * We explicitly delete messages first to handle cases where ON DELETE CASCADE might be missing.
+   * We try direct deletion first, then manual message cleanup if needed.
    */
   async deleteConversation(conversationId: string) {
-    // 1. Delete all messages associated with this conversation first
+    console.log("DB: Attempting to delete conversation:", conversationId);
+    
+    // 1. Try to delete the conversation record directly.
+    // If ON DELETE CASCADE is enabled on the database, this will handle everything.
+    const { error: convError } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+      
+    if (!convError) {
+      console.log("DB: Conversation deleted successfully (direct)");
+      return;
+    }
+
+    console.warn("DB: Direct deletion failed, attempting manual message cleanup:", convError);
+
+    // 2. If direct deletion failed (likely due to foreign key constraints), 
+    // try to delete messages first. Note: This might still fail if RLS 
+    // prevents deleting messages sent by the other party.
     const { error: msgError } = await supabase
       .from('messages')
       .delete()
       .eq('conversation_id', conversationId);
       
     if (msgError) {
-      console.warn("Message deletion error during conversation wipe:", msgError);
-      // We continue to try deleting the conversation itself
+      console.warn("DB: Message cleanup error:", msgError);
     }
 
-    // 2. Delete the conversation record
-    const { error } = await supabase
+    // 3. Try deleting the conversation record again
+    const { error: retryError } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId);
       
-    if (error) {
-      console.error("Database deletion failed:", error);
-      throw new Error("Could not delete conversation. Please try again.");
+    if (retryError) {
+      console.error("DB: Final deletion attempt failed:", retryError);
+      throw new Error(`Database error: ${retryError.message || 'Deletion failed'}`);
     }
+    
+    console.log("DB: Conversation deleted successfully (after cleanup)");
   },
 
   // --- ORDERS ---

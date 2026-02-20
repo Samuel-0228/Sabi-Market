@@ -142,9 +142,9 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
               key={c.id} 
               className="relative group"
             >
-              <button 
+              <div 
                 onClick={() => handleSelectConv(c)}
-                className={`w-full p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 ${
+                className={`w-full p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 cursor-pointer ${
                   activeConv?.id === c.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white dark:bg-white/5 dark:text-white'
                 }`}
               >
@@ -155,12 +155,12 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
                 </div>
                 <button 
                   onClick={(e) => handleDeleteConv(e, c.id)}
-                  className="p-2 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:text-red-500 transition-all"
+                  className="p-2 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:text-red-500 transition-all z-10"
                   title="Delete Conversation"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
-              </button>
+              </div>
             </div>
           ))}
           {conversations.length === 0 && <p className="text-gray-400 text-xs italic">No messages found.</p>}
