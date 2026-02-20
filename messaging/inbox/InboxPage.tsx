@@ -3,9 +3,11 @@ import { supabase } from '../../services/supabase/client';
 import { UserProfile, Message, Conversation } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { db } from '../../services/supabase/db';
+import { useUIStore } from '../../store/ui.store';
 
 const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
   const { t } = useLanguage();
+  const { addToast } = useUIStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<(Message & { pending?: boolean; error?: boolean })[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
@@ -25,36 +27,10 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        
         if (mounted) {
           setConversations(data || []);
-          
-          // Check for pending chat from ProductDetailsPage
-          const pendingChat = localStorage.getItem('savvy_pending_chat');
-          if (pendingChat) {
-            const { listingId, sellerId } = JSON.parse(pendingChat);
-            localStorage.removeItem('savvy_pending_chat');
-            
-            // Find existing or create new
-            const convId = await db.getOrCreateConversation(listingId, sellerId, user.id);
-            
-            // Refresh list to include new conversation if it was just created
-            const { data: refreshedData } = await supabase
-              .from('conversations')
-              .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
-              .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-              .order('created_at', { ascending: false });
-              
-            if (refreshedData && mounted) {
-              setConversations(refreshedData);
-              const target = refreshedData.find(c => c.id === convId);
-              if (target) {
-                setActiveConv(target);
-                setView('chat');
-              }
-            }
-          } else if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
-             // On desktop, default to first conv if no pending chat.
+          // On desktop, default to first conv. On mobile, stay in list.
+          if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
              setActiveConv(data[0]);
              setView('chat');
           }
@@ -109,19 +85,32 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
 
   const handleDeleteConv = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this conversation for both participants? This action is permanent.")) return;
 
     try {
       await db.deleteConversation(conversationId);
+      
+      // Update local state immediately
       setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
       if (activeConv?.id === conversationId) {
         setActiveConv(null);
         setMessages([]);
         setView('list');
       }
+      
+      addToast("Conversation deleted successfully", "success");
     } catch (err) {
       console.error("Failed to delete conversation:", err);
-      alert("Error deleting conversation.");
+      addToast("Failed to delete conversation. It might have already been removed.", "error");
+      
+      // Refresh list just in case it was deleted by someone else or failed partially
+      const { data } = await supabase
+        .from('conversations')
+        .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+      if (data) setConversations(data);
     }
   };
 
