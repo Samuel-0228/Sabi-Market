@@ -25,10 +25,36 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        
         if (mounted) {
           setConversations(data || []);
-          // On desktop, default to first conv. On mobile, stay in list.
-          if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
+          
+          // Check for pending chat from ProductDetailsPage
+          const pendingChat = localStorage.getItem('savvy_pending_chat');
+          if (pendingChat) {
+            const { listingId, sellerId } = JSON.parse(pendingChat);
+            localStorage.removeItem('savvy_pending_chat');
+            
+            // Find existing or create new
+            const convId = await db.getOrCreateConversation(listingId, sellerId, user.id);
+            
+            // Refresh list to include new conversation if it was just created
+            const { data: refreshedData } = await supabase
+              .from('conversations')
+              .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
+              .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+              .order('created_at', { ascending: false });
+              
+            if (refreshedData && mounted) {
+              setConversations(refreshedData);
+              const target = refreshedData.find(c => c.id === convId);
+              if (target) {
+                setActiveConv(target);
+                setView('chat');
+              }
+            }
+          } else if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
+             // On desktop, default to first conv if no pending chat.
              setActiveConv(data[0]);
              setView('chat');
           }
