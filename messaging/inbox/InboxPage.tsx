@@ -3,11 +3,9 @@ import { supabase } from '../../services/supabase/client';
 import { UserProfile, Message, Conversation } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { db } from '../../services/supabase/db';
-import { useUIStore } from '../../store/ui.store';
 
 const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
   const { t } = useLanguage();
-  const { addToast } = useUIStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<(Message & { pending?: boolean; error?: boolean })[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
@@ -42,8 +40,30 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
       }
     };
     fetchInbox();
-    return () => { mounted = false; };
-  }, [user.id]);
+
+    // Realtime subscription for conversation deletions
+    const convChannel = supabase.channel('inbox_changes')
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'conversations'
+      }, (payload: { old: { id: string } }) => {
+        if (mounted) {
+          setConversations(prev => prev.filter(c => c.id !== payload.old.id));
+          if (activeConv?.id === payload.old.id) {
+            setActiveConv(null);
+            setMessages([]);
+            setView('list');
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { 
+      mounted = false; 
+      supabase.removeChannel(convChannel);
+    };
+  }, [user.id, activeConv?.id]);
 
   useEffect(() => {
     if (!activeConv) return;
@@ -85,32 +105,19 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
 
   const handleDeleteConv = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this conversation for both participants? This action is permanent.")) return;
+    if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) return;
 
     try {
       await db.deleteConversation(conversationId);
-      
-      // Update local state immediately
       setConversations(prev => prev.filter(c => c.id !== conversationId));
-      
       if (activeConv?.id === conversationId) {
         setActiveConv(null);
         setMessages([]);
         setView('list');
       }
-      
-      addToast("Conversation deleted successfully", "success");
     } catch (err) {
       console.error("Failed to delete conversation:", err);
-      addToast("Failed to delete conversation. It might have already been removed.", "error");
-      
-      // Refresh list just in case it was deleted by someone else or failed partially
-      const { data } = await supabase
-        .from('conversations')
-        .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-      if (data) setConversations(data);
+      alert("Error deleting conversation.");
     }
   };
 
@@ -142,9 +149,9 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
               key={c.id} 
               className="relative group"
             >
-              <div 
+              <button 
                 onClick={() => handleSelectConv(c)}
-                className={`w-full p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 cursor-pointer ${
+                className={`w-full p-6 text-left rounded-3xl transition-all duration-300 tibico-border flex items-center gap-4 ${
                   activeConv?.id === c.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white dark:bg-white/5 dark:text-white'
                 }`}
               >
@@ -155,12 +162,12 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
                 </div>
                 <button 
                   onClick={(e) => handleDeleteConv(e, c.id)}
-                  className="p-2 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:text-red-500 transition-all z-10"
+                  className="p-2 opacity-0 group-hover:opacity-60 hover:opacity-100 hover:text-red-500 transition-all"
                   title="Delete Conversation"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
-              </div>
+              </button>
             </div>
           ))}
           {conversations.length === 0 && <p className="text-gray-400 text-xs italic">No messages found.</p>}

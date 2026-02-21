@@ -118,50 +118,30 @@ export const db = {
   },
 
   /**
-   * Permanently removes the conversation from the database for both participants.
-   * We try direct deletion first, then manual message cleanup if needed.
+   * Permanently removes the conversation and all associated messages from the database.
    */
   async deleteConversation(conversationId: string) {
-    console.log("DB: Attempting to delete conversation:", conversationId);
-    
-    // 1. Try to delete the conversation record directly.
-    // If ON DELETE CASCADE is enabled on the database, this will handle everything.
+    // Explicitly delete messages first to avoid foreign key constraint issues 
+    // if CASCADE DELETE is not configured in the database.
+    const { error: msgError } = await supabase
+      .from('messages')
+      .delete()
+      .eq('conversation_id', conversationId);
+
+    if (msgError) {
+      console.error("Failed to delete messages:", msgError);
+      throw new Error("Could not clear conversation history.");
+    }
+
     const { error: convError } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId);
       
-    if (!convError) {
-      console.log("DB: Conversation deleted successfully (direct)");
-      return;
+    if (convError) {
+      console.error("Database deletion failed:", convError);
+      throw new Error("Could not delete conversation. Please try again.");
     }
-
-    console.warn("DB: Direct deletion failed, attempting manual message cleanup:", convError);
-
-    // 2. If direct deletion failed (likely due to foreign key constraints), 
-    // try to delete messages first. Note: This might still fail if RLS 
-    // prevents deleting messages sent by the other party.
-    const { error: msgError } = await supabase
-      .from('messages')
-      .delete()
-      .eq('conversation_id', conversationId);
-      
-    if (msgError) {
-      console.warn("DB: Message cleanup error:", msgError);
-    }
-
-    // 3. Try deleting the conversation record again
-    const { error: retryError } = await supabase
-      .from('conversations')
-      .delete()
-      .eq('id', conversationId);
-      
-    if (retryError) {
-      console.error("DB: Final deletion attempt failed:", retryError);
-      throw new Error(`Database error: ${retryError.message || 'Deletion failed'}`);
-    }
-    
-    console.log("DB: Conversation deleted successfully (after cleanup)");
   },
 
   // --- ORDERS ---
