@@ -6,7 +6,7 @@ import { Moon, Sun, Languages, LogOut, User, MessageSquare, ShoppingBag } from '
 import { useLanguage } from '../../app/LanguageContext';
 import { useTheme } from '../../app/ThemeContext';
 import { useAuthStore } from '../../features/auth/auth.store';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../services/supabase/client';
 
 const Navbar: React.FC = () => {
   const { lang, setLang, t } = useLanguage();

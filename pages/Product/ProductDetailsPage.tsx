@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../services/supabase/client';
 import { Listing } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { useAuthStore } from '../../features/auth/auth.store';

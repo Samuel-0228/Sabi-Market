@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../services/supabase/client';
 import { Message } from '../../types';
 
 export const useChatRealtime = (conversationId: string | undefined) => {

@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { UserProfile } from '../../types';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../services/supabase/client';
 import { authApi } from './auth.api';
 
 interface AuthState {
@@ -13,13 +13,16 @@ interface AuthState {
   forceInitialize: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
   initialized: false,
   setUser: (user) => set({ user, loading: false, initialized: true }),
   forceInitialize: () => set({ initialized: true, loading: false }),
   sync: async () => {
+    // If we're already loading and not in the initial state, don't re-sync
+    if (get().loading && get().initialized) return get().user;
+    
     set({ loading: true });
     
     // Safety Race: Ensure the sync never takes longer than 6 seconds
@@ -32,8 +35,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const syncPromise = (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        if (sessionError) {
+          console.error("Session fetch error:", sessionError);
+          return null;
+        }
+
         if (!session) {
           return null;
         }

@@ -49,19 +49,38 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setError('');
     setLoading(true);
     try {
+      let result;
       if (isRegister) {
-        await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
+        result = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
+        if (result.needsConfirmation) {
+          setError('Registration successful! Please check your email to confirm your account before logging in.');
+          setLoading(false);
+          setStep('login');
+          return;
+        }
       } else {
         await authApi.login(formData.email, formData.password);
       }
       
       // Move to syncing state - the useEffect above will handle the redirect once sync finishes
       setStep('syncing');
-      await sync();
+      const profile = await sync();
+      
+      if (!profile) {
+        throw new Error("Session established but profile synchronization failed. Please try again.");
+      }
       
     } catch (err: any) {
       console.error("Authentication phase error:", err);
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      let msg = err.message || 'Authentication failed. Please check your credentials.';
+      
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        msg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link from Supabase.';
+      } else if (msg.toLowerCase().includes('invalid login credentials')) {
+        msg = 'Invalid email or password. Please try again.';
+      }
+      
+      setError(msg);
       setLoading(false);
       setStep(isRegister ? 'initial-email' : 'login');
     }
@@ -81,12 +100,20 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
         </div>
         <h2 className="text-3xl font-black dark:text-white tracking-tighter animate-pulse">Initializing Identity...</h2>
         <p className="mt-4 text-gray-400 font-medium italic mb-10">Building secure trade connection</p>
-        <button 
-          onClick={handleManualBypass}
-          className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all active:scale-95"
-        >
-          stuck? click here to get access fast
-        </button>
+        <div className="flex flex-col gap-4">
+          <button 
+            onClick={handleManualBypass}
+            className="px-8 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-indigo-600 transition-all active:scale-95"
+          >
+            stuck? click here to get access fast
+          </button>
+          <button 
+            onClick={() => { setStep('login'); setLoading(false); }}
+            className="text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors"
+          >
+            Cancel and go back
+          </button>
+        </div>
       </div>
     );
   }

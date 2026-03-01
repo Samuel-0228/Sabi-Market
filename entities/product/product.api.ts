@@ -1,5 +1,5 @@
 
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../services/supabase/client';
 import { Listing } from '../../types';
 
 export const productApi = {

@@ -3,7 +3,7 @@ import React, { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../features/auth/auth.store';
 import { useUIStore } from '../store/ui.store';
-import { supabase } from '../shared/lib/supabase';
+import { supabase } from '../services/supabase/client';
 import { useLanguage } from './LanguageContext';
 
 // Layout Components
