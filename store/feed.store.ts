@@ -13,6 +13,7 @@ interface FeedState {
   fetch: (signal?: AbortSignal) => Promise<void>;
   setSearchQuery: (query: string) => void;
   setCategory: (category: string) => void;
+  smartSearch: (query: string) => Promise<void>;
 }
 
 export const useFeedStore = create<FeedState>((set, get) => ({
@@ -74,5 +75,38 @@ export const useFeedStore = create<FeedState>((set, get) => ({
       return matchesSearch && matchesCategory;
     });
     set({ activeCategory: category, filteredListings: filtered });
+  },
+
+  smartSearch: async (query: string) => {
+    if (!query.trim()) {
+      get().setSearchQuery('');
+      return;
+    }
+
+    set({ loading: true });
+    try {
+      const { savvyAI } = await import('../services/ai/gemini');
+      const result = await savvyAI.smartSearch(query);
+      
+      const { listings } = get();
+      const filtered = listings.filter(l => {
+        const matchesRefined = l.title.toLowerCase().includes(result.refinedQuery.toLowerCase()) || 
+                              l.description.toLowerCase().includes(result.refinedQuery.toLowerCase());
+        const matchesCategory = result.suggestedCategories.length === 0 || 
+                               result.suggestedCategories.includes(l.category);
+        return matchesRefined || matchesCategory;
+      });
+
+      set({ 
+        searchQuery: query, 
+        filteredListings: filtered, 
+        loading: false,
+        activeCategory: result.suggestedCategories[0] || 'all'
+      });
+    } catch (e) {
+      console.error("Smart search failed", e);
+      get().setSearchQuery(query); // Fallback to normal search
+      set({ loading: false });
+    }
   }
 }));

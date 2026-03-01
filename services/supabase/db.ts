@@ -118,28 +118,18 @@ export const db = {
   },
 
   /**
-   * Permanently removes the conversation and all associated messages from the database.
+   * Permanently removes the conversation from the database.
+   * Requires 'ON DELETE CASCADE' on the 'messages' table fkey for 'conversation_id'
+   * to ensure all associated messages are wiped automatically.
    */
   async deleteConversation(conversationId: string) {
-    // Explicitly delete messages first to avoid foreign key constraint issues 
-    // if CASCADE DELETE is not configured in the database.
-    const { error: msgError } = await supabase
-      .from('messages')
-      .delete()
-      .eq('conversation_id', conversationId);
-
-    if (msgError) {
-      console.error("Failed to delete messages:", msgError);
-      throw new Error("Could not clear conversation history.");
-    }
-
-    const { error: convError } = await supabase
+    const { error } = await supabase
       .from('conversations')
       .delete()
       .eq('id', conversationId);
       
-    if (convError) {
-      console.error("Database deletion failed:", convError);
+    if (error) {
+      console.error("Database deletion failed:", error);
       throw new Error("Could not delete conversation. Please try again.");
     }
   },

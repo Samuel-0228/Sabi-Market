@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Moon, Sun, Languages, LogOut, User, MessageSquare, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '../../app/LanguageContext';
 import { useTheme } from '../../app/ThemeContext';
 import { useAuthStore } from '../../features/auth/auth.store';
@@ -21,9 +23,12 @@ const Navbar: React.FC = () => {
     <nav className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 py-4 md:py-8 flex items-center justify-between mix-blend-difference pointer-events-none">
       <div className="pointer-events-auto">
         <Link to="/" className="group flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-black font-black text-lg md:text-xl shadow-2xl transition-transform group-hover:rotate-12">
+          <motion.div 
+            whileHover={{ rotate: 12, scale: 1.1 }}
+            className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-black font-black text-lg md:text-xl shadow-2xl transition-transform"
+          >
             ሳ
-          </div>
+          </motion.div>
           <span className="text-white font-black tracking-[0.3em] uppercase text-[8px] md:text-[10px] hidden sm:block">
             {t('appName')}
           </span>
@@ -47,20 +52,27 @@ const Navbar: React.FC = () => {
       </div>
 
       <div className="flex pointer-events-auto items-center gap-3 md:gap-6 text-white">
-        <button onClick={toggleTheme} className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">{theme === 'light' ? 'NIGHT' : 'DAY'}</button>
-        <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="text-[8px] md:text-[10px] font-black uppercase tracking-widest">{lang === 'en' ? 'አማ' : 'EN'}</button>
+        <button onClick={toggleTheme} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
+        <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2">
+          <Languages className="w-4 h-4" />
+          <span className="text-[8px] font-black uppercase tracking-widest">{lang === 'en' ? 'አማ' : 'EN'}</span>
+        </button>
         
         {user ? (
           <div className="flex items-center gap-3">
             <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
-               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 10 01-2-2V6a2 2 10 012-2h14a2 2 10 012 2v8a2 2 10 01-2 2h-5l-5 5v-5z"/></svg>
+               <MessageSquare className="w-4 h-4 text-white" />
             </Link>
-            <button onClick={handleLogout} className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
-              EXIT
+            <button onClick={handleLogout} className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all flex items-center gap-2">
+              <LogOut className="w-3 h-3" />
+              <span className="hidden md:inline">EXIT</span>
             </button>
           </div>
         ) : (
-          <Link to="/auth" className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all">
+          <Link to="/auth" className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all flex items-center gap-2">
+            <User className="w-3 h-3" />
             JOIN
           </Link>
         )}

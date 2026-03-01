@@ -40,30 +40,8 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
       }
     };
     fetchInbox();
-
-    // Realtime subscription for conversation deletions
-    const convChannel = supabase.channel('inbox_changes')
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'conversations'
-      }, (payload: { old: { id: string } }) => {
-        if (mounted) {
-          setConversations(prev => prev.filter(c => c.id !== payload.old.id));
-          if (activeConv?.id === payload.old.id) {
-            setActiveConv(null);
-            setMessages([]);
-            setView('list');
-          }
-        }
-      })
-      .subscribe();
-
-    return () => { 
-      mounted = false; 
-      supabase.removeChannel(convChannel);
-    };
-  }, [user.id, activeConv?.id]);
+    return () => { mounted = false; };
+  }, [user.id]);
 
   useEffect(() => {
     if (!activeConv) return;

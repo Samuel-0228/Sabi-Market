@@ -15,13 +15,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const [stats, setStats] = useState({ totalSales: 0, activeListings: 0, pendingOrders: 0 });
   const [chartReady, setChartReady] = useState(false);
 
-  useEffect(() => {
-    loadData();
-    const timer = setTimeout(() => setChartReady(true), 500);
-    return () => clearTimeout(timer);
-  }, [user]);
-
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     try {
       const allListings = await db.getListings();
       const myListings = allListings.filter((l: Listing) => l.seller_id === user.id);
@@ -39,7 +33,14 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
     } catch (err) {
       console.error("Dashboard load failed", err);
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+    const timer = setTimeout(() => setChartReady(true), 500);
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
   const salesData = [
     { name: 'Mon', sales: 400 },

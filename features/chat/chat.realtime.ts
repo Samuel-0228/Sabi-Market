@@ -22,6 +22,7 @@ export const useChatRealtime = (conversationId: string | undefined) => {
   useEffect(() => {
     if (!conversationId) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHistory();
 
     const channel = supabase

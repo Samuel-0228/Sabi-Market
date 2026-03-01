@@ -23,6 +23,7 @@ export const useChatRoom = (conversationId: string | undefined) => {
   useEffect(() => {
     if (!conversationId) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMessages();
 
     // PRODUCTION-GRADE CLEANUP: Scoped channel logic

@@ -4,7 +4,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 // Initialize AI helper
 export const savvyAI = {
   async getMarketAdvice(query: string, history: any[] = []) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [...history, { role: 'user', parts: [{ text: query }] }],
@@ -23,7 +23,7 @@ export const savvyAI = {
   },
 
   async optimizeListing(title: string, description: string) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Product: ${title}\nRaw Description: ${description}`,
@@ -45,12 +45,38 @@ export const savvyAI = {
     // Correctly access text property from response
     const text = response.text;
     return JSON.parse(text || '{}');
+  },
+
+  async smartSearch(query: string) {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `User search query: "${query}"`,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            intent: { type: Type.STRING, description: "The user's core need" },
+            suggestedCategories: { 
+              type: Type.ARRAY, 
+              items: { type: Type.STRING },
+              description: "Categories from: goods, course, academic_materials, food"
+            },
+            refinedQuery: { type: Type.STRING, description: "A better search term for database lookup" }
+          },
+          required: ['intent', 'suggestedCategories', 'refinedQuery']
+        },
+        systemInstruction: 'Analyze the user search query for a campus marketplace. Map it to the most relevant categories and provide a refined search term.',
+      }
+    });
+    return JSON.parse(response.text || '{}');
   }
 };
 
 // Fix: Export chatWithGemini for the ChatBot component
 export const chatWithGemini = async (history: any[], message: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: [...history, { role: 'user', parts: [{ text: message }] }],
