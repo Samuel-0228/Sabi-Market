@@ -28,18 +28,35 @@ export const db = {
   async incrementVisitCount(userId: string): Promise<void> {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('visit_count, points')
+      .select('visit_count')
       .eq('id', userId)
       .maybeSingle();
 
     const currentVisits = profile?.visit_count || 0;
+
+    await supabase
+      .from('profiles')
+      .update({ 
+        visit_count: currentVisits + 1
+      })
+      .eq('id', userId);
+      
+    await db.grantPoints(userId, 10);
+  },
+
+  async grantPoints(userId: string, amount: number): Promise<void> {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('points')
+      .eq('id', userId)
+      .maybeSingle();
+
     const currentPoints = profile?.points || 0;
 
     await supabase
       .from('profiles')
       .update({ 
-        visit_count: currentVisits + 1,
-        points: currentPoints + 10 // 10 points per visit
+        points: currentPoints + amount
       })
       .eq('id', userId);
   },
@@ -86,6 +103,10 @@ export const db = {
         .single();
 
       if (error) throw error;
+      
+      // Grant points for listing
+      await db.grantPoints(user.id, 50);
+      
       return data;
     });
   },
@@ -201,6 +222,9 @@ export const db = {
     }).select().single();
 
     if (error) throw error;
+
+    // Grant points for placing an order
+    await db.grantPoints(user.id, 100);
 
     try {
       const cid = await db.getOrCreateConversation(listing.id, listing.seller_id, user.id);
