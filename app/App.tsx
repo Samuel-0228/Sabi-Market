@@ -23,6 +23,7 @@ const OrdersPage = lazy(() => import('../pages/Orders/OrdersPage'));
 const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
 const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
 const ProductDetailsPage = lazy(() => import('../pages/Product/ProductDetailsPage'));
+const ProfilePage = lazy(() => import('../pages/Profile/ProfilePage'));
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -88,6 +89,17 @@ const VerticalMobileNav: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             <span className="absolute top-1 right-1 w-2 h-2 bg-savvy-accent rounded-full border-2 border-white dark:border-black"></span>
           </div>
           <span className="text-[7px] font-black uppercase tracking-widest">{t('inbox')}</span>
+        </NavLink>
+
+        <NavLink 
+          to="/profile" 
+          onClick={onClose}
+          className={({ isActive }) => `flex flex-col items-center gap-2 group transition-all ${isActive ? 'text-savvy-accent' : 'text-gray-400'}`}
+        >
+          <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center group-active:scale-90 transition-transform">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          <span className="text-[7px] font-black uppercase tracking-widest">{t('profile')}</span>
         </NavLink>
 
         <button 
@@ -205,6 +217,12 @@ const AppRoutes: React.FC = () => {
             <Route path="/orders" element={
               <ProtectedRoute>
                 <OrdersPage user={user!} />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             } />
 

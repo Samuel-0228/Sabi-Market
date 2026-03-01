@@ -49,6 +49,7 @@ export const TRANSLATIONS: any = {
   items: { en: 'Items', am: 'ዕቃዎች' },
   orders: { en: 'Orders', am: 'ትዕዛዞች' },
   performance: { en: 'Performance', am: 'አፈጻጸም' },
+  profile: { en: 'Profile', am: 'መገለጫ' },
   gutHealth: { en: 'BECAUSE YOUR CAMPUS LIFE MATTERS', am: 'ምክንያቱም የእርስዎ የግቢ ሕይወት አስፈላጊ ነው' }
 };
 

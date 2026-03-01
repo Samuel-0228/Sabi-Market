@@ -25,6 +25,25 @@ export const db = {
     return data as UserProfile;
   },
 
+  async incrementVisitCount(userId: string): Promise<void> {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('visit_count, points')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const currentVisits = profile?.visit_count || 0;
+    const currentPoints = profile?.points || 0;
+
+    await supabase
+      .from('profiles')
+      .update({ 
+        visit_count: currentVisits + 1,
+        points: currentPoints + 10 // 10 points per visit
+      })
+      .eq('id', userId);
+  },
+
   async getCurrentUser(): Promise<UserProfile | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;

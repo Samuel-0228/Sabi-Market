@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { UserProfile } from '../../types';
 import { supabase } from '../../services/supabase/client';
+import { db } from '../../services/supabase/db';
 import { authApi } from './auth.api';
 
 interface AuthState {
@@ -45,6 +46,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!session) {
           return null;
         }
+        
+        // Track visit and update points
+        await db.incrementVisitCount(session.user.id);
         
         const profile = await authApi.syncProfile();
         

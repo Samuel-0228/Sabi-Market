@@ -13,6 +13,8 @@ export interface UserProfile {
   avatar_url?: string;
   student_id_url?: string;
   created_at: string;
+  points?: number;
+  visit_count?: number;
 }
 
 export interface Listing {
