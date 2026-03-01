@@ -18,85 +18,88 @@ const FeedPage: React.FC = () => {
 
   const categories = ['all', 'goods', 'course', 'academic_materials', 'food'];
 
-  const handleProductClick = (listing: Listing) => {
-    navigate(`/product/${listing.id}`);
-  };
-
   return (
-    <div className="max-w-[1400px] mx-auto px-8 py-10 animate-in fade-in duration-700">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div>
-          <h1 className="text-6xl font-black tracking-tighter dark:text-white mb-2">Explore.</h1>
-          <p className="text-gray-500 font-medium italic">Verified trades within Addis Ababa University.</p>
-        </div>
-        
-        <div className="w-full md:w-96 relative">
-          <span className="absolute left-5 top-1/2 -translate-y-1/2 opacity-30">🔍</span>
-          <input 
-            type="text"
-            placeholder="Search items, books..."
-            className="w-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl py-4 pl-12 pr-6 outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </header>
+    <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen pt-24 md:pt-40 px-3 md:px-10 pb-32">
+      <div className="max-w-[1600px] mx-auto">
+        <header className="mb-8 md:mb-20 reveal">
+          <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-savvy-accent mb-2">AAU Market</p>
+          <h1 className="text-3xl md:text-8xl font-black tracking-tighter uppercase leading-[0.9] mb-6 dark:text-white">
+            Daily <br /> <span className="font-serif italic text-savvy-accent lowercase tracking-normal">Feed.</span>
+          </h1>
+          
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+            <div className="flex gap-4 overflow-x-auto w-full pb-1 scrollbar-hide no-scrollbar">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap pb-1 border-b ${
+                    activeCategory === cat ? 'border-savvy-indigo text-savvy-indigo' : 'border-transparent text-gray-400'
+                  }`}
+                >
+                  {t(cat)}
+                </button>
+              ))}
+            </div>
+            
+            <div className="w-full lg:w-[320px] border-b border-black/10 dark:border-white/10 pb-1">
+              <input 
+                type="text"
+                placeholder="Search..."
+                className="w-full bg-transparent outline-none text-sm font-medium dark:text-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </header>
 
-      <div className="flex gap-3 mb-12 overflow-x-auto pb-4 scrollbar-hide">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
-              activeCategory === cat 
-                ? 'bg-black text-white dark:bg-white dark:text-black shadow-lg' 
-                : 'bg-gray-50 dark:bg-white/5 text-gray-400 hover:text-indigo-500'
-            }`}
-          >
-            {t(cat)}
-          </button>
-        ))}
-      </div>
-
-      {loading && filteredListings.length === 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[1,2,3,4].map(i => <div key={i} className="h-80 bg-gray-50 dark:bg-white/5 animate-pulse rounded-[2.5rem]" />)}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-          {filteredListings.map(l => (
-            <div key={l.id} className="group cursor-pointer" onClick={() => handleProductClick(l)}>
-              <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-5 shadow-sm group-hover:shadow-2xl transition-all relative">
-                <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-white/90 dark:bg-black/80 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest dark:text-white border border-white/10">
-                    {t(l.category)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-between items-start px-2">
-                <div>
-                  <h3 className="text-lg font-black dark:text-white leading-tight mb-1 group-hover:text-indigo-600 transition-colors">{l.title}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-gray-400">{l.seller_name}</span>
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full" title="Verified AAU Student"></span>
+        {loading && filteredListings.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 animate-pulse">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="bg-gray-100 dark:bg-white/5 aspect-square rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-6">
+            {filteredListings.map((l, idx) => (
+              <div 
+                key={l.id} 
+                className="reveal group cursor-pointer bg-white dark:bg-[#0c0c0e] rounded-2xl overflow-hidden tibico-border shadow-sm flex flex-col" 
+                style={{ animationDelay: `${(idx % 10) * 0.05}s` }}
+                onClick={() => navigate(`/product/${l.id}`)}
+              >
+                <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-white/5">
+                  <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1s]" alt={l.title} />
+                  <div className="absolute top-2 left-2">
+                    <span className="bg-black/60 backdrop-blur-md text-white text-[6px] font-black uppercase tracking-widest px-2 py-1 rounded-full">{t(l.category)}</span>
                   </div>
                 </div>
-                <p className="font-black text-indigo-600 text-lg">{l.price} ETB</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); fetch(); }} />}
+                <div className="p-3 flex flex-col flex-1">
+                  <h3 className="text-[10px] md:text-sm font-bold dark:text-white line-clamp-2 leading-tight mb-2 min-h-[2.4em]">
+                    {l.title}
+                  </h3>
+                  <div className="mt-auto flex items-baseline justify-between">
+                    <p className="text-[11px] md:text-lg font-black text-black dark:text-white tracking-tighter">
+                      {l.price} <span className="text-[7px] font-bold text-gray-400">ETB</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <button 
         onClick={() => setShowAdd(true)} 
-        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40 btn-hope px-12 py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center gap-4"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 btn-premium px-8 py-4 rounded-full font-black text-[9px] uppercase tracking-[0.3em] shadow-2xl flex items-center gap-3 border border-white/10"
       >
-        <span>+</span> {t('startSelling')}
+        <span>+</span> SELL
       </button>
+
+      {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); fetch(); }} />}
     </div>
   );
 };

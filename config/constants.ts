@@ -21,8 +21,10 @@ export const TRANSLATIONS: any = {
   explore: { en: 'Explore.', am: 'ይቃኙ' },
   search: { en: 'Search products...', am: 'ምርቶችን ፈልግ...' },
   exclusiveMarket: { en: 'The exclusive student marketplace.', am: 'ለተማሪዎች ብቻ የተዘጋጀ ገበያ' },
-  landingSubtitle: { en: 'The exclusive student marketplace for Addis Ababa University. Secure, intelligent, and local.', am: 'ለአዲስ አበባ ዩኒቨርሲቲ ተማሪዎች ብቻ የተዘጋጀ ልዩ ገበያ። አስተማማኝ፣ ብልህ እና ቀልጣፋ።' },
-  getStarted: { en: 'Get Started', am: 'ይጀምሩ' },
+  landingTitle: { en: 'TRADED WITH TRUST. POWERED BY STUDENTS.', am: 'በእምነት የሚገበያዩበት። በተማሪዎች የሚመራ።' },
+  landingSubtitle: { en: 'Discover the unique power and experience of Savvy. Our all-natural student ecosystem connects campus essentials from dorm to dorm. No middlemen, no hidden fees, just authentic student commerce.', am: 'የሳቪን ልዩ ኃይል እና ተሞክሮ ያግኙ። የእኛ የተማሪዎች ስነ-ምህዳር የግቢ አስፈላጊ ነገሮችን ከዶርም ወደ ዶርም ያገናኛል። ደላላ የለም፣ ድብቅ ክፍያ የለም፣ ትክክለኛ የተማሪዎች ንግድ ብቻ።' },
+  getStarted: { en: 'Shop All Market', am: 'ሁሉንም ይግዙ' },
+  sellNow: { en: 'Start Selling', am: 'መሸጥ ይጀምሩ' },
   whySavvy: { en: 'Why Savvy?', am: 'ለምን ሳቪ?' },
   trustTitle: { en: 'Trust & Safety', am: 'እምነት እና ደህንነት' },
   trustDesc: { en: 'Our escrow system ensures sellers get paid and buyers get what they ordered.', am: 'የእኛ የመያዣ ስርዓት ሻጮች ክፍያቸውን እንዲያገኙ እና ገዢዎች ያዘዙትን ነገር እንዲያገኙ ያረጋግጣል።' },
@@ -47,6 +49,7 @@ export const TRANSLATIONS: any = {
   items: { en: 'Items', am: 'ዕቃዎች' },
   orders: { en: 'Orders', am: 'ትዕዛዞች' },
   performance: { en: 'Performance', am: 'አፈጻጸም' },
+  gutHealth: { en: 'BECAUSE YOUR CAMPUS LIFE MATTERS', am: 'ምክንያቱም የእርስዎ የግቢ ሕይወት አስፈላጊ ነው' }
 };
 
 export const COMMISSION_RATE = 0.05;

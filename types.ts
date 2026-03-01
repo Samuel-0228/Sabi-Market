@@ -56,7 +56,6 @@ export interface Order {
   seller_id: string;
   listing_id: string;
   amount: number;
-  commission: number;
   status: OrderStatus;
   delivery_info: string;
   created_at: string;

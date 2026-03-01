@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/supabase/db';
-import { Listing, UserProfile, OrderStatus } from '../../types/index';
+import { Listing, UserProfile } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
 import { useUIStore } from '../../store/ui.store';
 
@@ -13,7 +14,6 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const { addToast } = useUIStore();
   const [data, setData] = useState<{listings: Listing[], orders: any[]}>({ listings: [], orders: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders'>('inventory');
 
   const load = async (signal?: AbortSignal) => {
     try {
@@ -41,94 +41,81 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
     pending: data.orders.filter((o: any) => o.status === 'pending').length
   }), [data]);
 
-  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
-    try {
-      await db.updateOrderStatus(orderId, status);
-      addToast(`Trade updated to ${status}`, "success");
-      load();
-    } catch (err) {
-      addToast("Update failed", "error");
-    }
-  };
-
-  if (loading) return (
-    <div className="h-[80vh] flex flex-col items-center justify-center">
-       <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
-       <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">Syncing Command Center...</p>
-    </div>
-  );
+  if (loading) return <div className="h-screen bg-savvy-bg dark:bg-savvy-dark flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-savvy-accent border-t-transparent rounded-full animate-spin" />
+  </div>;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-8 py-20 animate-in fade-in duration-700">
-      <header className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-        <div>
-          <h1 className="text-6xl font-black dark:text-white tracking-tighter mb-4">Command Center.</h1>
-          <p className="text-gray-500 font-medium text-lg italic">Manage your campus business.</p>
-        </div>
-        <div className="flex bg-gray-50 dark:bg-white/5 p-2 rounded-2xl border border-gray-100 dark:border-white/5">
-          <button onClick={() => setActiveTab('inventory')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'inventory' ? 'bg-white dark:bg-white/10 dark:text-white shadow-sm' : 'text-gray-400'}`}>Inventory</button>
-          <button onClick={() => setActiveTab('orders')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-white dark:bg-white/10 dark:text-white shadow-sm' : 'text-gray-400'}`}>Trades</button>
-        </div>
-      </header>
+    <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen pt-24 md:pt-48 px-4 md:px-10 pb-32">
+      <div className="max-w-[1200px] mx-auto">
+        <header className="mb-8 md:mb-20 reveal">
+          <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-savvy-accent mb-2">Trade Console</p>
+          <h1 className="text-3xl md:text-7xl font-black tracking-tighter uppercase leading-[1] dark:text-white">
+            My <span className="font-serif italic text-savvy-accent lowercase tracking-normal">Store.</span>
+          </h1>
+        </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        <StatCard label="Total Revenue" value={stats.revenue} unit="ETB" color="text-indigo-600" />
-        <StatCard label="Active Items" value={stats.active} unit="Units" color="text-black dark:text-white" />
-        <StatCard label="Pending Action" value={stats.pending} unit="Trades" color="text-pink-600" />
-      </div>
+        {/* Stats Grid - High Density */}
+        <div className="grid grid-cols-3 gap-px bg-black/5 dark:bg-white/5 tibico-border rounded-2xl overflow-hidden mb-8 md:mb-16">
+           <StatCard label="Yield" value={stats.revenue} unit="ETB" />
+           <StatCard label="Active" value={stats.active} unit="Items" />
+           <StatCard label="Pending" value={stats.pending} unit="Reqs" />
+        </div>
 
-      <div className="bg-white dark:bg-[#0c0c0e] p-10 rounded-[3rem] border border-gray-100 dark:border-white/5 shadow-xl">
-        {activeTab === 'inventory' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {data.listings.map((l: Listing) => (
-              <div key={l.id} className="group">
-                <div className="relative aspect-square rounded-[2rem] overflow-hidden mb-4 bg-gray-50 dark:bg-white/5 shadow-inner">
-                  <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                </div>
-                <p className="font-black dark:text-white truncate">{l.title}</p>
-                <p className="text-sm font-bold text-indigo-500">{l.price} ETB</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           {/* Inventory List */}
+           <div className="reveal delay-2">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-black uppercase tracking-widest dark:text-white">Active Inventory</h3>
+                <span className="text-[8px] font-bold text-gray-400 uppercase">{data.listings.length} Units</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {data.orders.map((o: any) => (
-              <div key={o.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-white/5">
-                <div className="flex items-center gap-6">
-                  <img src={o.image_url} className="w-16 h-16 rounded-2xl object-cover" />
-                  <div>
-                    <p className="font-black dark:text-white text-lg leading-none mb-2">{o.product_title}</p>
-                    <p className="text-xs font-bold text-gray-400">Buyer: <span className="text-indigo-500">{o.buyer_name}</span></p>
-                  </div>
-                </div>
-                <div className="mt-4 md:mt-0 flex flex-col md:items-end gap-3">
-                  <div className="flex items-center gap-4">
-                    <p className="text-xl font-black text-indigo-600">{o.amount} ETB</p>
-                    <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${o.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>{o.status}</span>
-                  </div>
-                  {o.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleUpdateStatus(o.id, 'accepted')} className="px-5 py-2.5 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl">Accept Trade</button>
-                      <button onClick={() => handleUpdateStatus(o.id, 'cancelled')} className="px-5 py-2.5 bg-red-100 text-red-600 text-[9px] font-black uppercase rounded-xl">Decline</button>
+              <div className="space-y-2">
+                {data.listings.map(l => (
+                  <div key={l.id} className="p-3 bg-white dark:bg-white/5 rounded-xl tibico-border flex items-center justify-between group">
+                    <div className="flex items-center gap-3">
+                      <img src={l.image_url} className="w-8 h-8 rounded-lg object-cover" alt="p" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-tight dark:text-white truncate max-w-[100px]">{l.title}</p>
+                        <p className="text-[7px] font-bold text-gray-400 uppercase">{l.category}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                    <p className="text-[11px] font-black dark:text-white">{l.price} <span className="text-[7px]">ETB</span></p>
+                  </div>
+                ))}
+                {data.listings.length === 0 && <p className="text-[10px] text-gray-400 italic py-4">No items listed yet.</p>}
               </div>
-            ))}
-          </div>
-        )}
+           </div>
+
+           {/* Sales Log */}
+           <div className="reveal delay-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-black uppercase tracking-widest dark:text-white">Sales Activity</h3>
+                <span className="text-[8px] font-bold text-gray-400 uppercase">Recent</span>
+              </div>
+              <div className="space-y-2">
+                 {data.orders.map(o => (
+                   <div key={o.id} className="p-3 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-between">
+                     <div className="min-w-0">
+                       <p className="text-[10px] font-black uppercase tracking-tight truncate">{o.product_title}</p>
+                       <p className="text-[7px] font-black uppercase tracking-[0.1em] opacity-60">Status: {o.status}</p>
+                     </div>
+                     <p className="text-[11px] font-black">{o.amount} <span className="text-[7px]">ETB</span></p>
+                   </div>
+                 ))}
+                 {data.orders.length === 0 && <p className="text-[10px] text-gray-400 italic py-4">No sales history yet.</p>}
+              </div>
+           </div>
+        </div>
       </div>
     </div>
   );
 };
 
-const StatCard = ({ label, value, unit, color }: any) => (
-  <div className="bg-white dark:bg-[#0c0c0e] p-10 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5">
-    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{label}</p>
-    <div className="flex items-baseline gap-2">
-      <h4 className={`text-4xl font-black tracking-tighter ${color}`}>{value}</h4>
-      <span className="text-[10px] font-bold text-gray-400 uppercase">{unit}</span>
-    </div>
+const StatCard = ({ label, value, unit }: any) => (
+  <div className="bg-white dark:bg-savvy-dark p-4 md:p-10 flex flex-col justify-center text-center">
+    <p className="text-[7px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">{label}</p>
+    <h4 className="text-sm md:text-4xl font-black dark:text-white tracking-tighter truncate">{value}</h4>
+    <p className="text-[6px] md:text-[8px] font-black text-savvy-accent uppercase mt-1">{unit}</p>
   </div>
 );
 

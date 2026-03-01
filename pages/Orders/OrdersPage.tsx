@@ -31,74 +31,63 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
   }, [user.id]);
 
   const handleConfirmReceipt = async (orderId: string) => {
-    if (!confirm("Did you receive the item and are satisfied with it? This releases the payment to the seller.")) return;
+    if (!confirm("Confirm delivery?")) return;
     try {
       await db.updateOrderStatus(orderId, 'completed');
       load();
     } catch (err) {
-      alert("Action failed. Check your connection.");
+      alert("Error processing confirmation.");
     }
   };
 
   if (loading && orders.length === 0) return (
-    <div className="h-[80vh] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-[10px] font-black uppercase tracking-widest opacity-40 dark:text-white">Syncing your history...</p>
+    <div className="h-screen flex items-center justify-center bg-savvy-bg dark:bg-savvy-dark">
+      <div className="w-8 h-8 border-2 border-savvy-accent border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-20 animate-in fade-in duration-700">
-      <header className="mb-16">
-        <h1 className="text-6xl font-black dark:text-white tracking-tighter mb-4">Trade History.</h1>
-        <p className="text-gray-500 text-lg italic font-medium">Tracking your secure AAU campus trades.</p>
+    <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-24 md:py-40 pb-32">
+      <header className="mb-8 md:mb-16 reveal">
+        <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-savvy-accent mb-2">Order History</p>
+        <h1 className="text-3xl md:text-7xl font-black dark:text-white tracking-tighter uppercase">Purchases.</h1>
       </header>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
         {orders.length === 0 ? (
-          <div className="py-40 text-center opacity-20">
-            <p className="text-6xl mb-6">🛍️</p>
-            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No trade history yet</p>
+          <div className="col-span-full py-20 text-center opacity-30 reveal">
+            <p className="text-sm font-black uppercase tracking-widest dark:text-white">No active acquisitions</p>
           </div>
         ) : (
           orders.map((order) => (
-            <div key={order.id} className="bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 p-8 flex flex-col md:flex-row gap-8 items-center shadow-sm hover:border-indigo-500/30 transition-all">
-              <div className="w-full md:w-32 aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 flex-shrink-0">
-                <img src={order.image_url} className="w-full h-full object-cover" />
+            <div key={order.id} className="reveal bg-white dark:bg-[#0c0c0e] rounded-2xl tibico-border p-4 flex gap-4 items-center shadow-sm">
+              <div className="w-16 h-20 rounded-xl overflow-hidden bg-gray-50 dark:bg-white/5 flex-shrink-0">
+                <img src={order.image_url} className="w-full h-full object-cover" alt="img" />
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-black dark:text-white tracking-tight truncate">{order.product_title}</h3>
-                  <span className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                    order.status === 'completed' ? 'bg-green-100 text-green-600' : 
-                    order.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                <div className="flex items-start justify-between mb-1">
+                  <h3 className="text-[11px] font-black dark:text-white tracking-tight truncate leading-tight pr-2">{order.product_title}</h3>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[6px] font-black uppercase tracking-widest ${
+                    order.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-savvy-accent/10 text-savvy-accent'
+                  }`}>
                     {order.status}
                   </span>
                 </div>
                 
-                <p className="text-lg font-black text-indigo-600 mb-6">{order.amount} ETB</p>
+                <p className="text-[10px] font-black text-savvy-accent mb-3">{order.amount} ETB</p>
                 
-                <div className="grid grid-cols-2 gap-8">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Seller</p>
-                    <p className="text-sm font-bold dark:text-white">{order.seller_name}</p>
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Seller</p>
+                    <p className="text-[9px] font-bold dark:text-white truncate">{order.seller_name}</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Meetup</p>
-                    <p className="text-xs font-medium dark:text-gray-400 italic truncate">{order.delivery_info}</p>
-                  </div>
+                  {order.status === 'accepted' && (
+                    <button onClick={() => handleConfirmReceipt(order.id)} className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg text-[7px] font-black uppercase tracking-widest shadow-md">
+                      Confirm
+                    </button>
+                  )}
                 </div>
-              </div>
-
-              <div className="flex flex-col md:items-end gap-3 shrink-0">
-                {order.status === 'accepted' && (
-                  <button onClick={() => handleConfirmReceipt(order.id)} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all">Confirm Delivery</button>
-                )}
-                {order.status === 'pending' && (
-                  <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Awaiting Seller Confirmation</p>
-                )}
-                <span className="text-[9px] font-bold text-gray-400">Order ID: {order.id.slice(0, 8)}</span>
               </div>
             </div>
           ))
