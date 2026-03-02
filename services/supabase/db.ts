@@ -474,7 +474,7 @@ export const db = {
       seller_id: listing.seller_id,
       listing_id: listing.id,
       amount,
-      status: 'pending',
+      status: 'not_seen',
       delivery_info: deliveryInfo,
       created_at: new Date().toISOString()
     }).select().single();

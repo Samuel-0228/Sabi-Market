@@ -1,7 +1,7 @@
 
 export type Role = 'student' | 'admin';
 export type ListingCategory = 'course' | 'academic_materials' | 'goods' | 'food';
-export type OrderStatus = 'pending' | 'accepted' | 'shipped' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
+export type OrderStatus = 'not_seen' | 'pending' | 'closed' | 'accepted' | 'shipped' | 'paid' | 'delivered' | 'completed' | 'disputed' | 'cancelled';
 
 export interface UserProfile {
   id: string;
