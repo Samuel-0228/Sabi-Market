@@ -36,42 +36,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     const syncPromise = (async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        let session = null;
+        let attempts = 0;
         
-        if (sessionError) {
-          console.error("Session fetch error:", sessionError);
-          return null;
+        // Retry session fetch up to 3 times with small delays
+        while (attempts < 3) {
+          const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
+          if (s && !sessionError) {
+            session = s;
+            break;
+          }
+          if (sessionError) console.warn("Session fetch attempt failed:", sessionError);
+          await new Promise(r => setTimeout(r, 500));
+          attempts++;
         }
-
+        
+        // Fallback to getUser if session is still null
         if (!session) {
-          return null;
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+          if (!authUser || userError) {
+            console.error("No session and getUser failed:", userError);
+            return null;
+          }
+          // If we have a user but no session object, we can still proceed with profile sync
+          const profile = await authApi.syncProfile();
+          return profile;
         }
         
         // Track visit and award achievements in background to prevent blocking the initial sync
+        const userId = session.user.id;
         (async () => {
           try {
-            await db.incrementVisitCount(session.user.id);
-            await db.awardAchievement(session.user.id, 'first_login');
+            await db.incrementVisitCount(userId);
+            await db.awardAchievement(userId, 'first_login');
           } catch (e) {
             console.warn("Background auth tracking failed:", e);
           }
         })();
         
         const profile = await authApi.syncProfile();
-        
-        if (profile) {
-          return profile;
-        }
-
-        // Minimal fallback profile if session exists but database profile is missing
-        return {
-          id: session.user.id,
-          email: session.user.email || '',
-          full_name: session.user.user_metadata?.full_name || 'Student',
-          role: 'student',
-          is_verified: session.user.email?.endsWith('@aau.edu.et') || false,
-          created_at: session.user.created_at || new Date().toISOString()
-        } as UserProfile;
+        return profile;
       } catch (e) {
         console.error("Auth sync internal error:", e);
         return null;
