@@ -221,12 +221,19 @@ export const db = {
   },
 
   // --- MARKETPLACE ---
-  async getListings(signal?: AbortSignal): Promise<Listing[]> {
+  async getListings(signal?: AbortSignal, sortBy: 'newest' | 'price_asc' | 'price_desc' = 'newest'): Promise<Listing[]> {
     const query = supabase
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      .eq('status', 'active');
+
+    if (sortBy === 'newest') {
+      query.order('created_at', { ascending: false });
+    } else if (sortBy === 'price_asc') {
+      query.order('price', { ascending: true });
+    } else if (sortBy === 'price_desc') {
+      query.order('price', { ascending: false });
+    }
 
     if (signal) query.abortSignal(signal);
 
@@ -417,5 +424,79 @@ export const db = {
     if (error) throw error;
     const { data } = supabase.storage.from('market-assets').getPublicUrl(path);
     return data.publicUrl;
+  },
+
+  // --- CART SYSTEM ---
+  async getCartItems(userId: string) {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('*, listing:listings(*, profiles:seller_id(full_name))')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return (data || []).map((item: any) => ({
+      ...item,
+      listing: {
+        ...item.listing,
+        seller_name: item.listing?.profiles?.full_name || 'AAU Student'
+      }
+    }));
+  },
+
+  async addToCart(userId: string, productId: string, quantity = 1) {
+    const { data: existing } = await supabase
+      .from('cart_items')
+      .select('id, quantity')
+      .eq('user_id', userId)
+      .eq('product_id', productId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ quantity: existing.quantity + quantity })
+        .eq('id', existing.id);
+      if (error) throw error;
+      return existing.id;
+    } else {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .insert({
+          user_id: userId,
+          product_id: productId,
+          quantity,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data.id;
+    }
+  },
+
+  async removeFromCart(itemId: string) {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', itemId);
+    if (error) throw error;
+  },
+
+  async updateCartQuantity(itemId: string, quantity: number) {
+    if (quantity <= 0) return db.removeFromCart(itemId);
+    const { error } = await supabase
+      .from('cart_items')
+      .update({ quantity })
+      .eq('id', itemId);
+    if (error) throw error;
+  },
+
+  async clearCart(userId: string) {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('user_id', userId);
+    if (error) throw error;
   }
 };

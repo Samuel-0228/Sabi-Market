@@ -91,6 +91,15 @@ export interface Order {
   product_title?: string;
 }
 
+export interface CartItem {
+  id: string;
+  user_id: string;
+  product_id: string;
+  quantity: number;
+  created_at: string;
+  listing?: Listing;
+}
+
 export interface OrderItem {
   id: string;
   order_id: string;
