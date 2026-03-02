@@ -272,6 +272,7 @@ export const db = {
         .select('id')
         .eq('listing_id', listingId)
         .eq('buyer_id', buyerId)
+        .eq('seller_id', sellerId)
         .maybeSingle();
 
       if (existing) return existing.id;

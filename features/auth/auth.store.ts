@@ -26,12 +26,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     set({ loading: true });
     
-    // Safety Race: Ensure the sync never takes longer than 6 seconds
+    // Safety Race: Ensure the sync never takes longer than 10 seconds
     const timeoutPromise = new Promise<null>((resolve) => 
       setTimeout(() => {
         console.warn("Auth sync timed out, forcing initialization fallback");
         resolve(null);
-      }, 6000)
+      }, 10000)
     );
 
     const syncPromise = (async () => {
@@ -47,11 +47,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return null;
         }
         
-        // Track visit and update points
-        await db.incrementVisitCount(session.user.id);
-        
-        // Award first login achievement
-        await db.awardAchievement(session.user.id, 'first_login');
+        // Track visit and award achievements in background to prevent blocking the initial sync
+        (async () => {
+          try {
+            await db.incrementVisitCount(session.user.id);
+            await db.awardAchievement(session.user.id, 'first_login');
+          } catch (e) {
+            console.warn("Background auth tracking failed:", e);
+          }
+        })();
         
         const profile = await authApi.syncProfile();
         

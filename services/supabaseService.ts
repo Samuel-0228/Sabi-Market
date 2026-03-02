@@ -174,7 +174,12 @@ export const db = {
   async getOrCreateConversation(listingId: string, sellerId: string): Promise<string> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
-    const { data: existing } = await supabase.from('conversations').select('id').eq('listing_id', listingId).eq('buyer_id', user.id).maybeSingle();
+    const { data: existing } = await supabase.from('conversations')
+      .select('id')
+      .eq('listing_id', listingId)
+      .eq('buyer_id', user.id)
+      .eq('seller_id', sellerId)
+      .maybeSingle();
     if (existing) return (existing as any).id;
     const { data: created, error: createError } = await supabase.from('conversations').insert({
       listing_id: listingId, buyer_id: user.id, seller_id: sellerId, created_at: new Date().toISOString()
