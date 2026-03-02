@@ -220,6 +220,44 @@ export const db = {
     return db.getProfile(user.id);
   },
 
+  async login(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  },
+
+  async register(email: string, password: string, fullName: string, preferences: string[]) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          preferences
+        }
+      }
+    });
+    if (error) throw error;
+    
+    // Ensure profile exists
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email: email,
+        full_name: fullName,
+        preferences: preferences,
+        role: 'student',
+        created_at: new Date().toISOString()
+      });
+    }
+    
+    return data;
+  },
+
+  async logout() {
+    await supabase.auth.signOut();
+  },
+
   // --- MARKETPLACE ---
   async getListings(signal?: AbortSignal, sortBy: 'newest' | 'price_asc' | 'price_desc' = 'newest'): Promise<Listing[]> {
     const query = supabase
