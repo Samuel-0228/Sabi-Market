@@ -47,6 +47,9 @@ const Navbar: React.FC = () => {
             <NavLink to="/inbox" className={({ isActive }) => `text-[9px] font-black uppercase tracking-[0.4em] transition-all hover:opacity-60 ${isActive ? 'text-savvy-accent' : ''}`}>
               {t('inbox')}
             </NavLink>
+            <NavLink to="/cart" className={({ isActive }) => `text-[9px] font-black uppercase tracking-[0.4em] transition-all hover:opacity-60 ${isActive ? 'text-savvy-accent' : ''}`}>
+              Cart
+            </NavLink>
             <NavLink to="/profile" className={({ isActive }) => `text-[9px] font-black uppercase tracking-[0.4em] transition-all hover:opacity-60 ${isActive ? 'text-savvy-accent' : ''}`}>
               {t('profile')}
             </NavLink>
@@ -65,6 +68,9 @@ const Navbar: React.FC = () => {
         
         {user ? (
           <div className="flex items-center gap-3">
+            <Link to="/cart" className="p-2 bg-white/10 rounded-full">
+               <ShoppingBag className="w-4 h-4 text-white" />
+            </Link>
             <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
                <MessageSquare className="w-4 h-4 text-white" />
             </Link>

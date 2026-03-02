@@ -24,6 +24,7 @@ const Checkout = lazy(() => import('../pages/Checkout/CheckoutPage'));
 const InboxPage = lazy(() => import('../messaging/inbox/InboxPage'));
 const ProductDetailsPage = lazy(() => import('../pages/Product/ProductDetailsPage'));
 const ProfilePage = lazy(() => import('../pages/Profile/ProfilePage'));
+const CartPage = lazy(() => import('../pages/Cart/CartPage'));
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -201,6 +202,11 @@ const AppRoutes: React.FC = () => {
             <Route path="/auth" element={<Auth onSuccess={() => {}} />} />
             <Route path="/marketplace" element={<FeedPage />} />
             <Route path="/product/:id" element={<ProductDetailsPage />} />
+            <Route path="/cart" element={
+              <ProtectedRoute>
+                <CartPage />
+              </ProtectedRoute>
+            } />
             
             <Route path="/dashboard" element={
               <ProtectedRoute>

@@ -1,16 +1,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ShoppingBag, MessageSquare, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../services/supabase/client';
+import { db } from '../../services/supabase/db';
 import { Listing } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { useAuthStore } from '../../features/auth/auth.store';
+import { useUIStore } from '../../store/ui.store';
 
 const ProductDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuthStore();
+  const { addToast } = useUIStore();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +42,17 @@ const ProductDetailsPage: React.FC = () => {
 
     fetchListing();
   }, [id]);
+
+  const handleAddToCart = async () => {
+    if (!user) return navigate('/auth');
+    if (!listing) return;
+    try {
+      await db.addToCart(user.id, listing.id);
+      addToast(`${listing.title} added to cart!`, 'success');
+    } catch (err) {
+      addToast('Failed to add to cart', 'error');
+    }
+  };
 
   const handleContactSeller = () => {
     if (!user) return navigate('/auth');
@@ -147,10 +162,16 @@ const ProductDetailsPage: React.FC = () => {
                 Acquire Now
               </button>
               <button 
+                onClick={handleAddToCart}
+                className="px-10 py-5 rounded-full bg-black dark:bg-white text-white dark:text-black font-black text-[10px] uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+              >
+                <ShoppingBag className="w-4 h-4" /> Add to Cart
+              </button>
+              <button 
                 onClick={handleContactSeller}
                 className="px-10 py-5 rounded-full border border-black/10 dark:border-white/10 font-black text-[10px] uppercase tracking-[0.3em] dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all"
               >
-                Message Seller
+                Message
               </button>
             </div>
 
@@ -171,7 +192,13 @@ const ProductDetailsPage: React.FC = () => {
             onClick={handleContactSeller}
             className="w-14 h-14 bg-gray-100 dark:bg-white/10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
          >
-           <svg className="w-6 h-6 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+           <MessageSquare className="w-6 h-6 dark:text-white" />
+         </button>
+         <button 
+            onClick={handleAddToCart}
+            className="w-14 h-14 bg-black dark:bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+         >
+           <ShoppingBag className="w-6 h-6 text-white dark:text-black" />
          </button>
          <button 
             onClick={() => navigate('/checkout', { state: { listing } })}

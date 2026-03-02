@@ -12,6 +12,22 @@ export const authApi = {
     
     if (error) throw error;
     if (!data.user) throw new Error("Registration failed to create a user.");
+
+    // Manual profile creation to ensure preferences are stored correctly
+    // This acts as a fallback if the Supabase trigger is missing or failing
+    try {
+      await authService.upsertProfile({
+        id: data.user.id,
+        email: email,
+        full_name: fullName,
+        preferences: preferences,
+        role: 'student',
+        is_verified: email.endsWith('@aau.edu.et'),
+        created_at: new Date().toISOString()
+      });
+    } catch (upsertError) {
+      console.warn("Initial profile upsert failed, relying on trigger:", upsertError);
+    }
     
     return {
       user: data.user,
