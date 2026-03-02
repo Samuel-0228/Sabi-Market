@@ -42,11 +42,27 @@ const Login: React.FC<LoginProps> = ({ onSuccess, onSwitch }) => {
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
           <div className="space-y-1.5">
             <label className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('email')}</label>
-            <input type="email" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+            <input
+              type="email"
+              required
+              className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold"
+              value={formData.email}
+              onChange={e => setFormData({...formData, email: e.target.value})}
+              placeholder={t('email')}
+              title={t('email')}
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">{t('password')}</label>
-            <input type="password" required className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            <input
+              type="password"
+              required
+              className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold"
+              value={formData.password}
+              onChange={e => setFormData({...formData, password: e.target.value})}
+              placeholder={t('password')}
+              title={t('password')}
+            />
           </div>
           <button type="submit" disabled={loading} className="w-full py-4 md:py-6 rounded-xl bg-indigo-600 text-white font-black text-[10px] md:text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50">
             {loading ? 'Processing...' : t('login')}
