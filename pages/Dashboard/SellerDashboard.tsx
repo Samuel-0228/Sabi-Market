@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { db } from '../../services/supabase/db';
 import { Listing, UserProfile } from '../../types/index';
 import { useLanguage } from '../../app/LanguageContext';
@@ -15,10 +15,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
   const [data, setData] = useState<{listings: Listing[], orders: any[]}>({ listings: [], orders: [] });
   const [loading, setLoading] = useState(true);
 
-  const load = async (signal?: AbortSignal) => {
+  const load = useCallback(async (signal?: AbortSignal) => {
     try {
       const [listings, orders] = await Promise.all([
-        db.getListings(signal).then(all => all.filter((l: Listing) => l.seller_id === user.id)),
+        db.getUserListings(user.id, signal),
         db.getOrders(user.id, 'seller', signal)
       ]);
       setData({ listings, orders });
@@ -27,13 +27,25 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
     } finally {
       setLoading(false);
     }
+  }, [user.id]);
+
+  const handleDelete = async (listingId: string) => {
+    if (!window.confirm("Are you sure you want to delete this listing? This action is permanent for the marketplace but will be archived in our records.")) return;
+    
+    try {
+      await db.deleteListing(listingId);
+      addToast("Listing removed successfully", "success");
+      load();
+    } catch (err: any) {
+      addToast(err.message || "Failed to delete listing", "error");
+    }
   };
 
   useEffect(() => {
     const controller = new AbortController();
     load(controller.signal);
     return () => controller.abort();
-  }, [user.id]);
+  }, [user.id, load]);
 
   const stats = useMemo(() => ({
     revenue: data.orders.reduce((acc: number, o: any) => acc + (o.status === 'completed' ? parseFloat(o.amount) : 0), 0),
@@ -79,7 +91,16 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                         <p className="text-[7px] font-bold text-gray-400 uppercase">{l.category}</p>
                       </div>
                     </div>
-                    <p className="text-[11px] font-black dark:text-white">{l.price} <span className="text-[7px]">ETB</span></p>
+                    <div className="flex items-center gap-4">
+                      <p className="text-[11px] font-black dark:text-white">{l.price} <span className="text-[7px]">ETB</span></p>
+                      <button 
+                        onClick={() => handleDelete(l.id)}
+                        className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete Listing"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {data.listings.length === 0 && <p className="text-[10px] text-gray-400 italic py-4">No items listed yet.</p>}

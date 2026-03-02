@@ -263,7 +263,8 @@ export const db = {
     const query = supabase
       .from('listings')
       .select('*, profiles:seller_id(full_name)')
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .eq('is_deleted', false);
 
     if (sortBy === 'newest') {
       query.order('created_at', { ascending: false });
@@ -282,6 +283,64 @@ export const db = {
       ...l,
       seller_name: l.profiles?.full_name || 'AAU Student'
     }));
+  },
+
+  async getUserListings(userId: string, signal?: AbortSignal): Promise<Listing[]> {
+    const query = supabase
+      .from('listings')
+      .select('*, profiles:seller_id(full_name)')
+      .eq('seller_id', userId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false });
+
+    if (signal) query.abortSignal(signal);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return (data || []).map((l: any) => ({
+      ...l,
+      seller_name: l.profiles?.full_name || 'AAU Student'
+    }));
+  },
+
+  async deleteListing(listingId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Auth required");
+
+    // Check if listing belongs to user
+    const { data: listing, error: fetchError } = await supabase
+      .from('listings')
+      .select('seller_id')
+      .eq('id', listingId)
+      .single();
+
+    if (fetchError || !listing) throw new Error("Listing not found");
+    if (listing.seller_id !== user.id) throw new Error("Unauthorized");
+
+    // Check for active orders
+    const { data: activeOrders, error: orderError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('listing_id', listingId)
+      .not('status', 'in', '("completed","cancelled","disputed")');
+
+    if (orderError) throw orderError;
+    if (activeOrders && activeOrders.length > 0) {
+      throw new Error("Cannot delete listing with active trade requests.");
+    }
+
+    // Soft delete
+    const { error: deleteError } = await supabase
+      .from('listings')
+      .update({ 
+        is_deleted: true, 
+        deleted_at: new Date().toISOString(),
+        status: 'archived'
+      })
+      .eq('id', listingId);
+
+    if (deleteError) throw deleteError;
   },
 
   async createListing(listing: Partial<Listing>) {

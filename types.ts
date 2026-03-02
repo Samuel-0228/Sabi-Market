@@ -51,6 +51,8 @@ export interface Listing {
   stock: number;
   status: 'active' | 'sold_out' | 'archived';
   contact_phone?: string;
+  is_deleted?: boolean;
+  deleted_at?: string;
   created_at: string;
   seller_name?: string;
 }

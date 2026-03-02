@@ -47,7 +47,7 @@ const Login: React.FC<LoginProps> = ({ onSuccess, onSwitch }) => {
               required
               className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold"
               value={formData.email}
-              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              onChange={e => setFormData({...formData, email: e.target.value})}
               placeholder={t('email')}
               title={t('email')}
             />
@@ -59,7 +59,7 @@ const Login: React.FC<LoginProps> = ({ onSuccess, onSwitch }) => {
               required
               className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-xl px-5 py-3 md:py-5 outline-none dark:text-white text-sm font-bold"
               value={formData.password}
-              onChange={e => setFormData({ ...formData, password: e.target.value })}
+              onChange={e => setFormData({...formData, password: e.target.value})}
               placeholder={t('password')}
               title={t('password')}
             />
