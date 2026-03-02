@@ -28,17 +28,21 @@ export const db = {
   async incrementVisitCount(userId: string): Promise<void> {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('visit_count')
+      .select('visit_count, last_active_date')
       .eq('id', userId)
       .maybeSingle();
 
     const currentVisits = profile?.visit_count || 0;
+    const today = new Date().toISOString().split('T')[0];
+
+    const updates: any = { 
+      visit_count: currentVisits + 1,
+      last_active_date: today
+    };
 
     await supabase
       .from('profiles')
-      .update({ 
-        visit_count: currentVisits + 1
-      })
+      .update(updates)
       .eq('id', userId);
       
     await db.grantPoints(userId, 10);
@@ -47,18 +51,167 @@ export const db = {
   async grantPoints(userId: string, amount: number): Promise<void> {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('points')
+      .select('points, level')
       .eq('id', userId)
       .maybeSingle();
 
     const currentPoints = profile?.points || 0;
+    const newPoints = currentPoints + amount;
+    
+    // Level thresholds: 1: 0-99, 2: 100-249, 3: 250-499, 4: 500-999, 5: 1000+
+    let newLevel = 1;
+    if (newPoints >= 1000) newLevel = 5;
+    else if (newPoints >= 500) newLevel = 4;
+    else if (newPoints >= 250) newLevel = 3;
+    else if (newPoints >= 100) newLevel = 2;
 
     await supabase
       .from('profiles')
       .update({ 
-        points: currentPoints + amount
+        points: newPoints,
+        level: newLevel
       })
       .eq('id', userId);
+  },
+
+  async dailyClaim(userId: string): Promise<{ success: boolean; reward: number; streak: number; message: string }> {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('points, last_claim_at, login_streak')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!profile) return { success: false, reward: 0, streak: 0, message: "Profile not found" };
+
+    const now = new Date();
+    const lastClaim = profile.last_claim_at ? new Date(profile.last_claim_at) : null;
+
+    if (lastClaim) {
+      const diffMs = now.getTime() - lastClaim.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      if (diffHours < 24) {
+        const remainingHours = Math.ceil(24 - diffHours);
+        return { success: false, reward: 0, streak: profile.login_streak || 0, message: `Wait ${remainingHours} more hours` };
+      }
+    }
+
+    let streak = profile.login_streak || 0;
+    const isConsecutive = lastClaim && (now.getTime() - lastClaim.getTime()) < (48 * 60 * 60 * 1000);
+    
+    if (isConsecutive) {
+      streak += 1;
+    } else {
+      streak = 1;
+    }
+
+    let reward = 5; // Base reward
+    if (streak === 7) reward += 10;
+    if (streak === 30) reward += 50;
+
+    await supabase
+      .from('profiles')
+      .update({
+        last_claim_at: now.toISOString(),
+        login_streak: streak
+      })
+      .eq('id', userId);
+
+    await db.grantPoints(userId, reward);
+    
+    // Check milestones
+    if (streak === 7) await db.awardAchievement(userId, 'streak_7');
+    if (streak === 30) await db.awardAchievement(userId, 'streak_30');
+
+    return { success: true, reward, streak, message: "Claimed successfully!" };
+  },
+
+  async getLeaderboard(limit = 20) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, level, points, avatar_url')
+      .order('points', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async awardAchievement(userId: string, achievementId: string) {
+    // Check if already earned
+    const { data: existing } = await supabase
+      .from('user_achievements')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('achievement_id', achievementId)
+      .maybeSingle();
+
+    if (existing) return;
+
+    // Fetch achievement reward
+    const { data: achievement } = await supabase
+      .from('achievements')
+      .select('xp_reward')
+      .eq('id', achievementId)
+      .maybeSingle();
+
+    const reward = achievement?.xp_reward || 0;
+
+    await supabase
+      .from('user_achievements')
+      .insert({
+        user_id: userId,
+        achievement_id: achievementId,
+        earned_at: new Date().toISOString()
+      });
+
+    if (reward > 0) {
+      await db.grantPoints(userId, reward);
+    }
+  },
+
+  async getUserAchievements(userId: string) {
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .select('*, achievement:achievements(*)')
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async applyReferral(userId: string, referralCode: string): Promise<{ success: boolean; message: string }> {
+    // Check if user already referred
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('referred_by')
+      .eq('id', userId)
+      .single();
+
+    if (userProfile?.referred_by) return { success: false, message: "Already referred" };
+
+    // Find referrer
+    const { data: referrer } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('referral_code', referralCode)
+      .maybeSingle();
+
+    if (!referrer) return { success: false, message: "Invalid referral code" };
+    if (referrer.id === userId) return { success: false, message: "Cannot refer yourself" };
+
+    // Update user
+    await supabase
+      .from('profiles')
+      .update({ referred_by: referrer.id })
+      .eq('id', userId);
+
+    // Reward both
+    await db.grantPoints(userId, 20);
+    await db.grantPoints(referrer.id, 50);
+    
+    await db.awardAchievement(referrer.id, 'first_referral');
+
+    return { success: true, message: "Referral applied!" };
   },
 
   async getCurrentUser(): Promise<UserProfile | null> {
@@ -225,6 +378,19 @@ export const db = {
 
     // Grant points for placing an order
     await db.grantPoints(user.id, 100);
+    
+    // Award purchase achievements
+    await db.awardAchievement(user.id, 'first_purchase');
+    
+    // Check for 10 purchases
+    const { count } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('buyer_id', user.id);
+      
+    if (count && count >= 10) {
+      await db.awardAchievement(user.id, 'purchases_10');
+    }
 
     try {
       const cid = await db.getOrCreateConversation(listing.id, listing.seller_id, user.id);

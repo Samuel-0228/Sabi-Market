@@ -50,6 +50,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Track visit and update points
         await db.incrementVisitCount(session.user.id);
         
+        // Award first login achievement
+        await db.awardAchievement(session.user.id, 'first_login');
+        
         const profile = await authApi.syncProfile();
         
         if (profile) {

@@ -15,6 +15,29 @@ export interface UserProfile {
   created_at: string;
   points?: number;
   visit_count?: number;
+  level?: number;
+  last_claim_at?: string;
+  login_streak?: number;
+  last_active_date?: string;
+  referral_code?: string;
+  referred_by?: string;
+  is_banned?: boolean;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  xp_reward: number;
+}
+
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  earned_at: string;
+  achievement?: Achievement;
 }
 
 export interface Listing {
