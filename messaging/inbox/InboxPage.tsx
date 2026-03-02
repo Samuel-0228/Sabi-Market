@@ -27,8 +27,32 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
         if (error) throw error;
         if (mounted) {
           setConversations(data || []);
-          // On desktop, default to first conv. On mobile, stay in list.
-          if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
+          
+          const pending = localStorage.getItem('savvy_pending_chat');
+          if (pending) {
+            localStorage.removeItem('savvy_pending_chat');
+            const { listingId, sellerId } = JSON.parse(pending);
+            const cid = await db.getOrCreateConversation(listingId, sellerId, user.id);
+            
+            // Check if it's already in the list
+            const existing = (data || []).find((c: any) => c.id === cid);
+            if (existing) {
+              setActiveConv(existing);
+              setView('chat');
+            } else {
+              // Fetch the new conversation specifically
+              const { data: fresh } = await supabase
+                .from('conversations')
+                .select('*, listing:listings(title, image_url, price), seller:profiles!conversations_seller_id_fkey(full_name), buyer:profiles!conversations_buyer_id_fkey(full_name)')
+                .eq('id', cid)
+                .single();
+              if (fresh && mounted) {
+                setConversations(prev => [fresh, ...prev]);
+                setActiveConv(fresh);
+                setView('chat');
+              }
+            }
+          } else if (data && data.length > 0 && !activeConv && window.innerWidth > 1024) {
              setActiveConv(data[0]);
              setView('chat');
           }
