@@ -18,7 +18,10 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false // HMR is disabled by platform
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -26,11 +29,19 @@ async function startServer() {
     // Explicit SPA fallback for development
     app.use('*', async (req: Request, res: Response, next: NextFunction) => {
       const url = req.originalUrl;
+      
+      // Skip if it looks like a file request (has an extension)
+      if (url.includes('.') && !url.endsWith('.html')) {
+        return next();
+      }
+
       try {
-        // In middleware mode, we need to manually serve index.html for non-file requests
-        // Vite's transformIndexHtml will inject the necessary scripts
         const fs = await import('fs');
-        let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+        const templatePath = path.resolve(__dirname, 'index.html');
+        if (!fs.existsSync(templatePath)) {
+          return res.status(404).send('index.html not found');
+        }
+        let template = fs.readFileSync(templatePath, 'utf-8');
         template = await vite.transformIndexHtml(url, template);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {

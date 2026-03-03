@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Github, Chrome, Facebook } from 'lucide-react';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
+import { supabase } from '../services/supabase/client';
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { 
   label: string; 
@@ -32,7 +33,7 @@ interface AuthProps {
   initialStep?: 'login' | 'initial-email';
 }
 
-type Step = 'login' | 'register' | 'syncing';
+type Step = 'login' | 'register' | 'syncing' | 'reset';
 
 const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const navigate = useNavigate();
@@ -44,6 +45,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('step') === 'reset') {
+      setStep('reset');
+    }
+  }, [location]);
 
   const from = (location.state as any)?.from?.pathname || '/marketplace';
 
@@ -149,7 +157,50 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           )}
 
           <AnimatePresence mode="wait">
-            {step === 'login' ? (
+            {step === 'reset' ? (
+              <motion.form 
+                key="reset"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onSubmit={async (e: FormEvent) => { 
+                  e.preventDefault(); 
+                  setLoading(true);
+                  setError('');
+                  try {
+                    const { error } = await supabase.auth.updateUser({ password: formData.password });
+                    if (error) throw error;
+                    setError('Password successfully updated! You can now sign in.');
+                    setStep('login');
+                  } catch (err: any) {
+                    setError(err.message || 'Failed to update password.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }} 
+                className="space-y-6"
+              >
+                <h2 className="text-xl font-black dark:text-white tracking-tighter mb-4">Set New Password</h2>
+                <Input 
+                  label="New Password" 
+                  type="password" 
+                  icon={<Lock className="w-5 h-5" />}
+                  value={formData.password} 
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
+                  placeholder="••••••••"
+                />
+                <button 
+                  disabled={loading} 
+                  className="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-black uppercase text-[11px] tracking-[0.2em] shadow-xl active:scale-95 transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Updating...' : 'Update Password'}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </button>
+                <div className="text-center">
+                  <button type="button" onClick={() => setStep('login')} className="text-xs font-bold text-indigo-600 hover:underline">Back to Sign in</button>
+                </div>
+              </motion.form>
+            ) : step === 'login' ? (
               <motion.form 
                 key="login"
                 initial={{ opacity: 0, x: -20 }}
@@ -185,7 +236,30 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                     />
                     <span className="text-xs font-bold text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">Remember me</span>
                   </label>
-                  <button type="button" className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors">Forgot Password?</button>
+                  <button 
+                    type="button" 
+                    onClick={async () => {
+                      if (!formData.email) {
+                        setError('Please enter your email address first.');
+                        return;
+                      }
+                      setLoading(true);
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+                          redirectTo: `${window.location.origin}/auth?step=reset`,
+                        });
+                        if (error) throw error;
+                        setError('Password reset link sent! Please check your email.');
+                      } catch (err: any) {
+                        setError(err.message || 'Failed to send reset link.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="text-xs font-bold text-gray-400 hover:text-indigo-600 transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
                 </div>
 
                 <button 
