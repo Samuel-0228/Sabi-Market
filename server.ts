@@ -22,6 +22,22 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+    
+    // Explicit SPA fallback for development
+    app.use('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        // In middleware mode, we need to manually serve index.html for non-file requests
+        // Vite's transformIndexHtml will inject the necessary scripts
+        const fs = await import('fs');
+        let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     // Production serving
     app.use(express.static(path.join(__dirname, 'dist')));
