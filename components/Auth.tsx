@@ -272,43 +272,30 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       </div>
 
       {/* Right Side: Decorative Panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0c0c0e] relative overflow-hidden items-center justify-center p-24">
-        {/* Abstract Background Elements */}
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-600/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-600/10 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/4" />
+      <div className="hidden lg:flex w-1/2 bg-[#0c0c0e] relative overflow-hidden items-center justify-center">
+        <img 
+          src="https://share.google/dTENfoJ7A9KqcdC1S" 
+          alt="Savvy Market" 
+          className="absolute inset-0 w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        {/* Overlay for readability if needed, but user asked for the image */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
         
-        <div className="relative z-10 max-w-lg">
+        <div className="relative z-10 max-w-lg p-12">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
-            className="mb-16"
           >
-            <div className="w-32 h-32 bg-white/5 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 flex items-center justify-center text-white font-black text-6xl shadow-2xl mb-12">ሳ</div>
-            <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-6">
-              Welcome to <br /> <span className="text-indigo-500">Savvy Market.</span>
+            <div className="w-24 h-24 bg-white/10 backdrop-blur-3xl rounded-3xl border border-white/20 flex items-center justify-center text-white font-black text-5xl shadow-2xl mb-8">ሳ</div>
+            <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-6 drop-shadow-2xl">
+              Welcome to <br /> <span className="text-indigo-400">Savvy Market.</span>
             </h2>
-            <p className="text-gray-400 text-lg font-medium leading-relaxed">
-              The premier marketplace for Addis Ababa University students. Buy, sell, and trade with confidence in a secure campus environment.
+            <p className="text-white/90 text-lg font-medium leading-relaxed drop-shadow-lg">
+              The premier marketplace for Addis Ababa University students. Buy, sell, and trade with confidence.
             </p>
           </motion.div>
-
-          <div className="grid grid-cols-2 gap-8">
-            <div className="p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10">
-              <p className="text-3xl font-black text-white mb-1">17k+</p>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Active Students</p>
-            </div>
-            <div className="p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10">
-              <p className="text-3xl font-black text-white mb-1">50k+</p>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Trades Completed</p>
-            </div>
-          </div>
-
-          <div className="mt-16 p-8 bg-indigo-600 rounded-[2.5rem] shadow-2xl shadow-indigo-600/20 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-            <p className="text-white font-black text-xl tracking-tight mb-2">Get your right gear and right price now</p>
-            <p className="text-indigo-100 text-sm font-medium opacity-80">Be among the first founders to shape the future of campus trade.</p>
-          </div>
         </div>
       </div>
     </div>
