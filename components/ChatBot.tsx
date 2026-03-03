@@ -44,7 +44,7 @@ const ChatBot: React.FC = () => {
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
               {t('savvyAI')}
             </h3>
-            <button onClick={() => setIsOpen(false)} aria-label="Close chat" title="Close chat" className="text-white hover:text-gray-200">✕</button>
+            <button onClick={() => setIsOpen(false)} className="text-white hover:text-gray-200">✕</button>
           </div>
           
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-black/20">
@@ -76,8 +76,6 @@ const ChatBot: React.FC = () => {
             />
             <button 
               onClick={handleSend}
-              aria-label="Send message"
-              title="Send message"
               className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-indigo-700 transition-all"
             >
               ➤
@@ -87,8 +85,6 @@ const ChatBot: React.FC = () => {
       ) : (
         <button 
           onClick={() => setIsOpen(true)}
-          aria-label="Open chat assistant"
-          title="Open chat assistant"
           className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-transform"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 10 01-2-2V6a2 2 10 012-2h14a2 2 10 012 2v8a2 2 10 01-2 2h-5l-5 5v-5z"></path></svg>

@@ -89,7 +89,6 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
               type="button" 
               onClick={() => fileInputRef.current?.click()} 
               disabled={uploading}
-              aria-label={t('uploadPhoto')}
               className="absolute inset-0 opacity-0 cursor-pointer z-20" 
               title={t('uploadPhoto')} 
             />
@@ -105,7 +104,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
               {uploading ? 'Processing...' : t('selectImage')}
             </button>
           </div>
-          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} title={t('uploadPhoto')} aria-label={t('uploadPhoto')} />
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
         </div>
 
         <div className="md:w-[55%] p-12 overflow-y-auto">
@@ -114,7 +113,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
               <h2 className="text-4xl font-black text-black dark:text-white tracking-tighter">{t('newListing')}</h2>
               <p className="text-gray-400 font-medium text-sm mt-2 italic">Savvy AI will help categorize your items.</p>
             </div>
-            <button onClick={onClose} aria-label="Close add listing modal" title="Close" className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-black dark:text-white">✕</button>
+            <button onClick={onClose} className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-black dark:text-white">✕</button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -127,7 +126,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('category')}</label>
                 <div className="relative">
-                  <select title={t('category')} className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white appearance-none cursor-pointer" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                  <select className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white appearance-none cursor-pointer" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
                     <option value="goods">{t('goods')}</option>
                     <option value="course">{t('course')}</option>
                     <option value="academic_materials">{t('academic_materials')}</option>
@@ -140,7 +139,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('price')} (ETB)</label>
-                  <input type="number" required title={t('price')} className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
+                  <input type="number" required className="w-full bg-gray-50/50 dark:bg-white/5 border-2 border-transparent focus:border-savvy-pink rounded-2xl px-6 py-5 font-bold outline-none transition-all dark:text-white" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3 px-1">{t('contactPhone')}</label>

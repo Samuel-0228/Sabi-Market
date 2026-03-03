@@ -58,7 +58,7 @@ const Navbar: React.FC = () => {
       </div>
 
       <div className="flex pointer-events-auto items-center gap-3 md:gap-6 text-white">
-        <button onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+        <button onClick={toggleTheme} className="p-2 hover:bg-white/10 rounded-full transition-colors">
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
         <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2">
@@ -68,10 +68,10 @@ const Navbar: React.FC = () => {
         
         {user ? (
           <div className="flex items-center gap-3">
-            <Link to="/cart" aria-label="Open cart" title="Open cart" className="p-2 bg-white/10 rounded-full">
+            <Link to="/cart" className="p-2 bg-white/10 rounded-full">
                <ShoppingBag className="w-4 h-4 text-white" />
             </Link>
-            <Link to="/inbox" aria-label="Open inbox" title="Open inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
+            <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
                <MessageSquare className="w-4 h-4 text-white" />
             </Link>
             <button onClick={handleLogout} className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all flex items-center gap-2">

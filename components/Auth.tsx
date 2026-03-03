@@ -209,14 +209,14 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button type="button" aria-label="Continue with Google" title="Continue with Google" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <Chrome className="w-5 h-5" aria-hidden="true" />
+                  <button type="button" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <Chrome className="w-5 h-5" />
                   </button>
-                  <button type="button" aria-label="Continue with GitHub" title="Continue with GitHub" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <Github className="w-5 h-5" aria-hidden="true" />
+                  <button type="button" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <Github className="w-5 h-5" />
                   </button>
-                  <button type="button" aria-label="Continue with Facebook" title="Continue with Facebook" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <Facebook className="w-5 h-5" aria-hidden="true" />
+                  <button type="button" className="flex-1 flex items-center justify-center py-3 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <Facebook className="w-5 h-5" />
                   </button>
                 </div>
               </motion.form>
