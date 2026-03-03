@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,7 @@ async function startServer() {
   const PORT = 3000;
 
   // API routes go here
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
   });
 
@@ -24,7 +24,7 @@ async function startServer() {
     app.use(vite.middlewares);
     
     // Explicit SPA fallback for development
-    app.use('*', async (req, res, next) => {
+    app.use('*', async (req: Request, res: Response, next: NextFunction) => {
       const url = req.originalUrl;
       try {
         // In middleware mode, we need to manually serve index.html for non-file requests
@@ -41,7 +41,7 @@ async function startServer() {
   } else {
     // Production serving
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (req, res) => {
+    app.get('*', (req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }
