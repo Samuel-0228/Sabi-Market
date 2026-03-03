@@ -72,13 +72,17 @@ export const authApi = {
   async _fetchProfileWithRetries(user: any): Promise<UserProfile> {
     const userId = user.id;
     let attempts = 0;
-    const maxAttempts = 6; // Reduced attempts for faster feedback
+    const maxAttempts = 3; // Faster feedback for missing profiles
 
     while (attempts < maxAttempts) {
-      const { data, error } = await authService.getProfile(userId);
-      if (data && !error) return data as UserProfile;
+      try {
+        const { data, error } = await authService.getProfile(userId);
+        if (data && !error) return data as UserProfile;
+      } catch (e) {
+        console.warn("Profile fetch attempt failed:", e);
+      }
       
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 800));
       attempts++;
     }
 

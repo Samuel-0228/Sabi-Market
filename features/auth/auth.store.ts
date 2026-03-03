@@ -10,7 +10,7 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   setUser: (user: UserProfile | null) => void;
-  sync: () => Promise<UserProfile | null>;
+  sync: (providedSession?: any) => Promise<UserProfile | null>;
   forceInitialize: () => void;
 }
 
@@ -20,42 +20,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialized: false,
   setUser: (user) => set({ user, loading: false, initialized: true }),
   forceInitialize: () => set({ initialized: true, loading: false }),
-  sync: async () => {
+  sync: async (providedSession) => {
     // If we're already loading and not in the initial state, don't re-sync
-    if (get().loading && get().initialized) return get().user;
+    if (get().loading && get().initialized && !providedSession) return get().user;
     
     set({ loading: true });
     
-    // Safety Race: Ensure the sync never takes longer than 10 seconds
+    // Safety Race: Ensure the sync never takes longer than 15 seconds
     const timeoutPromise = new Promise<null>((resolve) => 
       setTimeout(() => {
-        console.warn("Auth sync timed out, forcing initialization fallback");
         resolve(null);
-      }, 10000)
+      }, 15000)
     );
 
     const syncPromise = (async () => {
       try {
-        let session = null;
+        let session = providedSession || null;
         let attempts = 0;
         
-        // Retry session fetch up to 3 times with small delays
-        while (attempts < 3) {
-          const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
-          if (s && !sessionError) {
-            session = s;
-            break;
+        // If no session provided, retry session fetch up to 3 times with small delays
+        if (!session) {
+          while (attempts < 3) {
+            const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
+            if (s && !sessionError) {
+              session = s;
+              break;
+            }
+            if (sessionError) console.warn("Session fetch attempt failed:", sessionError);
+            await new Promise(r => setTimeout(r, 500));
+            attempts++;
           }
-          if (sessionError) console.warn("Session fetch attempt failed:", sessionError);
-          await new Promise(r => setTimeout(r, 500));
-          attempts++;
         }
         
         // Fallback to getUser if session is still null
         if (!session) {
           const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
           if (!authUser || userError) {
-            console.error("No session and getUser failed:", userError);
+            // This is a normal state for unauthenticated users, so we don't console.error
             return null;
           }
           // If we have a user but no session object, we can still proceed with profile sync

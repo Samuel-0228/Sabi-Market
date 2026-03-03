@@ -58,6 +58,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     setError('');
     setLoading(true);
     try {
+      let loginData;
       if (isRegister) {
         const result = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
         if (result.needsConfirmation) {
@@ -66,12 +67,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           setStep('login');
           return;
         }
+        loginData = result;
       } else {
-        await authApi.login(formData.email, formData.password);
+        loginData = await authApi.login(formData.email, formData.password);
       }
       
       setStep('syncing');
-      const profile = await sync();
+      const profile = await sync(loginData?.session);
       
       if (!profile) {
         throw new Error("Session established but profile synchronization failed.");
@@ -272,15 +274,14 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       </div>
 
       {/* Right Side: Decorative Panel */}
-      <div className="hidden lg:flex w-1/2 bg-[#0c0c0e] relative overflow-hidden items-center justify-center">
+      <div className="hidden lg:flex w-1/2 bg-savvy-dark relative overflow-hidden items-center justify-center">
         <img 
-          src="https://share.google/dTENfoJ7A9KqcdC1S" 
-          alt="Savvy Market" 
-          className="absolute inset-0 w-full h-full object-cover"
+          src="https://www.aau.edu.et/_next/image?url=%2Fimages%2Fforumbuilding.jpg&w=3840&q=75" 
+          alt="AAU Campus" 
+          className="absolute inset-0 w-full h-full object-cover opacity-50"
           referrerPolicy="no-referrer"
         />
-        {/* Overlay for readability if needed, but user asked for the image */}
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-savvy-dark via-savvy-dark/40 to-transparent" />
         
         <div className="relative z-10 max-w-lg p-12">
           <motion.div
@@ -288,12 +289,12 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
           >
-            <div className="w-24 h-24 bg-white/10 backdrop-blur-3xl rounded-3xl border border-white/20 flex items-center justify-center text-white font-black text-5xl shadow-2xl mb-8">ሳ</div>
-            <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-6 drop-shadow-2xl">
-              Welcome to <br /> <span className="text-indigo-400">Savvy Market.</span>
+            <div className="w-20 h-20 bg-savvy-bg text-savvy-dark rounded-2xl flex items-center justify-center font-black text-4xl shadow-2xl mb-8">ሳ</div>
+            <h2 className="text-6xl font-black text-white tracking-tighter leading-[0.85] mb-6 uppercase">
+              Campus <br /> <span className="text-savvy-accent italic font-serif lowercase tracking-normal">Trade</span> <br /> Simplified.
             </h2>
-            <p className="text-white/90 text-lg font-medium leading-relaxed drop-shadow-lg">
-              The premier marketplace for Addis Ababa University students. Buy, sell, and trade with confidence.
+            <p className="text-gray-300 text-lg font-medium leading-relaxed tracking-tight">
+              The premier marketplace for Addis Ababa University students. Buy, sell, and trade with confidence in a secure campus environment.
             </p>
           </motion.div>
         </div>
