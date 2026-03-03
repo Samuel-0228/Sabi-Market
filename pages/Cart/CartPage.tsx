@@ -117,6 +117,8 @@ const CartPage: React.FC = () => {
                         <h3 className="text-sm md:text-lg font-black dark:text-white leading-tight">{item.listing?.title}</h3>
                         <button 
                           onClick={() => handleRemove(item.id)}
+                          aria-label={`Remove ${item.listing?.title || 'item'} from cart`}
+                          title="Remove item"
                           className="text-gray-300 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -131,6 +133,8 @@ const CartPage: React.FC = () => {
                         <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 px-4 py-2 rounded-xl">
                           <button 
                             onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                            aria-label={`Decrease quantity of ${item.listing?.title || 'item'}`}
+                            title="Decrease quantity"
                             className="text-gray-400 hover:text-black dark:hover:text-white"
                           >
                             <Minus className="w-4 h-4" />
@@ -138,6 +142,8 @@ const CartPage: React.FC = () => {
                           <span className="text-xs font-black dark:text-white w-4 text-center">{item.quantity}</span>
                           <button 
                             onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                            aria-label={`Increase quantity of ${item.listing?.title || 'item'}`}
+                            title="Increase quantity"
                             className="text-gray-400 hover:text-black dark:hover:text-white"
                           >
                             <Plus className="w-4 h-4" />

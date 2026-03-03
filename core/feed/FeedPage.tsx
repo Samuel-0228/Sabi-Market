@@ -68,6 +68,7 @@ const FeedPage: React.FC = () => {
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
+                  title="Sort listings"
                   className="bg-transparent border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest outline-none dark:text-white pb-1 cursor-pointer"
                 >
                   <option value="newest" className="dark:bg-black">Newest</option>
@@ -113,6 +114,7 @@ const FeedPage: React.FC = () => {
                 <button 
                   type="button"
                   onClick={() => setIsSmartSearch(!isSmartSearch)}
+                  aria-label={isSmartSearch ? 'Disable smart search' : 'Enable smart search'}
                   className={`p-2 rounded-xl transition-all ${isSmartSearch ? 'bg-savvy-indigo text-white shadow-lg' : 'text-gray-400 hover:bg-black/5'}`}
                   title="Toggle Smart Search"
                 >
@@ -159,6 +161,8 @@ const FeedPage: React.FC = () => {
                     </div>
                     <button 
                       onClick={(e) => handleAddToCart(e, l)}
+                      aria-label={`Add ${l.title} to cart`}
+                      title={`Add ${l.title} to cart`}
                       className="absolute bottom-4 right-4 w-12 h-12 bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 hover:bg-savvy-indigo hover:text-white"
                     >
                       <Plus className="w-6 h-6" />

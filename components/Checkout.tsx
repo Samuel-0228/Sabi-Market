@@ -45,7 +45,7 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 reveal">
       <div className="flex items-center gap-6 mb-16">
-        <button onClick={onCancel} className="w-12 h-12 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center text-xl shadow-sm hover:scale-105 transition-all">←</button>
+        <button onClick={onCancel} aria-label="Go back" title="Go back" className="w-12 h-12 bg-white dark:bg-white/5 rounded-2xl flex items-center justify-center text-xl shadow-sm hover:scale-105 transition-all">←</button>
         <div>
           <h1 className="text-4xl font-black tracking-tighter dark:text-white">{t('secureCheckout')}</h1>
           <p className="text-gray-400 font-medium">Finalize your purchase securely.</p>

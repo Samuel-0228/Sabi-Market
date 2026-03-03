@@ -83,6 +83,8 @@ const ProductDetailsPage: React.FC = () => {
       {/* Mobile Back Button */}
       <button 
         onClick={() => navigate(-1)}
+        aria-label="Go back"
+        title="Go back"
         className="fixed top-24 left-6 z-50 p-3 bg-white/80 dark:bg-black/80 backdrop-blur-md rounded-full shadow-lg lg:hidden"
       >
         <svg className="w-5 h-5 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"/></svg>
@@ -190,12 +192,16 @@ const ProductDetailsPage: React.FC = () => {
       <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t dark:border-white/10 p-4 flex gap-3 animate-in slide-in-from-bottom duration-500">
          <button 
             onClick={handleContactSeller}
+          aria-label="Message seller"
+          title="Message seller"
             className="w-14 h-14 bg-gray-100 dark:bg-white/10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
          >
            <MessageSquare className="w-6 h-6 dark:text-white" />
          </button>
          <button 
             onClick={handleAddToCart}
+          aria-label="Add to cart"
+          title="Add to cart"
             className="w-14 h-14 bg-black dark:bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
          >
            <ShoppingBag className="w-6 h-6 text-white dark:text-black" />

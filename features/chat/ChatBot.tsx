@@ -61,7 +61,7 @@ const ChatBot: React.FC = () => {
                   <p className="text-[8px] opacity-60 uppercase tracking-widest">AAU Assistant</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <button onClick={() => setIsOpen(false)} aria-label="Close chat" title="Close chat" className="p-2 hover:bg-white/10 rounded-full transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -108,6 +108,8 @@ const ChatBot: React.FC = () => {
                 <button 
                   onClick={handleSend} 
                   disabled={loading || !input.trim()}
+                  aria-label="Send message"
+                  title="Send message"
                   className="w-10 h-10 bg-savvy-indigo text-white rounded-xl flex items-center justify-center disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
                 >
                   <Send className="w-4 h-4" />
@@ -122,6 +124,8 @@ const ChatBot: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)} 
+        aria-label={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
+        title={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
         className={`w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all ${
           isOpen ? 'bg-white dark:bg-[#141414] text-savvy-indigo' : 'bg-savvy-indigo text-white'
         }`}

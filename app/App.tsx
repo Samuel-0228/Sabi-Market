@@ -105,6 +105,8 @@ const VerticalMobileNav: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
         <button 
           onClick={onClose}
+          aria-label="Close navigation"
+          title="Close navigation"
           className="mt-auto mb-4 w-10 h-10 rounded-xl bg-gray-50 dark:bg-white/5 flex items-center justify-center text-gray-400"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"/></svg>
@@ -183,6 +185,8 @@ const AppRoutes: React.FC = () => {
       {user && (
         <button 
           onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+          aria-label="Open navigation menu"
+          title="Open navigation menu"
           className={`fixed left-4 top-24 z-[105] w-10 h-10 bg-white/80 dark:bg-black/80 backdrop-blur-md rounded-xl shadow-lg border border-black/5 dark:border-white/5 flex items-center justify-center transition-all lg:hidden ${isMobileNavOpen ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-100 scale-100'}`}
         >
           <svg className="w-5 h-5 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16"/></svg>

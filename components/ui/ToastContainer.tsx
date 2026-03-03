@@ -21,7 +21,7 @@ const ToastContainer: React.FC = () => {
             {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
           </span>
           <p className="font-black uppercase text-[10px] tracking-widest">{toast.message}</p>
-          <button onClick={() => removeToast(toast.id)} className="ml-4 opacity-50 hover:opacity-100">✕</button>
+          <button onClick={() => removeToast(toast.id)} aria-label="Dismiss notification" title="Dismiss" className="ml-4 opacity-50 hover:opacity-100">✕</button>
         </div>
       ))}
     </div>

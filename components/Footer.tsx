@@ -51,7 +51,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </p>
             <div className="flex gap-4">
               {['𝕏', '📸', '💬', '💼'].map((icon, i) => (
-                <button key={i} className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
+                <button key={i} aria-label={`Open social channel ${i + 1}`} title={`Open social channel ${i + 1}`} className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
                   {icon}
                 </button>
               ))}

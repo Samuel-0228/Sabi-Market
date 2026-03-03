@@ -197,6 +197,8 @@ const ProfilePage: React.FC = () => {
                   <code className="px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{user.referral_code || 'SAVVY-USER'}</code>
                   <button 
                     onClick={copyReferral}
+                    aria-label="Copy referral code"
+                    title="Copy referral code"
                     className="p-2 bg-gray-50 dark:bg-white/5 rounded-lg hover:bg-indigo-50 transition-colors"
                   >
                     {copied ? <Check className="text-emerald-500" size={16} /> : <Copy size={16} className="text-gray-400" />}
