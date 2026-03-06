@@ -82,7 +82,7 @@ const CartPage: React.FC = () => {
                     className="bg-white dark:bg-[#0c0c0e] rounded-[2rem] p-6 flex gap-6 tibico-border shadow-sm group"
                   >
                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-gray-50 flex-shrink-0">
-                      <img src={item.listing?.image_url} className="w-full h-full object-cover" alt={item.listing?.title} />
+                      <img src={item.listing?.image_url} className="w-full h-full object-cover" alt={item.listing?.title} referrerPolicy="no-referrer" />
                     </div>
                     
                     <div className="flex-1 flex flex-col">

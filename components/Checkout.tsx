@@ -56,7 +56,7 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
         {/* Left: Product & Delivery */}
         <div className="space-y-10">
           <div className="bg-white dark:bg-[#141414] p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5 flex gap-6 items-center">
-            <img src={listing.image_url} className="w-24 h-32 object-cover rounded-2xl shadow-lg" alt={listing.title} />
+            <img src={listing.image_url} className="w-24 h-32 object-cover rounded-2xl shadow-lg" alt={listing.title} referrerPolicy="no-referrer" />
             <div>
               <h3 className="text-2xl font-black dark:text-white leading-tight">{listing.title}</h3>
               <p className="text-gray-400 text-sm mt-1">{listing.seller_name}</p>

@@ -198,7 +198,7 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
                   className={`w-full p-6 text-left border-b last:border-0 dark:border-white/5 transition-all flex items-center gap-5 hover:bg-gray-50 dark:hover:bg-white/5 ${isSelected ? 'bg-indigo-50/50 dark:bg-white/5 border-l-4 border-l-indigo-600' : ''}`}
                 >
                   <div className="relative flex-shrink-0">
-                    <img src={conv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-sm" alt="Product" />
+                    <img src={conv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-sm" alt="Product" referrerPolicy="no-referrer" />
                     <div className="absolute -top-1 -right-1">
                       <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-tighter ${isSeller ? 'bg-pink-500 text-white' : 'bg-indigo-600 text-white'}`}>
                         {isSeller ? 'Customer' : 'Seller'}
@@ -222,7 +222,7 @@ const Messages: React.FC<MessagesProps> = ({ user }) => {
           <>
             <div className="p-8 border-b dark:border-white/5 flex justify-between items-center bg-gray-50/30 dark:bg-black/20 backdrop-blur-md z-10">
               <div className="flex items-center gap-5">
-                <img src={activeConv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover" alt="Product" />
+                <img src={activeConv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover" alt="Product" referrerPolicy="no-referrer" />
                 <div>
                   <h3 className="text-xl font-black dark:text-white tracking-tighter leading-tight">{activeConv.listings?.title}</h3>
                   <div className="flex items-center gap-2 mt-1">

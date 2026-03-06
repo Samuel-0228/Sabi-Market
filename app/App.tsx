@@ -206,7 +206,7 @@ const AppRoutes: React.FC = () => {
           </div>
         }>
           <Routes>
-            <Route path="/" element={user ? <Navigate to="/marketplace" replace /> : <Landing />} />
+            <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Landing />} />
             <Route path="/auth" element={<Auth onSuccess={() => {}} />} />
             <Route path="/marketplace" element={<FeedPage />} />
             <Route path="/product/:id" element={<ProductDetailsPage />} />

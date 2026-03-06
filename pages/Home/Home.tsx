@@ -21,6 +21,7 @@ const ListingItem = memo(({ l, onClick, t }: { l: Listing; onClick: () => void; 
         loading="lazy"
         decoding="async"
         alt={l.title}
+        referrerPolicy="no-referrer"
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
       />
       <div className="absolute top-4 left-4">
@@ -109,7 +110,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
         <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setDetailItem(null)}>
           <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="md:w-1/2 bg-black flex items-center justify-center">
-              <img src={detailItem.image_url} decoding="async" className="max-h-full object-contain" />
+              <img src={detailItem.image_url} decoding="async" className="max-h-full object-contain" referrerPolicy="no-referrer" />
             </div>
             <div className="md:w-1/2 p-10 flex flex-col justify-between overflow-y-auto">
               <div>

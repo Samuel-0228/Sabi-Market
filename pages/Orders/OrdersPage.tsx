@@ -62,7 +62,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ user }) => {
           orders.map((order) => (
             <div key={order.id} className="reveal bg-white dark:bg-[#0c0c0e] rounded-2xl tibico-border p-4 flex gap-4 items-center shadow-sm">
               <div className="w-16 h-20 rounded-xl overflow-hidden bg-gray-50 dark:bg-white/5 flex-shrink-0">
-                <img src={order.image_url} className="w-full h-full object-cover" alt="img" />
+                <img src={order.image_url} className="w-full h-full object-cover" alt="img" referrerPolicy="no-referrer" />
               </div>
 
               <div className="flex-1 min-w-0">

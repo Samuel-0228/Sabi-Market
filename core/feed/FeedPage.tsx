@@ -154,7 +154,7 @@ const FeedPage: React.FC = () => {
                   onClick={() => navigate(`/product/${l.id}`)}
                 >
                   <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 dark:bg-white/5">
-                    <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" alt={l.title} />
+                    <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" alt={l.title} referrerPolicy="no-referrer" />
                     <div className="absolute top-4 left-4">
                       <span className="bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">{t(l.category)}</span>
                     </div>

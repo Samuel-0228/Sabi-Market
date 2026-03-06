@@ -174,7 +174,7 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
                   onClick={() => setActiveConv(conv)}
                   className={`w-full p-6 text-left flex items-center gap-5 transition-all border-l-4 ${isSelected ? 'bg-indigo-50/50 dark:bg-white/5 border-l-indigo-600' : 'border-l-transparent hover:bg-gray-50 dark:hover:bg-white/5'}`}
                 >
-                  <img src={conv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-sm" />
+                  <img src={conv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
                   <div className="flex-1 min-w-0">
                     <p className="font-black dark:text-white text-sm truncate">{other?.full_name || 'Student'}</p>
                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest truncate">{conv.listings?.title}</p>
@@ -191,7 +191,7 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
         {activeConv ? (
           <>
             <div className="p-6 border-b dark:border-white/5 flex items-center gap-5 bg-gray-50/20 dark:bg-black/20">
-              <img src={activeConv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-lg" />
+              <img src={activeConv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-lg" referrerPolicy="no-referrer" />
               <div>
                 <h3 className="text-xl font-black dark:text-white tracking-tighter">{activeConv.listings?.title}</h3>
                 <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">

@@ -9,6 +9,7 @@ interface AuthState {
   user: UserProfile | null;
   loading: boolean;
   initialized: boolean;
+  syncing: boolean;
   setUser: (user: UserProfile | null) => void;
   sync: (providedSession?: any) => Promise<UserProfile | null>;
   forceInitialize: () => void;
@@ -18,54 +19,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
   initialized: false,
-  setUser: (user) => set({ user, loading: false, initialized: true }),
-  forceInitialize: () => set({ initialized: true, loading: false }),
+  syncing: false,
+  setUser: (user) => set({ user, loading: false, initialized: true, syncing: false }),
+  forceInitialize: () => set({ initialized: true, loading: false, syncing: false }),
   sync: async (providedSession) => {
-    // If we're already loading and not in the initial state, don't re-sync
-    if (get().loading && get().initialized && !providedSession) return get().user;
+    if (get().syncing && !providedSession) return get().user;
     
-    set({ loading: true });
+    set({ loading: true, syncing: true });
     
-    // Safety Race: Ensure the sync never takes longer than 15 seconds
-    const timeoutPromise = new Promise<null>((resolve) => 
-      setTimeout(() => {
-        resolve(null);
-      }, 15000)
-    );
-
-    const syncPromise = (async () => {
-      try {
-        let session = providedSession || null;
-        let attempts = 0;
-        
-        // If no session provided, retry session fetch up to 3 times with small delays
-        if (!session) {
-          while (attempts < 3) {
-            const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
-            if (s && !sessionError) {
-              session = s;
-              break;
-            }
-            if (sessionError) console.warn("Session fetch attempt failed:", sessionError);
-            await new Promise(r => setTimeout(r, 500));
-            attempts++;
-          }
+    try {
+      let session = providedSession || null;
+      
+      if (!session) {
+        const { data: { session: s }, error: sessionError } = await supabase.auth.getSession();
+        if (s && !sessionError) {
+          session = s;
         }
-        
-        // Fallback to getUser if session is still null
-        if (!session) {
-          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-          if (!authUser || userError) {
-            // This is a normal state for unauthenticated users, so we don't console.error
-            return null;
-          }
-          // If we have a user but no session object, we can still proceed with profile sync
-          const profile = await authApi.syncProfile();
-          return profile;
+      }
+      
+      if (!session) {
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        if (!authUser || userError) {
+          set({ user: null, loading: false, initialized: true, syncing: false });
+          return null;
         }
-        
-        // Track visit and award achievements in background to prevent blocking the initial sync
-        const userId = session.user.id;
+      }
+      
+      const profile = await authApi.syncProfile();
+      
+      if (profile) {
+        const userId = profile.id;
         (async () => {
           try {
             await db.incrementVisitCount(userId);
@@ -74,23 +57,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             console.warn("Background auth tracking failed:", e);
           }
         })();
-        
-        const profile = await authApi.syncProfile();
-        return profile;
-      } catch (e) {
-        console.error("Auth sync internal error:", e);
-        return null;
       }
-    })();
 
-    const result = await Promise.race([syncPromise, timeoutPromise]);
-    
-    set({ 
-      user: result, 
-      loading: false, 
-      initialized: true 
-    });
-    
-    return result;
+      set({ 
+        user: profile, 
+        loading: false, 
+        initialized: true,
+        syncing: false
+      });
+      
+      return profile;
+    } catch (e) {
+      console.error("Auth sync internal error:", e);
+      set({ user: null, loading: false, initialized: true, syncing: false });
+      return null;
+    }
   }
 }));

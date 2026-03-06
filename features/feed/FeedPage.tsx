@@ -78,7 +78,7 @@ const FeedPage: React.FC<FeedPageProps> = ({ onSelect, onAdd }) => {
           {filtered.map((l: Listing) => (
             <div key={l.id} className="group cursor-pointer" onClick={() => onSelect(l)}>
               <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-6 shadow-sm group-hover:shadow-2xl transition-all relative">
-                <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
                 <div className="absolute top-4 left-4">
                   <span className="bg-white/90 dark:bg-black/90 px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest dark:text-white">{t(l.category)}</span>
                 </div>

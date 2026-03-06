@@ -57,7 +57,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     }
   }, [location]);
 
-  const from = (location.state as any)?.from?.pathname || '/marketplace';
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
 
   useEffect(() => {
     if (user && initialized) {
@@ -145,7 +145,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
           <div className="flex -space-x-3">
             {[1,2,3].map(i => (
               <div key={i} className="w-8 h-8 rounded-full border-2 border-white/20 bg-gray-800 overflow-hidden">
-                <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="user" />
+                <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="user" referrerPolicy="no-referrer" />
               </div>
             ))}
           </div>

@@ -107,7 +107,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                   <div key={l.id} className="p-4 bg-white dark:bg-[#0c0c0e] rounded-2xl tibico-border flex items-center justify-between group hover:shadow-xl transition-all duration-500">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 dark:bg-white/5">
-                        <img src={l.image_url} className="w-full h-full object-cover" alt="p" />
+                        <img src={l.image_url} className="w-full h-full object-cover" alt="p" referrerPolicy="no-referrer" />
                       </div>
                       <div>
                         <p className="text-[11px] font-black uppercase tracking-tight dark:text-white truncate max-w-[150px]">{l.title}</p>
@@ -145,7 +145,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ user }) => {
                    <div key={o.id} className="p-6 bg-white dark:bg-[#0c0c0e] rounded-[2rem] tibico-border flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-2xl transition-all duration-500 group">
                      <div className="flex items-center gap-6">
                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 shrink-0">
-                         <img src={o.image_url} className="w-full h-full object-cover" alt="p" />
+                         <img src={o.image_url} className="w-full h-full object-cover" alt="p" referrerPolicy="no-referrer" />
                        </div>
                        <div className="min-w-0">
                          <div className="flex items-center gap-3 mb-1">

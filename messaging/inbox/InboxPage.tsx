@@ -157,7 +157,7 @@ const InboxPage: React.FC<{ user: UserProfile }> = ({ user }) => {
                   activeConv?.id === c.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white dark:bg-white/5 dark:text-white'
                 }`}
               >
-                <img src={c.listing?.image_url} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="img" />
+                <img src={c.listing?.image_url} className="w-10 h-10 rounded-xl object-cover shrink-0" alt="img" referrerPolicy="no-referrer" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[7px] font-black uppercase tracking-widest opacity-60 truncate">{c.listing?.title}</p>
                   <p className="text-sm font-black truncate uppercase tracking-tight">{c.seller_id === user.id ? c.buyer?.full_name : c.seller?.full_name}</p>

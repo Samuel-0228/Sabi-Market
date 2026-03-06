@@ -110,7 +110,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
             filteredListings.map((listing) => (
               <div key={listing.id} onClick={() => setDetailItem(listing)} className="group cursor-pointer">
                 <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-gray-50 dark:bg-[#0c0c0e] mb-6 shadow-sm group-hover:shadow-2xl transition-all">
-                  <img src={listing.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" />
+                  <img src={listing.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" referrerPolicy="no-referrer" />
                   <div className="absolute top-4 left-4">
                      <span className="text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full bg-white/90 dark:bg-black/90 backdrop-blur-xl dark:text-white shadow-lg">
                        {t(listing.category)}
@@ -133,7 +133,7 @@ const Home: React.FC<HomeProps> = ({ user, onSelectListing, onAddListing, onBuyL
         <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300" onClick={() => setDetailItem(null)}>
           <div className="bg-white dark:bg-[#0c0c0e] w-full max-w-5xl rounded-[3.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
              <div className="md:w-1/2 overflow-hidden bg-black flex items-center justify-center">
-               <img src={detailItem.image_url} className="w-full h-full object-contain" />
+               <img src={detailItem.image_url} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
              </div>
              <div className="md:w-1/2 p-12 flex flex-col justify-between overflow-y-auto">
                <div>

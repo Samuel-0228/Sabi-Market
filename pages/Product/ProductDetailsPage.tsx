@@ -97,6 +97,7 @@ const ProductDetailsPage: React.FC = () => {
             src={listing.image_url} 
             className="w-full h-full object-cover aspect-square lg:aspect-auto transition-transform duration-[3s] hover:scale-105" 
             alt={listing.title} 
+            referrerPolicy="no-referrer"
           />
         </div>
 

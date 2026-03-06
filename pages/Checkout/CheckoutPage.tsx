@@ -77,7 +77,7 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, items, onSuccess, onCancel
             {checkoutItems.map((item, idx) => (
               <div key={idx} className="bg-white dark:bg-[#0c0c0e] p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5 flex gap-6 items-center">
                 <div className="w-20 h-20 flex-shrink-0 bg-gray-50 dark:bg-white/5 rounded-xl overflow-hidden shadow-md">
-                  <img src={item.listing?.image_url} className="w-full h-full object-cover" alt={item.listing?.title} />
+                  <img src={item.listing?.image_url} className="w-full h-full object-cover" alt={item.listing?.title} referrerPolicy="no-referrer" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-black dark:text-white leading-tight">{item.listing?.title}</h3>

@@ -16,6 +16,7 @@ const Landing: React.FC = () => {
             src="https://www.aau.edu.et/_next/image?url=%2Fimages%2Fforumbuilding.jpg&w=3840&q=75" 
             className="w-full h-full object-cover opacity-60 dark:opacity-30 grayscale-[20%] transition-transform duration-[10s]"
             alt="AAU"
+            referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-savvy-bg/40 to-savvy-bg dark:via-savvy-dark/40 dark:to-savvy-dark"></div>
         </div>
@@ -59,7 +60,7 @@ const Landing: React.FC = () => {
           ].map((cat) => (
             <div key={cat.id} className="reveal group bg-white dark:bg-white/5 rounded-2xl overflow-hidden tibico-border">
               <div className="aspect-square overflow-hidden">
-                <img src={cat.img} className="w-full h-full object-cover" alt={cat.name} />
+                <img src={cat.img} className="w-full h-full object-cover" alt={cat.name} referrerPolicy="no-referrer" />
               </div>
               <div className="p-3">
                 <p className="text-[9px] font-black dark:text-white truncate">{cat.name}</p>

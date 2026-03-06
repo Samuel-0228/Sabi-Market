@@ -83,7 +83,7 @@ const AddListingModal: React.FC<AddListingModalProps> = ({ onClose, onSuccess })
             className="w-full aspect-square bg-white dark:bg-white/5 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-white/10 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-indigo-500 transition-all relative"
           >
              {formData.image_url ? (
-               <img src={formData.image_url} className="w-full h-full object-cover" />
+               <img src={formData.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
              ) : (
                <div className="text-center opacity-40">
                   <div className="text-4xl mb-2">📸</div>
