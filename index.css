@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-savvy-bg: #F9F8F4;
+  --color-savvy-dark: #050505;
+  --color-savvy-indigo: #4F46E5;
+  --color-savvy-accent: #C5A572;
+}
+
+:root {
+  --bg: #F9F8F4;
+  --text: #050505;
+}
+
+.dark {
+  --bg: #050505;
+  --text: #F9F8F4;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}

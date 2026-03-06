@@ -1,70 +1,43 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag } from 'lucide-react';
-import { db } from '../../services/supabase/db';
 import { useAuthStore } from '../../features/auth/auth.store';
-import { useUIStore } from '../../store/ui.store';
-import { CartItem } from '../../types';
+import { useCartStore } from '../../store/cart.store';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { addToast } = useUIStore();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    items, 
+    loading, 
+    fetchCart, 
+    updateQuantity, 
+    removeItem, 
+    getTotal 
+  } = useCartStore();
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
+    if (user) {
+      fetchCart(user.id);
     }
-    fetchCart();
-  }, [user]);
+  }, [user, fetchCart]);
 
-  const fetchCart = async () => {
-    if (!user) return;
-    try {
-      const data = await db.getCartItems(user.id);
-      setItems(data as CartItem[]);
-    } catch (err) {
-      console.error("Failed to fetch cart", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const total = getTotal();
 
-  const handleUpdateQuantity = async (itemId: string, newQty: number) => {
-    try {
-      await db.updateCartQuantity(itemId, newQty);
-      setItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, quantity: newQty } : item
-      ).filter(item => item.quantity > 0));
-    } catch (err) {
-      addToast('Failed to update quantity', 'error');
-    }
-  };
-
-  const handleRemove = async (itemId: string) => {
-    try {
-      await db.removeFromCart(itemId);
-      setItems(prev => prev.filter(item => item.id !== itemId));
-      addToast('Item removed', 'success');
-    } catch (err) {
-      addToast('Failed to remove item', 'error');
-    }
-  };
-
-  const total = items.reduce((sum, item) => sum + (item.listing?.price || 0) * item.quantity, 0);
-
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <div className="min-h-screen pt-40 flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-savvy-indigo" />
       </div>
     );
   }
+
+  const handleCheckout = () => {
+    // Navigate to checkout with all cart items
+    navigate('/checkout', { state: { items } });
+  };
 
   return (
     <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen pt-24 md:pt-40 px-4 md:px-10 pb-32">
@@ -116,7 +89,7 @@ const CartPage: React.FC = () => {
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-sm md:text-lg font-black dark:text-white leading-tight">{item.listing?.title}</h3>
                         <button 
-                          onClick={() => handleRemove(item.id)}
+                          onClick={() => removeItem(item.id)}
                           className="text-gray-300 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -130,14 +103,14 @@ const CartPage: React.FC = () => {
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 px-4 py-2 rounded-xl">
                           <button 
-                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             className="text-gray-400 hover:text-black dark:hover:text-white"
                           >
                             <Minus className="w-4 h-4" />
                           </button>
                           <span className="text-xs font-black dark:text-white w-4 text-center">{item.quantity}</span>
                           <button 
-                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             className="text-gray-400 hover:text-black dark:hover:text-white"
                           >
                             <Plus className="w-4 h-4" />
@@ -177,7 +150,7 @@ const CartPage: React.FC = () => {
 
               <button 
                 disabled={items.length === 0}
-                onClick={() => addToast('Checkout coming soon!', 'info')}
+                onClick={handleCheckout}
                 className="w-full py-5 bg-savvy-indigo text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Checkout

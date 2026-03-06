@@ -8,6 +8,7 @@ import { Listing } from '../../types';
 import { useLanguage } from '../../app/LanguageContext';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useUIStore } from '../../store/ui.store';
+import { useCartStore } from '../../store/cart.store';
 
 const ProductDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const ProductDetailsPage: React.FC = () => {
   const { t } = useLanguage();
   const { user } = useAuthStore();
   const { addToast } = useUIStore();
+  const { addItem } = useCartStore();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +49,7 @@ const ProductDetailsPage: React.FC = () => {
     if (!user) return navigate('/auth');
     if (!listing) return;
     try {
-      await db.addToCart(user.id, listing.id);
+      await addItem(user.id, listing.id);
       addToast(`${listing.title} added to cart!`, 'success');
     } catch (err) {
       addToast('Failed to add to cart', 'error');

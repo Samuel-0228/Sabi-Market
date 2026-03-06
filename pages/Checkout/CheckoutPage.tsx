@@ -1,23 +1,29 @@
 
 import React, { useState } from 'react';
-import { Listing } from '../../types/index';
+import { Listing, CartItem } from '../../types/index';
 import { db } from '../../services/supabase/db';
 import { useLanguage } from '../../app/LanguageContext';
 import { useUIStore } from '../../store/ui.store';
+import { useCartStore } from '../../store/cart.store';
+import { useAuthStore } from '../../features/auth/auth.store';
 
 interface CheckoutProps {
-  listing: Listing;
+  listing?: Listing;
+  items?: CartItem[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => {
+const Checkout: React.FC<CheckoutProps> = ({ listing, items, onSuccess, onCancel }) => {
   const { t } = useLanguage();
   const { addToast } = useUIStore();
+  const { user } = useAuthStore();
+  const { clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState('');
 
-  const total = listing.price;
+  const checkoutItems = items || (listing ? [{ listing, quantity: 1 }] : []);
+  const total = checkoutItems.reduce((sum, item) => sum + (item.listing?.price || 0) * (item.quantity || 1), 0);
 
   const handlePlaceOrder = async () => {
     if (!deliveryInfo.trim()) {
@@ -27,14 +33,24 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
     
     setLoading(true);
     try {
-      await db.createOrder(listing, listing.price, deliveryInfo);
-      addToast("Trade request sent! Check 'My Orders'.", "success");
+      // Create orders for each item
+      // In a real app, we might group by seller, but for simplicity here we create one order per listing
+      for (const item of checkoutItems) {
+        if (item.listing) {
+          await db.createOrder(item.listing, item.listing.price * (item.quantity || 1), deliveryInfo);
+        }
+      }
+      
+      if (items && user) {
+        await clearCart(user.id);
+      }
+
+      addToast("Trade requests sent! Check 'My Orders'.", "success");
       onSuccess();
     } catch (err: any) {
       console.error("Checkout Failure:", err);
       const errorMsg = err.message || "Trade failed. Please try again.";
       addToast(errorMsg, "error");
-      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -51,20 +67,25 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
         </button>
         <div>
           <h1 className="text-4xl font-black tracking-tighter dark:text-white">Secure Checkout.</h1>
-          <p className="text-gray-400 font-medium italic">Buying from {listing.seller_name}</p>
+          <p className="text-gray-400 font-medium italic">Review your items and meeting details</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-8">
-          <div className="bg-white dark:bg-[#0c0c0e] p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-white/5 flex gap-6 items-center">
-            <div className="w-24 h-32 flex-shrink-0 bg-gray-50 dark:bg-white/5 rounded-2xl overflow-hidden shadow-lg">
-              <img src={listing.image_url} className="w-full h-full object-cover" alt={listing.title} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black dark:text-white leading-tight">{listing.title}</h3>
-              <p className="text-indigo-600 font-black text-xl mt-1">{listing.price} ETB</p>
-            </div>
+          <div className="space-y-4">
+            {checkoutItems.map((item, idx) => (
+              <div key={idx} className="bg-white dark:bg-[#0c0c0e] p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-white/5 flex gap-6 items-center">
+                <div className="w-20 h-20 flex-shrink-0 bg-gray-50 dark:bg-white/5 rounded-xl overflow-hidden shadow-md">
+                  <img src={item.listing?.image_url} className="w-full h-full object-cover" alt={item.listing?.title} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-black dark:text-white leading-tight">{item.listing?.title}</h3>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Qty: {item.quantity || 1} • Seller: {item.listing?.seller_name}</p>
+                  <p className="text-indigo-600 font-black mt-1">{(item.listing?.price || 0) * (item.quantity || 1)} ETB</p>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="p-8 bg-indigo-50/50 dark:bg-indigo-500/5 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-500/10">
@@ -97,8 +118,8 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
           
           <div className="space-y-6 mb-12">
             <div className="flex justify-between items-center opacity-60">
-              <span className="text-sm font-bold">Listing Price</span>
-              <span className="font-black">{listing.price} ETB</span>
+              <span className="text-sm font-bold">Subtotal</span>
+              <span className="font-black">{total} ETB</span>
             </div>
             <div className="flex justify-between items-center text-green-500">
               <span className="text-[9px] font-black uppercase tracking-widest">AAU Fee</span>
@@ -112,7 +133,7 @@ const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => 
           </div>
 
           <button 
-            disabled={loading}
+            disabled={loading || checkoutItems.length === 0}
             onClick={handlePlaceOrder}
             className="w-full bg-white dark:bg-black text-black dark:text-white py-6 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all disabled:opacity-50"
           >

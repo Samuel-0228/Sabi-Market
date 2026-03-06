@@ -6,9 +6,9 @@ import { Search, Sparkles, Plus, Filter } from 'lucide-react';
 import { useFeedStore } from '../../store/feed.store';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useUIStore } from '../../store/ui.store';
+import { useCartStore } from '../../store/cart.store';
 import { useLanguage } from '../../app/LanguageContext';
 import { Listing } from '../../types';
-import { db } from '../../services/supabase/db';
 import AddListingModal from '../../components/product/AddListingModal';
 
 const FeedPage: React.FC = () => {
@@ -17,6 +17,7 @@ const FeedPage: React.FC = () => {
   const { filteredListings, loading, fetch, setSearchQuery, searchQuery, setCategory, activeCategory, smartSearch, sortBy, setSortBy } = useFeedStore();
   const { user } = useAuthStore();
   const { addToast } = useUIStore();
+  const { addItem } = useCartStore();
   const [showAdd, setShowAdd] = useState(false);
   const [isSmartSearch, setIsSmartSearch] = useState(false);
 
@@ -28,7 +29,7 @@ const FeedPage: React.FC = () => {
     e.stopPropagation();
     if (!user) return navigate('/auth');
     try {
-      await db.addToCart(user.id, listing.id);
+      await addItem(user.id, listing.id);
       addToast(`${listing.title} added to cart!`, 'success');
     } catch (err) {
       addToast('Failed to add to cart', 'error');

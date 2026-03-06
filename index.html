@@ -5,37 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ሳቪ – Savvy Market | AAU Premium Student Marketplace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        window.process = { 
-            env: { 
-                NODE_ENV: 'production',
-                API_KEY: '' 
-            },
-            cwd: () => '/',
-            nextTick: (cb) => setTimeout(cb, 0)
-        };
-        
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { 
-                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-                        serif: ['Playfair Display', 'serif']
-                    },
-                    colors: {
-                        savvy: {
-                            bg: '#F9F8F4',
-                            dark: '#050505',
-                            indigo: '#4F46E5',
-                            accent: '#C5A572'
-                        }
-                    }
-                },
-            },
-        }
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F9F8F4; --text: #050505; }
@@ -120,24 +89,13 @@
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
         .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom": "https://esm.sh/react-dom@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
-    "zustand": "https://esm.sh/zustand@^5.0.11",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
-    "@vercel/node": "https://esm.sh/@vercel/node@^5.6.3"
-  }
-}
-</script>
+    <script>
+      window.process = window.process || {
+        env: { NODE_ENV: 'development' },
+        cwd: () => '/',
+        nextTick: (cb) => setTimeout(cb, 0)
+      };
+    </script>
 </head>
 <body>
     <div class="watermark" style="top: -10rem; left: -5rem;">ሳ</div>

@@ -63,3 +63,12 @@ export interface Order {
   seller_name?: string;
   buyer_name?: string;
 }
+
+export interface CartItem {
+  id: string;
+  user_id: string;
+  product_id: string;
+  quantity: number;
+  created_at: string;
+  listing?: Listing;
+}

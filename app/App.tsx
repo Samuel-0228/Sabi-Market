@@ -3,6 +3,7 @@ import React, { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../features/auth/auth.store';
 import { useUIStore } from '../store/ui.store';
+import { useCartStore } from '../store/cart.store';
 import { supabase } from '../services/supabase/client';
 import { useLanguage } from './LanguageContext';
 
@@ -115,10 +116,17 @@ const VerticalMobileNav: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 };
 
 const AppRoutes: React.FC = () => {
-  const { user, initialized, sync, forceInitialize } = useAuthStore();
+  const { user, initialized, loading, sync, forceInitialize } = useAuthStore();
+  const { fetchCart } = useCartStore();
   const { addToast } = useUIStore();
   const navigate = useNavigate();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchCart(user.id);
+    }
+  }, [user, fetchCart]);
 
   useEffect(() => {
     sync();
@@ -156,7 +164,7 @@ const AppRoutes: React.FC = () => {
     };
   }, [user, addToast]);
 
-  if (!initialized) {
+  if (!initialized || (loading && !user)) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-[#050505] p-10 text-center">
         <div className="relative mb-12">
@@ -249,17 +257,19 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-// Helper component to extract listing from state for Checkout
+// Helper component to extract listing or items from state for Checkout
 const CheckoutWrapper: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const listing = location.state?.listing;
+  const items = location.state?.items;
 
-  if (!listing) return <Navigate to="/marketplace" replace />;
+  if (!listing && !items) return <Navigate to="/marketplace" replace />;
 
   return (
     <Checkout 
       listing={listing} 
+      items={items}
       onSuccess={() => navigate('/orders')} 
       onCancel={() => navigate(-1)} 
     />

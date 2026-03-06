@@ -6,13 +6,17 @@ import { Moon, Sun, Languages, LogOut, User, MessageSquare, ShoppingBag } from '
 import { useLanguage } from '../../app/LanguageContext';
 import { useTheme } from '../../app/ThemeContext';
 import { useAuthStore } from '../../features/auth/auth.store';
+import { useCartStore } from '../../store/cart.store';
 import { supabase } from '../../services/supabase/client';
 
 const Navbar: React.FC = () => {
   const { lang, setLang, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuthStore();
+  const { getItemCount } = useCartStore();
   const navigate = useNavigate();
+
+  const cartCount = getItemCount();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -68,8 +72,13 @@ const Navbar: React.FC = () => {
         
         {user ? (
           <div className="flex items-center gap-3">
-            <Link to="/cart" className="p-2 bg-white/10 rounded-full">
+            <Link to="/cart" className="p-2 bg-white/10 rounded-full relative">
                <ShoppingBag className="w-4 h-4 text-white" />
+               {cartCount > 0 && (
+                 <span className="absolute -top-1 -right-1 bg-savvy-accent text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black">
+                   {cartCount}
+                 </span>
+               )}
             </Link>
             <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
                <MessageSquare className="w-4 h-4 text-white" />
