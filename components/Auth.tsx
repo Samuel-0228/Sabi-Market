@@ -57,7 +57,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     }
   }, [location]);
 
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const from = (location.state as any)?.from?.pathname || '/marketplace';
 
   useEffect(() => {
     if (user && initialized) {
