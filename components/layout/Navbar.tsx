@@ -19,8 +19,13 @@ const Navbar: React.FC = () => {
   const cartCount = getItemCount();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      await supabase.auth.signOut();
+      useAuthStore.getState().setUser(null);
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (

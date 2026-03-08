@@ -10,7 +10,9 @@ interface CheckoutProps {
   onCancel: () => void;
 }
 
-
+/**
+ * Checkout component for handling secure purchases via the escrow system.
+ */
 const Checkout: React.FC<CheckoutProps> = ({ listing, onSuccess, onCancel }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
