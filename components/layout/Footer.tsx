@@ -13,25 +13,25 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
     {
       title: t('platform'),
       links: [
-        { name: t('marketplace'), target: 'home' },
-        { name: t('dashboard'), target: 'dashboard' },
-        { name: 'Pricing', target: 'landing' }
+        { name: t('marketplace'), target: '/marketplace' },
+        { name: t('dashboard'), target: '/dashboard' },
+        { name: 'Pricing', target: '/' }
       ]
     },
     {
       title: t('community'),
       links: [
-        { name: 'About Savvy', target: 'landing' },
-        { name: 'Help Center', target: 'landing' },
-        { name: 'Campus Safety', target: 'landing' }
+        { name: 'About Savvy', target: '/about' },
+        { name: 'Help Center', target: '/help' },
+        { name: 'Campus Safety', target: '/safety' }
       ]
     },
     {
       title: t('legal'),
       links: [
-        { name: 'Privacy Policy', target: 'landing' },
-        { name: 'Terms of Service', target: 'landing' },
-        { name: 'Escrow Terms', target: 'landing' }
+        { name: 'Privacy Policy', target: '/privacy' },
+        { name: 'Terms of Service', target: '/terms' },
+        { name: 'Escrow Terms', target: '/escrow' }
       ]
     }
   ];

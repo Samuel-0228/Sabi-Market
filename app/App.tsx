@@ -27,6 +27,14 @@ const ProductDetailsPage = lazy(() => import('../pages/Product/ProductDetailsPag
 const ProfilePage = lazy(() => import('../pages/Profile/ProfilePage'));
 const CartPage = lazy(() => import('../pages/Cart/CartPage'));
 
+// Info Pages
+const AboutPage = lazy(() => import('../pages/Info/AboutPage'));
+const HelpCenterPage = lazy(() => import('../pages/Info/HelpCenterPage'));
+const CampusSafetyPage = lazy(() => import('../pages/Info/CampusSafetyPage'));
+const PrivacyPolicyPage = lazy(() => import('../pages/Info/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('../pages/Info/TermsOfServicePage'));
+const EscrowTermsPage = lazy(() => import('../pages/Info/EscrowTermsPage'));
+
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, initialized } = useAuthStore();
@@ -245,6 +253,14 @@ const AppRoutes: React.FC = () => {
                 <CheckoutWrapper />
               </ProtectedRoute>
             } />
+
+            {/* Info Routes */}
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/help" element={<HelpCenterPage />} />
+            <Route path="/safety" element={<CampusSafetyPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/escrow" element={<EscrowTermsPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
