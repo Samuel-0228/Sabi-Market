@@ -244,7 +244,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                     icon={<Mail className="w-5 h-5" />}
                     value={formData.email} 
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
-                    placeholder="name@aau.edu.et"
+                    placeholder="name@aau.edu.et/ @gmail.com"
                   />
                   <div className="space-y-1">
                     <Input 
