@@ -29,11 +29,12 @@ export const db = {
     try {
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
-        .select('visit_count, last_active_date')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!profile) return;
 
       const today = new Date().toISOString().split('T')[0];
       const lastActive = profile?.last_active_date;
@@ -46,6 +47,12 @@ export const db = {
         visit_count: currentVisits + 1,
         last_active_date: today
       };
+
+      // Check if columns exist before updating
+      if (!('visit_count' in profile) || !('last_active_date' in profile)) {
+        console.warn("Schema mismatch: visit_count or last_active_date missing");
+        return;
+      }
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -64,11 +71,17 @@ export const db = {
     try {
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
-        .select('points, level')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!profile) return;
+
+      if (!('points' in profile)) {
+        console.warn("Schema mismatch: points column missing");
+        return;
+      }
 
       const currentPoints = profile?.points || 0;
       const newPoints = currentPoints + amount;
@@ -80,12 +93,12 @@ export const db = {
       else if (newPoints >= 250) newLevel = 3;
       else if (newPoints >= 100) newLevel = 2;
 
+      const updates: any = { points: newPoints };
+      if ('level' in profile) updates.level = newLevel;
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ 
-          points: newPoints,
-          level: newLevel
-        })
+        .update(updates)
         .eq('id', userId);
 
       if (updateError) throw updateError;
@@ -96,18 +109,29 @@ export const db = {
 
   async dailyClaim(userId: string): Promise<{ success: boolean; reward: number; streak: number; message: string }> {
     try {
+      // Select all columns to avoid error if specific ones are missing
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('points, last_claim_at, login_streak')
+        .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileError) {
         console.error("Profile fetch error in dailyClaim:", profileError);
-        return { success: false, reward: 0, streak: 0, message: "Could not fetch profile." };
+        return { success: false, reward: 0, streak: 0, message: "Database error. Please check if 'profiles' table has gamification columns." };
       }
 
       if (!profile) return { success: false, reward: 0, streak: 0, message: "Profile not found" };
+
+      // Check if required columns exist in the returned data
+      if (!('points' in profile) || !('last_claim_at' in profile) || !('login_streak' in profile)) {
+        return { 
+          success: false, 
+          reward: 0, 
+          streak: 0, 
+          message: "Database schema mismatch. Please add 'points', 'last_claim_at', and 'login_streak' columns to the 'profiles' table." 
+        };
+      }
 
       const now = new Date();
       const lastClaim = profile.last_claim_at ? new Date(profile.last_claim_at) : null;
