@@ -12,6 +12,13 @@ export interface UserProfile {
   preferences?: string[];
   avatar_url?: string;
   created_at: string;
+  points?: number;
+  level?: number;
+  last_claim_at?: string;
+  login_streak?: number;
+  visit_count?: number;
+  referral_code?: string;
+  referred_by?: string;
 }
 
 export interface Listing {

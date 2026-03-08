@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useLanguage } from '../../app/LanguageContext';
+import { useUIStore } from '../../store/ui.store';
 import { motion } from 'framer-motion';
 import { User, Mail, Shield, Calendar, Star, Award, TrendingUp, Info, CheckCircle2, ShoppingCart, PlusCircle, Gift, Copy, Check, Clock, Trophy } from 'lucide-react';
 import Leaderboard from '../../components/Leaderboard';
@@ -9,6 +10,7 @@ import XpAnimation from '../../components/XpAnimation';
 
 const ProfilePage: React.FC = () => {
   const { user, sync } = useAuthStore();
+  const { addToast } = useUIStore();
   const { t } = useLanguage();
   const [copied, setCopied] = React.useState(false);
   const [claiming, setClaiming] = React.useState(false);
@@ -30,18 +32,21 @@ const ProfilePage: React.FC = () => {
   const progress = (points % 100);
 
   const handleClaim = async () => {
+    if (claiming) return;
     setClaiming(true);
     try {
       const result = await db.dailyClaim(user.id);
       if (result.success) {
         setXpGained(result.reward);
+        addToast(`Successfully claimed ${result.reward} points!`, 'success');
         await sync();
         setTimeout(() => setXpGained(null), 3000);
       } else {
-        alert(result.message);
+        addToast(result.message, 'info');
       }
     } catch (err) {
       console.error("Claim failed", err);
+      addToast("An error occurred while claiming. Please try again.", 'error');
     } finally {
       setClaiming(false);
     }
