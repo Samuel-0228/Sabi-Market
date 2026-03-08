@@ -43,6 +43,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
   const [step, setStep] = useState<Step>(initialStep === 'login' ? 'login' : 'register');
   const [formData, setFormData] = useState({ email: '', password: '', name: '', preferences: [] as string[] });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -72,13 +73,14 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
 
   const handleAuth = async (isRegister: boolean) => {
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
       let loginData;
       if (isRegister) {
         const result = await authApi.register(formData.email, formData.password, formData.name, formData.preferences);
         if (result.needsConfirmation) {
-          setError('Registration successful! Please check your email to confirm.');
+          setSuccess('Registration successful! Please check your email to confirm.');
           setLoading(false);
           setStep('login');
           return;
@@ -188,6 +190,17 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
             </motion.div>
           )}
 
+          {success && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-4 rounded-2xl mb-8 text-xs font-bold border border-emerald-500/10 flex items-center gap-3"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {success}
+            </motion.div>
+          )}
+
           <AnimatePresence mode="wait">
             {step === 'reset' ? (
               <motion.form 
@@ -199,10 +212,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   e.preventDefault(); 
                   setLoading(true);
                   setError('');
+                  setSuccess('');
                   try {
                     const { error } = await supabase.auth.updateUser({ password: formData.password });
                     if (error) throw error;
-                    setError('Password successfully updated! You can now sign in.');
+                    setSuccess('Password successfully updated! You can now sign in.');
                     setStep('login');
                   } catch (err: any) {
                     setError(err.message || 'Failed to update password.');
@@ -259,12 +273,14 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                           return;
                         }
                         setLoading(true);
+                        setError('');
+                        setSuccess('');
                         try {
                           const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
                             redirectTo: `${window.location.origin}/auth?step=reset`,
                           });
                           if (error) throw error;
-                          setError('Password reset link sent! Please check your email.');
+                          setSuccess('Password reset link sent! Please check your email.');
                         } catch (err: any) {
                           setError(err.message || 'Failed to send reset link.');
                         } finally {
