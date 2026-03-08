@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Moon, Sun, Languages, LogOut, User, MessageSquare, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Moon, Sun, Languages, LogOut, User, MessageSquare, ShoppingBag, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../app/LanguageContext';
 import { useTheme } from '../../app/ThemeContext';
 import { useAuthStore } from '../../features/auth/auth.store';
@@ -15,8 +15,20 @@ const Navbar: React.FC = () => {
   const { user } = useAuthStore();
   const { getItemCount } = useCartStore();
   const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const cartCount = getItemCount();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -59,24 +71,18 @@ const Navbar: React.FC = () => {
             <NavLink to="/cart" className={({ isActive }) => `text-[9px] font-black uppercase tracking-[0.4em] transition-all hover:opacity-60 ${isActive ? 'text-savvy-accent' : ''}`}>
               Cart
             </NavLink>
-            <NavLink to="/profile" className={({ isActive }) => `text-[9px] font-black uppercase tracking-[0.4em] transition-all hover:opacity-60 ${isActive ? 'text-savvy-accent' : ''}`}>
-              {t('profile')}
-            </NavLink>
           </>
         )}
       </div>
 
       <div className="flex pointer-events-auto items-center gap-3 md:gap-6 text-white">
-        <button onClick={toggleTheme} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-        </button>
         <button onClick={() => setLang(lang === 'en' ? 'am' : 'en')} className="p-2 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2">
           <Languages className="w-4 h-4" />
           <span className="text-[8px] font-black uppercase tracking-widest">{lang === 'en' ? 'አማ' : 'EN'}</span>
         </button>
         
         {user ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 relative" ref={menuRef}>
             <Link to="/cart" className="p-2 bg-white/10 rounded-full relative">
                <ShoppingBag className="w-4 h-4 text-white" />
                {cartCount > 0 && (
@@ -88,10 +94,67 @@ const Navbar: React.FC = () => {
             <Link to="/inbox" className="lg:hidden p-2 bg-white/10 rounded-full">
                <MessageSquare className="w-4 h-4 text-white" />
             </Link>
-            <button onClick={handleLogout} className="bg-white text-black px-4 md:px-6 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all flex items-center gap-2">
-              <LogOut className="w-3 h-3" />
-              <span className="hidden md:inline">EXIT</span>
+            
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 p-1 pr-3 bg-white/10 rounded-full hover:bg-white/20 transition-all border border-white/5"
+            >
+              <div className="w-8 h-8 rounded-full bg-savvy-accent flex items-center justify-center text-[10px] font-black text-white shadow-lg">
+                {user.full_name?.charAt(0) || 'U'}
+              </div>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
             </button>
+
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-4 w-64 bg-white dark:bg-[#0c0c0e] rounded-3xl shadow-2xl border border-black/5 dark:border-white/5 overflow-hidden z-[110]"
+                >
+                  <div className="p-6 border-b dark:border-white/5 bg-gray-50/50 dark:bg-black/20">
+                    <p className="text-[10px] font-black text-savvy-accent uppercase tracking-widest mb-1">Authenticated</p>
+                    <p className="text-sm font-black text-black dark:text-white truncate">{user.full_name}</p>
+                  </div>
+
+                  <div className="p-2">
+                    <button 
+                      onClick={() => { navigate('/profile'); setShowProfileMenu(false); }}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-left"
+                    >
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white">My Account</span>
+                    </button>
+
+                    <button 
+                      onClick={() => { toggleTheme(); }}
+                      className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        {theme === 'light' ? <Moon className="w-4 h-4 text-gray-400" /> : <Sun className="w-4 h-4 text-gray-400" />}
+                        <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white">
+                          {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                        </span>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-colors ${theme === 'dark' ? 'bg-savvy-accent' : 'bg-gray-200'}`}>
+                        <div className={`absolute top-1 w-2 h-2 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-5' : 'left-1'}`} />
+                      </div>
+                    </button>
+
+                    <div className="h-[1px] bg-black/5 dark:bg-white/5 my-2" />
+
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-left group"
+                    >
+                      <LogOut className="w-4 h-4 text-gray-400 group-hover:text-red-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white group-hover:text-red-500">Logout</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         ) : (
           <Link to="/auth" className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:invert transition-all flex items-center gap-2">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, MessageSquare, User, LayoutGrid } from 'lucide-react';
+import { Home, ShoppingBag, MessageSquare, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../../app/LanguageContext';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useCartStore } from '../../store/cart.store';
@@ -59,14 +59,6 @@ const BottomNav: React.FC = () => {
             )}
           </div>
           <span className="text-[9px] font-bold uppercase tracking-tighter">Cart</span>
-        </NavLink>
-
-        <NavLink 
-          to="/profile" 
-          className={({ isActive }) => `flex flex-col items-center gap-1 transition-all ${isActive ? 'text-savvy-indigo' : 'text-gray-400'}`}
-        >
-          <User className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-tighter">Me</span>
         </NavLink>
       </div>
     </nav>
