@@ -88,97 +88,98 @@ const ProfilePage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
+    <div className="max-w-6xl mx-auto px-3 py-6 md:py-12">
       {xpGained && <XpAnimation amount={xpGained} />}
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left Column: Profile & Stats */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-white/5 rounded-3xl p-8 border border-gray-100 dark:border-white/10 shadow-sm"
+            className="bg-white dark:bg-white/5 rounded-2xl md:rounded-3xl p-4 md:p-8 border border-gray-100 dark:border-white/10 shadow-sm"
           >
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-              <div className="w-32 h-32 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center border-4 border-white dark:border-zinc-900 shadow-xl relative">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-8 md:mb-12">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center border-4 border-white dark:border-zinc-900 shadow-xl relative">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt={user.full_name} className="w-full h-full rounded-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <User size={64} className="text-indigo-600 dark:text-indigo-400" />
+                  <User size={48} className="text-indigo-600 dark:text-indigo-400 md:hidden" />
                 )}
-                <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white w-10 h-10 rounded-xl flex items-center justify-center font-black border-4 border-white dark:border-zinc-900 shadow-lg">
+                {!user.avatar_url && <User size={64} className="text-indigo-600 dark:text-indigo-400 hidden md:block" />}
+                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-amber-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-black border-2 md:border-4 border-white dark:border-zinc-900 shadow-lg text-xs md:text-base">
                   {level}
                 </div>
               </div>
               <div className="text-center md:text-left flex-1">
-                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-2">
-                  <h1 className="text-4xl font-black tracking-tighter dark:text-white">{user.full_name}</h1>
+                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-2">
+                  <h1 className="text-2xl md:text-4xl font-black tracking-tighter dark:text-white">{user.full_name}</h1>
                   <button 
                     onClick={handleClaim}
                     disabled={claiming}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-2 self-center md:self-auto"
+                    className="px-3 py-1.5 md:px-4 md:py-2 bg-indigo-600 text-white rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-2 self-center md:self-auto"
                   >
-                    {claiming ? <Clock size={12} className="animate-spin" /> : <Gift size={12} />}
+                    {claiming ? <Clock size={10} className="animate-spin" /> : <Gift size={10} />}
                     {claiming ? 'Claiming...' : 'Daily Claim'}
                   </button>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 flex items-center justify-center md:justify-start gap-2">
-                  <Mail size={16} /> {user.email}
+                <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center md:justify-start gap-2">
+                  <Mail size={12} /> {user.email}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
-                  <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Shield size={12} /> {user.role}
+                <div className="mt-3 flex flex-wrap gap-1.5 justify-center md:justify-start">
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Shield size={10} /> {user.role}
                   </span>
                   {user.is_verified && (
-                    <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                      Verified Student
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                      Verified
                     </span>
                   )}
-                  <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
                     🔥 {user.login_streak || 0} Day Streak
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                <div className="flex items-center gap-3 mb-4 text-indigo-600 dark:text-indigo-400">
-                  <Star size={20} />
-                  <span className="font-bold uppercase text-xs tracking-widest">Total Points</span>
+            <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8 md:mb-12">
+              <div className="p-3 md:p-6 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 md:mb-4 text-indigo-600 dark:text-indigo-400">
+                  <Star size={14} className="md:w-5 md:h-5" />
+                  <span className="font-bold uppercase text-[7px] md:text-xs tracking-widest hidden md:inline">Points</span>
                 </div>
-                <div className="text-3xl font-black dark:text-white">{points}</div>
-                <p className="text-xs text-gray-500 mt-1">Earned through activity</p>
+                <div className="text-lg md:text-3xl font-black dark:text-white">{points}</div>
+                <p className="text-[7px] md:text-xs text-gray-500 mt-1 hidden md:block">Earned points</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                <div className="flex items-center gap-3 mb-4 text-amber-500">
-                  <Award size={20} />
-                  <span className="font-bold uppercase text-xs tracking-widest">Current Level</span>
+              <div className="p-3 md:p-6 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 md:mb-4 text-amber-500">
+                  <Award size={14} className="md:w-5 md:h-5" />
+                  <span className="font-bold uppercase text-[7px] md:text-xs tracking-widest hidden md:inline">Level</span>
                 </div>
-                <div className="text-3xl font-black dark:text-white">Lvl {level}</div>
-                <p className="text-xs text-gray-500 mt-1">Savvy Trader Status</p>
+                <div className="text-lg md:text-3xl font-black dark:text-white">Lvl {level}</div>
+                <p className="text-[7px] md:text-xs text-gray-500 mt-1 hidden md:block">Trader Status</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
-                <div className="flex items-center gap-3 mb-4 text-emerald-500">
-                  <TrendingUp size={20} />
-                  <span className="font-bold uppercase text-xs tracking-widest">Visits</span>
+              <div className="p-3 md:p-6 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 md:mb-4 text-emerald-500">
+                  <TrendingUp size={14} className="md:w-5 md:h-5" />
+                  <span className="font-bold uppercase text-[7px] md:text-xs tracking-widest hidden md:inline">Visits</span>
                 </div>
-                <div className="text-3xl font-black dark:text-white">{user.visit_count || 0}</div>
-                <p className="text-xs text-gray-500 mt-1">Total platform visits</p>
+                <div className="text-lg md:text-3xl font-black dark:text-white">{user.visit_count || 0}</div>
+                <p className="text-[7px] md:text-xs text-gray-500 mt-1 hidden md:block">Total visits</p>
               </div>
             </div>
 
-            <div className="mb-12">
-              <div className="flex justify-between items-end mb-4">
+            <div className="mb-8 md:mb-12">
+              <div className="flex justify-between items-end mb-3 md:mb-4">
                 <div>
-                  <h3 className="font-bold dark:text-white">Level Progress</h3>
-                  <p className="text-xs text-gray-500">{nextLevelPoints - points} points until Level {level + 1}</p>
+                  <h3 className="text-xs md:text-sm font-bold dark:text-white">Level Progress</h3>
+                  <p className="text-[10px] md:text-xs text-gray-500">{nextLevelPoints - points} points until Lvl {level + 1}</p>
                 </div>
-                <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
+                <div className="text-[10px] md:text-xs font-bold text-indigo-600 dark:text-indigo-400">{progress}%</div>
               </div>
-              <div className="h-3 w-full bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+              <div className="h-2 md:h-3 w-full bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
@@ -189,33 +190,33 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Referral Section */}
-            <div className="p-6 rounded-2xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20 mb-12">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div>
-                  <h3 className="font-bold dark:text-white flex items-center gap-2">
-                    <Gift className="text-indigo-600" size={18} />
-                    Invite Friends, Earn Points
+            <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20 mb-8 md:mb-12">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+                <div className="text-center md:text-left">
+                  <h3 className="text-xs md:text-sm font-bold dark:text-white flex items-center justify-center md:justify-start gap-2">
+                    <Gift className="text-indigo-600" size={16} />
+                    Invite Friends
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">Get 50 points for every friend who joins using your code.</p>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-1">Get 50 points for every friend who joins.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-2 rounded-xl border border-black/5 dark:border-white/5 w-full md:w-auto">
-                  <code className="px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{user.referral_code || 'SAVVY-USER'}</code>
+                <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1.5 md:p-2 rounded-lg md:rounded-xl border border-black/5 dark:border-white/5 w-full md:w-auto">
+                  <code className="px-2 md:px-3 font-mono font-bold text-indigo-600 dark:text-indigo-400 text-[10px] md:text-sm">{user.referral_code || 'SAVVY-USER'}</code>
                   <button 
                     onClick={copyReferral}
-                    className="p-2 bg-gray-50 dark:bg-white/5 rounded-lg hover:bg-indigo-50 transition-colors"
+                    className="p-1.5 md:p-2 bg-gray-50 dark:bg-white/5 rounded-lg hover:bg-indigo-50 transition-colors"
                   >
-                    {copied ? <Check className="text-emerald-500" size={16} /> : <Copy size={16} className="text-gray-400" />}
+                    {copied ? <Check className="text-emerald-500" size={14} /> : <Copy size={14} className="text-gray-400" />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="pt-8 border-t border-gray-100 dark:border-white/10">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">Achievement Badges</h3>
-              <div className="flex flex-wrap gap-4">
+            <div className="pt-6 md:pt-8 border-t border-gray-100 dark:border-white/10">
+              <h3 className="text-[10px] md:text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 md:mb-6">Achievement Badges</h3>
+              <div className="flex flex-wrap gap-2 md:gap-4">
                 {achievements.length > 0 ? achievements.map((ua) => (
                   <div key={ua.id} className="group relative">
-                    <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-2xl shadow-sm hover:scale-110 transition-transform cursor-help">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-xl md:text-2xl shadow-sm hover:scale-110 transition-transform cursor-help">
                       {ua.achievement?.icon || '🏆'}
                     </div>
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-black text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">

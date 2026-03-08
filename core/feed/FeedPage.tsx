@@ -48,28 +48,28 @@ const FeedPage: React.FC = () => {
   const categories = ['all', 'goods', 'course', 'academic_materials', 'food'];
 
   return (
-    <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen pt-24 md:pt-40 px-4 md:px-10 pb-32">
+    <div className="bg-savvy-bg dark:bg-savvy-dark min-h-screen pt-16 md:pt-40 px-2 md:px-10 pb-32">
       <div className="max-w-[1200px] mx-auto">
         <motion.header 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-12 md:mb-20"
+          className="mb-6 md:mb-20"
         >
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-8 mb-6 md:mb-12">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-savvy-accent mb-3">AAU Market</p>
-              <h1 className="text-4xl md:text-7xl font-black tracking-tighter uppercase leading-[0.9] dark:text-white">
+              <p className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.4em] text-savvy-accent mb-1 md:mb-3">AAU Market</p>
+              <h1 className="text-2xl md:text-7xl font-black tracking-tighter uppercase leading-[0.9] dark:text-white">
                 Daily <br /> <span className="font-serif italic text-savvy-accent lowercase tracking-normal">Feed.</span>
               </h1>
             </div>
             
-            <div className="flex flex-wrap items-center gap-4 md:gap-8">
-              <div className="flex flex-col gap-2">
-                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Sort By</span>
+            <div className="flex flex-wrap items-center gap-3 md:gap-8">
+              <div className="flex flex-col gap-1">
+                <span className="text-[7px] font-black uppercase tracking-widest text-gray-400">Sort By</span>
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent border-b border-black/10 dark:border-white/10 text-[10px] font-black uppercase tracking-widest outline-none dark:text-white pb-1 cursor-pointer"
+                  className="bg-transparent border-b border-black/10 dark:border-white/10 text-[9px] font-black uppercase tracking-widest outline-none dark:text-white pb-1 cursor-pointer"
                 >
                   <option value="newest" className="dark:bg-black">Newest</option>
                   <option value="price_asc" className="dark:bg-black">Price: Low to High</option>
@@ -78,21 +78,21 @@ const FeedPage: React.FC = () => {
               </div>
               <button 
                 onClick={() => navigate('/cart')}
-                className="flex items-center gap-2 px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 Cart
               </button>
             </div>
           </div>
           
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 border-t border-black/5 dark:border-white/5 pt-8">
-            <div className="flex gap-6 overflow-x-auto w-full pb-2 scrollbar-hide no-scrollbar">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 md:gap-8 border-t border-black/5 dark:border-white/5 pt-4 md:pt-8">
+            <div className="flex gap-3 md:gap-6 overflow-x-auto w-full pb-2 scrollbar-hide no-scrollbar">
               {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setCategory(cat)}
-                  className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap pb-2 border-b-2 ${
+                  className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap pb-1 md:pb-2 border-b-2 ${
                     activeCategory === cat ? 'border-savvy-indigo text-savvy-indigo' : 'border-transparent text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
@@ -102,22 +102,22 @@ const FeedPage: React.FC = () => {
             </div>
             
             <form onSubmit={handleSearch} className="w-full lg:w-[400px] relative group">
-              <div className="flex items-center border-b-2 border-black/10 dark:border-white/10 pb-2 gap-4">
-                <Search className="w-5 h-5 text-gray-400" />
+              <div className="flex items-center border-b-2 border-black/10 dark:border-white/10 pb-1 md:pb-2 gap-3 md:gap-4">
+                <Search className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                 <input 
                   type="text"
-                  placeholder={isSmartSearch ? "Ask Savvy AI (e.g. 'dorm decor')..." : "Search..."}
-                  className="flex-1 bg-transparent outline-none text-sm font-bold dark:text-white"
+                  placeholder={isSmartSearch ? "Ask Savvy AI..." : "Search..."}
+                  className="flex-1 bg-transparent outline-none text-xs md:text-sm font-bold dark:text-white"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button 
                   type="button"
                   onClick={() => setIsSmartSearch(!isSmartSearch)}
-                  className={`p-2 rounded-xl transition-all ${isSmartSearch ? 'bg-savvy-indigo text-white shadow-lg' : 'text-gray-400 hover:bg-black/5'}`}
+                  className={`p-1.5 md:p-2 rounded-lg md:rounded-xl transition-all ${isSmartSearch ? 'bg-savvy-indigo text-white shadow-lg' : 'text-gray-400 hover:bg-black/5'}`}
                   title="Toggle Smart Search"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </button>
               </div>
             </form>
@@ -150,31 +150,31 @@ const FeedPage: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: (idx % 12) * 0.05 }}
-                  className="group cursor-pointer bg-white dark:bg-[#0c0c0e] rounded-[2rem] overflow-hidden tibico-border shadow-sm flex flex-col hover:shadow-2xl transition-all duration-500" 
+                  className="group cursor-pointer bg-white dark:bg-[#0c0c0e] rounded-xl md:rounded-[2rem] overflow-hidden tibico-border shadow-sm flex flex-col hover:shadow-2xl transition-all duration-500" 
                   onClick={() => navigate(`/product/${l.id}`)}
                 >
                   <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 dark:bg-white/5">
                     <img src={l.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" alt={l.title} referrerPolicy="no-referrer" />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-black/60 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">{t(l.category)}</span>
+                    <div className="absolute top-1.5 left-1.5 md:top-4 md:left-4">
+                      <span className="bg-black/60 backdrop-blur-md text-white text-[6px] md:text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 md:px-3 md:py-1.5 rounded-full">{t(l.category)}</span>
                     </div>
                     <button 
                       onClick={(e) => handleAddToCart(e, l)}
-                      className="absolute bottom-4 right-4 w-12 h-12 bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 hover:bg-savvy-indigo hover:text-white"
+                      className="absolute bottom-1.5 right-1.5 md:bottom-4 md:right-4 w-8 h-8 md:w-12 md:h-12 bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-lg md:rounded-2xl flex items-center justify-center shadow-xl opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 hover:bg-savvy-indigo hover:text-white"
                     >
-                      <Plus className="w-6 h-6" />
+                      <Plus className="w-4 h-4 md:w-6 md:h-6" />
                     </button>
                   </div>
 
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-sm md:text-base font-black dark:text-white line-clamp-2 leading-tight mb-3 min-h-[2.8em] tracking-tight">
+                  <div className="p-2.5 md:p-6 flex flex-col flex-1">
+                    <h3 className="text-[11px] md:text-base font-bold md:font-black dark:text-white line-clamp-2 leading-tight mb-1.5 md:mb-3 min-h-[2.4em] tracking-tight">
                       {l.title}
                     </h3>
-                    <div className="mt-auto flex items-baseline justify-between border-t dark:border-white/5 pt-4">
-                      <p className="text-lg md:text-2xl font-black text-black dark:text-white tracking-tighter">
-                        {l.price} <span className="text-[10px] font-bold text-gray-400">ETB</span>
+                    <div className="mt-auto flex items-baseline justify-between border-t dark:border-white/5 pt-2 md:pt-4">
+                      <p className="text-sm md:text-2xl font-black text-black dark:text-white tracking-tighter">
+                        {l.price} <span className="text-[7px] md:text-[10px] font-bold text-gray-400">ETB</span>
                       </p>
-                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">AAU Verified</span>
+                      <span className="text-[6px] md:text-[8px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">AAU Verified</span>
                     </div>
                   </div>
                 </motion.div>
@@ -195,9 +195,9 @@ const FeedPage: React.FC = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowAdd(true)} 
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 btn-premium px-8 py-4 rounded-full font-black text-[9px] uppercase tracking-[0.3em] shadow-2xl flex items-center gap-3 border border-white/10"
+        className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 btn-premium px-6 md:px-8 py-3 md:py-4 rounded-full font-black text-[8px] md:text-[9px] uppercase tracking-[0.3em] shadow-2xl flex items-center gap-2 md:gap-3 border border-white/10"
       >
-        <Plus className="w-4 h-4" /> SELL
+        <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" /> SELL
       </motion.button>
 
       {showAdd && <AddListingModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); fetch(); }} />}

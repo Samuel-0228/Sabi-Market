@@ -16,7 +16,15 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'list' | 'chat'>('list');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Handle mobile view switching
+  useEffect(() => {
+    if (activeConv && window.innerWidth < 1024) {
+      setView('chat');
+    }
+  }, [activeConv]);
 
   // 1. Initial Fetch
   useEffect(() => {
@@ -152,17 +160,17 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-10 h-[85vh] flex flex-col lg:flex-row gap-8">
-      {/* Sidebar */}
-      <div className="w-full lg:w-96 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-2xl">
-        <div className="p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
-          <h2 className="text-2xl font-black dark:text-white tracking-tighter">Messages</h2>
+    <div className="max-w-[1400px] mx-auto px-3 md:px-6 py-4 md:py-10 h-[calc(100vh-120px)] md:h-[85vh] flex flex-col lg:flex-row gap-4 md:gap-8">
+      {/* Sidebar (Chat List) */}
+      <div className={`w-full lg:w-80 md:w-96 bg-white dark:bg-[#0c0c0e] rounded-2xl md:rounded-[2.5rem] border border-gray-100 dark:border-white/5 flex flex-col overflow-hidden shadow-xl ${view === 'chat' && 'hidden lg:flex'}`}>
+        <div className="p-4 md:p-8 border-b dark:border-white/5 bg-gray-50/20 dark:bg-black/20">
+          <h2 className="text-xl md:text-2xl font-black dark:text-white tracking-tighter">Messages</h2>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {conversations.length === 0 ? (
-            <div className="p-16 text-center opacity-30 flex flex-col items-center">
-              <span className="text-5xl mb-6">💬</span>
-              <p className="text-xs font-black uppercase tracking-widest dark:text-white">No trade chats</p>
+            <div className="p-12 md:p-16 text-center opacity-30 flex flex-col items-center">
+              <span className="text-4xl md:text-5xl mb-4 md:mb-6">💬</span>
+              <p className="text-[10px] font-black uppercase tracking-widest dark:text-white">No trade chats</p>
             </div>
           ) : (
             conversations.map(conv => {
@@ -171,13 +179,16 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
               return (
                 <button 
                   key={conv.id} 
-                  onClick={() => setActiveConv(conv)}
-                  className={`w-full p-6 text-left flex items-center gap-5 transition-all border-l-4 ${isSelected ? 'bg-indigo-50/50 dark:bg-white/5 border-l-indigo-600' : 'border-l-transparent hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                  onClick={() => {
+                    setActiveConv(conv);
+                    if (window.innerWidth < 1024) setView('chat');
+                  }}
+                  className={`w-full p-3 md:p-6 text-left flex items-center gap-3 md:gap-5 transition-all border-l-4 ${isSelected ? 'bg-indigo-50/50 dark:bg-white/5 border-l-indigo-600' : 'border-l-transparent hover:bg-gray-50 dark:hover:bg-white/5'}`}
                 >
-                  <img src={conv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
+                  <img src={conv.listings?.image_url} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover shadow-sm" referrerPolicy="no-referrer" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-black dark:text-white text-sm truncate">{other?.full_name || 'Student'}</p>
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest truncate">{conv.listings?.title}</p>
+                    <p className="font-bold md:font-black dark:text-white text-xs md:text-sm truncate">{other?.full_name || 'Student'}</p>
+                    <p className="text-[8px] md:text-[10px] font-black text-indigo-500 uppercase tracking-widest truncate">{conv.listings?.title}</p>
                   </div>
                 </button>
               );
@@ -186,31 +197,37 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Main Window */}
-      <div className="flex-1 bg-white dark:bg-[#0c0c0e] rounded-[2.5rem] flex flex-col border border-gray-100 dark:border-white/5 overflow-hidden shadow-2xl">
+      {/* Main Window (Chat Detail) */}
+      <div className={`flex-1 bg-white dark:bg-[#0c0c0e] rounded-2xl md:rounded-[2.5rem] flex flex-col border border-gray-100 dark:border-white/5 overflow-hidden shadow-xl ${view === 'list' && 'hidden lg:flex'}`}>
         {activeConv ? (
           <>
-            <div className="p-6 border-b dark:border-white/5 flex items-center gap-5 bg-gray-50/20 dark:bg-black/20">
-              <img src={activeConv.listings?.image_url} className="w-14 h-14 rounded-2xl object-cover shadow-lg" referrerPolicy="no-referrer" />
-              <div>
-                <h3 className="text-xl font-black dark:text-white tracking-tighter">{activeConv.listings?.title}</h3>
-                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">
+            <div className="p-3 md:p-6 border-b dark:border-white/5 flex items-center gap-3 md:gap-5 bg-gray-50/20 dark:bg-black/20">
+              <button 
+                onClick={() => setView('list')}
+                className="lg:hidden p-2 -ml-2 text-gray-400 hover:text-black dark:hover:text-white"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <img src={activeConv.listings?.image_url} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover shadow-lg" referrerPolicy="no-referrer" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm md:text-xl font-black dark:text-white tracking-tighter truncate">{activeConv.listings?.title}</h3>
+                <p className="text-[8px] md:text-[10px] font-bold text-indigo-500 uppercase tracking-widest truncate">
                   {activeConv.seller_id === user.id ? 'Customer' : 'Seller'}: {activeConv.seller_id === user.id ? activeConv.buyer?.full_name : activeConv.seller?.full_name}
                 </p>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-10 space-y-4 bg-gray-50/5 dark:bg-black/5" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-3 md:space-y-4 bg-gray-50/5 dark:bg-black/5" ref={scrollRef}>
               {messages.map((m) => (
                 <div key={m.id} className={`flex ${m.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`px-6 py-3 rounded-2xl max-w-[75%] text-sm font-medium shadow-sm transition-all ${
+                  <div className={`px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[75%] text-[13px] md:text-sm font-medium shadow-sm transition-all ${
                     m.sender_id === user.id 
                       ? 'bg-indigo-600 text-white rounded-br-none' 
                       : 'bg-white dark:bg-[#1a1a1c] dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5'
                     } ${m.temp ? 'opacity-70' : 'opacity-100'}`}
                   >
                     {m.content}
-                    <div className="text-[8px] font-black uppercase mt-2 opacity-50">
+                    <div className="text-[7px] md:text-[8px] font-black uppercase mt-1 md:mt-2 opacity-50">
                       {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       {m.temp && " • Sending..."}
                     </div>
@@ -219,22 +236,22 @@ const MessagesPage: React.FC<MessagesProps> = ({ user }) => {
               ))}
             </div>
 
-            <form onSubmit={handleSend} className="p-8 border-t dark:border-white/5 flex gap-4 bg-white dark:bg-[#0c0c0e]">
+            <form onSubmit={handleSend} className="p-3 md:p-8 border-t dark:border-white/5 flex gap-2 md:gap-4 bg-white dark:bg-[#0c0c0e]">
               <input 
-                className="flex-1 bg-gray-50 dark:bg-white/5 border-none p-5 px-8 rounded-2xl dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 font-bold" 
+                className="flex-1 bg-gray-50 dark:bg-white/5 border-none p-3 md:p-5 px-4 md:px-8 rounded-xl md:rounded-2xl dark:text-white outline-none focus:ring-2 focus:ring-indigo-600 font-bold text-sm" 
                 value={newMessage} 
                 onChange={e => setNewMessage(e.target.value)} 
-                placeholder="Type your message..." 
+                placeholder="Type message..." 
               />
-              <button className="bg-black dark:bg-white text-white dark:text-black px-12 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl active:scale-95 transition-all">
+              <button className="bg-black dark:bg-white text-white dark:text-black px-6 md:px-12 rounded-xl md:rounded-2xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">
                 Send
               </button>
             </form>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center opacity-30">
-            <span className="text-6xl mb-6">📬</span>
-            <p className="text-sm font-black uppercase tracking-widest dark:text-white">Select a chat to begin</p>
+            <span className="text-5xl md:text-6xl mb-4 md:mb-6">📬</span>
+            <p className="text-[10px] md:text-sm font-black uppercase tracking-widest dark:text-white">Select a chat to begin</p>
           </div>
         )}
       </div>

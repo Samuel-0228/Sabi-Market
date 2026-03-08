@@ -8,6 +8,15 @@
   --color-savvy-dark: #050505;
   --color-savvy-indigo: #4F46E5;
   --color-savvy-accent: #C5A572;
+
+  --spacing-mobile-x: 0.75rem;
+  --spacing-mobile-y: 1rem;
+}
+
+@layer base {
+  html {
+    @apply text-[14px] md:text-[16px];
+  }
 }
 
 :root {

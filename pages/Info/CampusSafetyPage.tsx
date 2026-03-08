@@ -50,11 +50,20 @@ const CampusSafetyPage: React.FC = () => {
           ))}
         </div>
 
-        <section className="bg-red-500/10 p-8 rounded-3xl border border-red-500/20 text-center">
-          <h2 className="text-xl font-black uppercase tracking-tighter text-red-600 dark:text-red-400 mb-2">Emergency?</h2>
-          <p className="text-sm text-red-600/80 dark:text-red-400/80">
-            If you feel unsafe or are in immediate danger, contact AAU Campus Security or local authorities immediately.
+        <section className="bg-savvy-accent/10 p-8 rounded-3xl border border-savvy-accent/20 text-center">
+          <h2 className="text-xl font-black uppercase tracking-tighter text-savvy-accent mb-2">Report Suspicious Activity</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+            If you notice anything suspicious or encounter a potential scam, please report it to our team immediately.
           </p>
+          <a 
+            href="https://t.me/SavvyMarketbot" 
+            target="_blank" 
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-savvy-accent text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:scale-105 transition-transform"
+          >
+            <MessageSquare size={16} />
+            Contact @SavvyMarketbot
+          </a>
         </section>
       </div>
     </InfoLayout>

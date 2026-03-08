@@ -29,16 +29,16 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 py-4 md:py-8 flex items-center justify-between mix-blend-difference pointer-events-none">
+    <nav className="fixed top-0 left-0 right-0 z-[100] px-3 md:px-8 py-3 md:py-8 flex items-center justify-between mix-blend-difference pointer-events-none">
       <div className="pointer-events-auto">
-        <Link to="/" className="group flex items-center gap-3 md:gap-4">
+        <Link to="/" className="group flex items-center gap-2 md:gap-4">
           <motion.div 
             whileHover={{ rotate: 12, scale: 1.1 }}
-            className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-black font-black text-lg md:text-xl shadow-2xl transition-transform"
+            className="w-8 h-8 md:w-12 md:h-12 bg-white rounded-lg md:rounded-2xl flex items-center justify-center text-black font-black text-base md:text-xl shadow-2xl transition-transform"
           >
             ሳ
           </motion.div>
-          <span className="text-white font-black tracking-[0.3em] uppercase text-[8px] md:text-[10px] hidden sm:block">
+          <span className="text-white font-black tracking-[0.3em] uppercase text-[7px] md:text-[10px] hidden sm:block">
             {t('appName')}
           </span>
         </Link>

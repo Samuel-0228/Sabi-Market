@@ -102,50 +102,50 @@ const ProductDetailsPage: React.FC = () => {
         </div>
 
         {/* Right: Refined Content */}
-        <div className="w-full lg:w-[55%] lg:ml-[45%] px-6 md:px-12 lg:px-20 py-12 md:py-24 lg:py-40 flex flex-col">
+        <div className="w-full lg:w-[55%] lg:ml-[45%] px-4 md:px-12 lg:px-20 py-8 md:py-24 lg:py-40 flex flex-col">
           <div className="max-w-xl mx-auto w-full reveal">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-savvy-accent">verified gem</p>
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">ID: {listing.id.slice(0,6)}</span>
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <p className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] text-savvy-accent">verified gem</p>
+              <span className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-white/5 px-2 py-0.5 md:px-3 md:py-1 rounded-full">ID: {listing.id.slice(0,6)}</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase leading-[0.95] mb-8 dark:text-white">
+            <h1 className="text-2xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase leading-[0.95] mb-4 md:mb-8 dark:text-white">
               {listing.title}
             </h1>
 
-            <div className="flex items-baseline gap-4 mb-10 border-b dark:border-white/10 pb-10">
-              <p className="text-4xl font-black dark:text-white tracking-tighter">{listing.price}</p>
-              <span className="text-xs font-black uppercase text-gray-400 tracking-widest">ETB</span>
-              <span className="ml-auto text-[9px] font-black text-green-500 uppercase tracking-widest">In Stock</span>
+            <div className="flex items-baseline gap-3 md:gap-4 mb-6 md:mb-10 border-b dark:border-white/10 pb-6 md:pb-10">
+              <p className="text-3xl md:text-4xl font-black dark:text-white tracking-tighter">{listing.price}</p>
+              <span className="text-[10px] md:text-xs font-black uppercase text-gray-400 tracking-widest">ETB</span>
+              <span className="ml-auto text-[8px] md:text-[9px] font-black text-green-500 uppercase tracking-widest">In Stock</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-2 gap-4 md:gap-8 mb-8 md:mb-12">
               <div className="reveal delay-1">
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Category</p>
-                <p className="text-sm font-black dark:text-white uppercase tracking-widest">{listing.category.replace('_', ' ')}</p>
+                <p className="text-[7px] md:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 md:mb-2">Category</p>
+                <p className="text-xs md:text-sm font-black dark:text-white uppercase tracking-widest">{listing.category.replace('_', ' ')}</p>
               </div>
               <div className="reveal delay-2">
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Origin</p>
-                <p className="text-sm font-black dark:text-white uppercase tracking-widest">AAU Campus</p>
+                <p className="text-[7px] md:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 md:mb-2">Origin</p>
+                <p className="text-xs md:text-sm font-black dark:text-white uppercase tracking-widest">AAU Campus</p>
               </div>
             </div>
 
-            <div className="reveal delay-3 mb-12">
-              <h3 className="text-[9px] font-black text-savvy-accent uppercase tracking-[0.4em] mb-4">Narrative</h3>
-              <p className="text-lg font-medium leading-relaxed dark:text-gray-300 italic font-serif">
+            <div className="reveal delay-3 mb-8 md:mb-12">
+              <h3 className="text-[8px] md:text-[9px] font-black text-savvy-accent uppercase tracking-[0.4em] mb-3 md:mb-4">Narrative</h3>
+              <p className="text-base md:text-lg font-medium leading-relaxed dark:text-gray-300 italic font-serif">
                 "{listing.description}"
               </p>
             </div>
 
             {/* Seller Info Component */}
-            <div className="reveal delay-4 p-6 md:p-8 bg-white dark:bg-white/5 rounded-[2.5rem] tibico-border flex items-center justify-between mb-16">
-               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-black dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-black font-black text-xl">
+            <div className="reveal delay-4 p-4 md:p-8 bg-white dark:bg-white/5 rounded-2xl md:rounded-[2.5rem] tibico-border flex items-center justify-between mb-8 md:mb-16">
+               <div className="flex items-center gap-3 md:gap-4">
+                 <div className="w-10 h-10 md:w-12 md:h-12 bg-black dark:bg-white rounded-lg md:rounded-xl flex items-center justify-center text-white dark:text-black font-black text-lg md:text-xl">
                    {listing.seller_name?.[0]}
                  </div>
                  <div>
-                   <p className="text-[10px] font-black uppercase tracking-widest dark:text-white">{listing.seller_name}</p>
-                   <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">AAU Certified Merchant</p>
+                   <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest dark:text-white">{listing.seller_name}</p>
+                   <p className="text-[7px] md:text-[8px] font-bold text-gray-400 uppercase tracking-widest">AAU Certified Merchant</p>
                  </div>
                </div>
                <button 
@@ -190,22 +190,22 @@ const ProductDetailsPage: React.FC = () => {
       </div>
 
       {/* Mobile Sticky Footer Actions */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t dark:border-white/10 p-4 flex gap-3 animate-in slide-in-from-bottom duration-500">
+      <div className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t dark:border-white/10 p-3 flex gap-2 animate-in slide-in-from-bottom duration-500 pb-safe">
          <button 
             onClick={handleContactSeller}
-            className="w-14 h-14 bg-gray-100 dark:bg-white/10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+            className="w-12 h-12 bg-gray-100 dark:bg-white/10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
          >
-           <MessageSquare className="w-6 h-6 dark:text-white" />
+           <MessageSquare className="w-5 h-5 dark:text-white" />
          </button>
          <button 
             onClick={handleAddToCart}
-            className="w-14 h-14 bg-black dark:bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+            className="w-12 h-12 bg-black dark:bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm"
          >
-           <ShoppingBag className="w-6 h-6 text-white dark:text-black" />
+           <ShoppingBag className="w-5 h-5 text-white dark:text-black" />
          </button>
          <button 
             onClick={() => navigate('/checkout', { state: { listing } })}
-            className="flex-1 btn-premium rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] shadow-lg"
+            className="flex-1 bg-savvy-indigo text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
          >
            Acquire Now
          </button>
