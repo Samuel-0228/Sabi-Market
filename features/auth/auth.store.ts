@@ -71,6 +71,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error("Auth sync internal error:", e);
       set({ user: null, loading: false, initialized: true, syncing: false });
       return null;
+    } finally {
+      set({ syncing: false, loading: false, initialized: true });
     }
   }
 }));

@@ -72,7 +72,7 @@ export const authApi = {
   async _fetchProfileWithRetries(user: any): Promise<UserProfile> {
     const userId = user.id;
     let attempts = 0;
-    const maxAttempts = 3; // Faster feedback for missing profiles
+    const maxAttempts = 2; // Faster feedback for missing profiles
 
     while (attempts < maxAttempts) {
       try {
@@ -82,7 +82,7 @@ export const authApi = {
         console.warn("Profile fetch attempt failed:", e);
       }
       
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 500));
       attempts++;
     }
 
@@ -94,7 +94,11 @@ export const authApi = {
       role: 'student',
       is_verified: user.email?.endsWith('@aau.edu.et') || false,
       preferences: user.user_metadata?.preferences || [],
-      created_at: user.created_at || new Date().toISOString()
+      created_at: user.created_at || new Date().toISOString(),
+      points: 0,
+      level: 1,
+      login_streak: 0,
+      visit_count: 0
     };
     
     try {

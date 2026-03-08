@@ -207,7 +207,7 @@ const AppRoutes: React.FC = () => {
         }>
           <Routes>
             <Route path="/" element={user ? <Navigate to="/marketplace" replace /> : <Landing />} />
-            <Route path="/auth" element={<Auth onSuccess={() => {}} />} />
+            <Route path="/auth" element={user ? <Navigate to="/marketplace" replace /> : <Auth onSuccess={() => {}} />} />
             <Route path="/marketplace" element={<FeedPage />} />
             <Route path="/product/:id" element={<ProductDetailsPage />} />
             <Route path="/cart" element={

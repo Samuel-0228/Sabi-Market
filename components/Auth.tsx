@@ -57,7 +57,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     }
   }, [location]);
 
-  const from = (location.state as any)?.from?.pathname || '/marketplace';
+  const from = React.useMemo(() => {
+    let path = (location.state as any)?.from?.pathname || '/marketplace';
+    if (path === '/auth' || path === '/') path = '/marketplace';
+    return path;
+  }, [location.state]);
 
   useEffect(() => {
     if (user && initialized) {
@@ -85,8 +89,13 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
       }
       
       // sync() will set loading: true in the store, triggering the global loading screen in App.tsx
-      await sync(loginData?.session);
+      const profile = await sync(loginData?.session);
       setLoading(false);
+      
+      if (profile) {
+        if (onSuccess) onSuccess();
+        navigate(from, { replace: true });
+      }
       
     } catch (err: any) {
       console.error("Auth error:", err);
