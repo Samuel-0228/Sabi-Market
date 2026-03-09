@@ -157,7 +157,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Joined by 2k+ Students</p>
+              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Joined by 45+ Students</p>
             </div>
           </div>
         </div>
