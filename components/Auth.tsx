@@ -1,4 +1,3 @@
-
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -260,7 +259,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   icon={<Mail className="w-4 h-4" />}
                   value={formData.email} 
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
-                  placeholder="name@aau.edu.et"
+                  placeholder="name@aau.edu.et/gmail.com"
                 />
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -289,7 +288,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                       }}
                       className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                     >
-                      Forgot Password?
+                      Forgot Password?(Reseting password is not available. Please contact support.)
                     </button>
                   </div>
                   <div className="relative group">
@@ -327,11 +326,24 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button type="button" className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95">
+                  <button
+                    type="button"
+                    aria-label="Continue with Google"
+                    title="Continue with Google"
+                    className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
+                  >
                     <Chrome className="w-4 h-4 dark:text-white" />
+                    <span className="sr-only">Continue with Google</span>
                   </button>
-                  <button type="button" className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95">
+
+                  <button
+                    type="button"
+                    aria-label="Continue with GitHub"
+                    title="Continue with GitHub"
+                    className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
+                  >
                     <Github className="w-4 h-4 dark:text-white" />
+                    <span className="sr-only">Continue with GitHub</span>
                   </button>
                 </div>
               </motion.form>
