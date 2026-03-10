@@ -118,7 +118,7 @@ const AppRoutes: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col dark:bg-[#050505] selection:bg-indigo-600 selection:text-white pb-20 lg:pb-0">
+    <div className="min-h-screen flex flex-col bg-savvy-surface selection:bg-indigo-600 selection:text-white pb-20 lg:pb-0">
       <Navbar />
       
       <BottomNav />

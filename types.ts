@@ -119,6 +119,16 @@ export interface OrderItem {
   amount?: number;
 }
 
+export interface Rating {
+  id: string;
+  order_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number; // 1-5
+  comment?: string;
+  created_at: string;
+}
+
 export interface Translation {
   [key: string]: {
     en: string;

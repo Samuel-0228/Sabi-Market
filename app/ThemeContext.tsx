@@ -25,11 +25,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = window.document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
       document.body.classList.add('dark');
     } else {
       root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
       document.body.classList.remove('dark');
     }
+    
+    console.log(`Theme updated to: ${theme}`);
     
     try {
       localStorage.setItem('savvy-theme', theme);
