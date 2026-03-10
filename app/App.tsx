@@ -71,6 +71,7 @@ const AppRoutes: React.FC = () => {
       }
       if (event === 'SIGNED_OUT') {
         useAuthStore.getState().setUser(null);
+        useCartStore.setState({ items: [], initialized: false });
       }
     });
 

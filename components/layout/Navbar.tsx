@@ -8,11 +8,12 @@ import { useTheme } from '../../app/ThemeContext';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useCartStore } from '../../store/cart.store';
 import { supabase } from '../../services/supabase/client';
+import { authApi } from '../../features/auth/auth.api';
 
 const Navbar: React.FC = () => {
   const { lang, setLang, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const { getItemCount } = useCartStore();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -32,11 +33,17 @@ const Navbar: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      useAuthStore.getState().setUser(null);
+      setShowProfileMenu(false);
+      await authApi.logout();
+      setUser(null);
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
+      // Force logout locally even if server call fails
+      setUser(null);
+      localStorage.clear();
+      navigate('/', { replace: true });
+      window.location.reload();
     }
   };
 
@@ -138,6 +145,7 @@ const Navbar: React.FC = () => {
                     <div className="h-[1px] bg-black/5 dark:bg-white/5 my-2" />
 
                     <button 
+                      type="button"
                       onClick={handleLogout}
                       className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-left group"
                     >
