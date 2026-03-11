@@ -108,5 +108,17 @@ export const authApi = {
     } catch (e) {
       return fallback;
     }
+  },
+
+  async requestPasswordReset(email: string) {
+    const { error } = await authService.resetPassword(email);
+    if (error) throw error;
+    return true;
+  },
+
+  async updatePassword(password: string) {
+    const { error } = await authService.updatePassword(password);
+    if (error) throw error;
+    return true;
   }
 };

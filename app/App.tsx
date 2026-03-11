@@ -73,10 +73,13 @@ const AppRoutes: React.FC = () => {
         useAuthStore.getState().setUser(null);
         useCartStore.setState({ items: [], initialized: false });
       }
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/auth?step=reset');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [sync]);
+  }, [sync, navigate]);
 
   // Seller Notification Listener
   useEffect(() => {

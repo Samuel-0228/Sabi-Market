@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Github, Chrome } from 'lucide-react';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
-import { supabase } from '../services/supabase/client';
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { 
   label: string; 
@@ -158,7 +157,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Joined by 40+ Students</p>
+              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Joined by 2k+ Students</p>
             </div>
           </div>
         </div>
@@ -214,8 +213,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   setError('');
                   setSuccess('');
                   try {
-                    const { error } = await supabase.auth.updateUser({ password: formData.password });
-                    if (error) throw error;
+                    await authApi.updatePassword(formData.password);
                     setSuccess('Password successfully updated! You can now sign in.');
                     setStep('login');
                   } catch (err: any) {
@@ -276,10 +274,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                         setError('');
                         setSuccess('');
                         try {
-                          const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-                            redirectTo: `${window.location.origin}/auth?step=reset`,
-                          });
-                          if (error) throw error;
+                          await authApi.requestPasswordReset(formData.email);
                           setSuccess('Password reset link sent! Please check your email.');
                         } catch (err: any) {
                           setError(err.message || 'Failed to send reset link.');

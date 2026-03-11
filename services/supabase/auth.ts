@@ -26,5 +26,13 @@ export const authService = {
   },
   async upsertProfile(profile: any) {
     return await supabase.from('profiles').upsert(profile);
+  },
+  async resetPassword(email: string) {
+    return await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?step=reset`,
+    });
+  },
+  async updatePassword(password: string) {
+    return await supabase.auth.updateUser({ password });
   }
 };
