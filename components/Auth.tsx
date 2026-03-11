@@ -2,9 +2,67 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Github, Chrome } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Github, Chrome, Check } from 'lucide-react';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
+
+const PasswordStrengthIndicator = ({ password }: { password: string }) => {
+  const requirements = [
+    { label: 'Lowercase letter', regex: /[a-z]/ },
+    { label: 'Uppercase letter', regex: /[A-Z]/ },
+    { label: 'Number', regex: /[0-9]/ },
+    { label: 'At least 6 characters', regex: /.{6,}/ },
+  ];
+
+  const metCount = requirements.filter(req => req.regex.test(password)).length;
+  const progress = (metCount / requirements.length) * 100;
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Security Strength</span>
+        <span className={`text-[10px] font-black uppercase tracking-widest ${
+          metCount === 0 ? 'text-gray-400' :
+          metCount < 3 ? 'text-amber-500' :
+          metCount < 4 ? 'text-indigo-500' :
+          'text-emerald-500'
+        }`}>
+          {metCount === 0 ? 'None' : metCount < 3 ? 'Weak' : metCount < 4 ? 'Good' : 'Strong'}
+        </span>
+      </div>
+      
+      <div className="h-1.5 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          className={`h-full transition-colors duration-500 ${
+            metCount < 3 ? 'bg-amber-500' :
+            metCount < 4 ? 'bg-indigo-500' :
+            'bg-emerald-500'
+          }`}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {requirements.map((req, idx) => {
+          const isMet = req.regex.test(password);
+          return (
+            <div key={idx} className="flex items-center gap-2">
+              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
+                isMet ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-100 dark:bg-white/5 text-gray-300'
+              }`}>
+                {isMet ? <Check size={8} strokeWidth={4} /> : <div className="w-1 h-1 rounded-full bg-current" />}
+              </div>
+              <span className={`text-[9px] font-bold transition-colors ${isMet ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
+                {req.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { 
   label: string; 
@@ -232,6 +290,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
                   placeholder="••••••••"
                 />
+                {formData.password && <PasswordStrengthIndicator password={formData.password} />}
                 <button 
                   disabled={loading} 
                   className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold text-sm shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -362,6 +421,7 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setFormData({...formData, password: e.target.value})} 
                   placeholder="Min. 6 characters"
                 />
+                {formData.password && <PasswordStrengthIndicator password={formData.password} />}
                 
                 <button 
                   disabled={loading} 
