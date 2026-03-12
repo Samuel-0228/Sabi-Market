@@ -120,5 +120,11 @@ export const authApi = {
     const { error } = await authService.updatePassword(password);
     if (error) throw error;
     return true;
+  },
+
+  async getGoogleAuthUrl() {
+    const { data, error } = await authService.getGoogleAuthUrl();
+    if (error) throw error;
+    return data.url;
   }
 };

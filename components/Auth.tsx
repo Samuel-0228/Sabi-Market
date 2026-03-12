@@ -128,6 +128,50 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
     }
   }, [user, initialized, navigate, from, onSuccess]);
 
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+        return;
+      }
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setLoading(true);
+        try {
+          const profile = await sync();
+          if (profile) {
+            if (onSuccess) onSuccess();
+            navigate(from, { replace: true });
+          }
+        } catch (err) {
+          console.error("OAuth sync error:", err);
+          setError("Failed to sync profile after Google Sign-In.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [sync, onSuccess, navigate, from]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const url = await authApi.getGoogleAuthUrl();
+      if (url) {
+        const authWindow = window.open(url, 'google_oauth', 'width=600,height=700');
+        if (!authWindow) {
+          setError('Popup blocked. Please allow popups for this site.');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google Sign-In failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuth = async (isRegister: boolean) => {
     setError('');
     setSuccess('');
@@ -381,7 +425,12 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, initialStep = 'login' }) => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button type="button" className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95">
+                  <button 
+                    type="button" 
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95 disabled:opacity-50"
+                  >
                     <Chrome className="w-4 h-4 dark:text-white" />
                   </button>
                   <button type="button" className="flex-1 flex items-center justify-center py-3.5 border border-gray-100 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95">

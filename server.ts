@@ -3,17 +3,68 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import webpush from 'web-push';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// VAPID keys should be generated once and stored in environment variables
+const vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || 'BJ6_v_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o_X_Y_z-o',
+  privateKey: process.env.VAPID_PRIVATE_KEY || ''
+};
+
+if (vapidKeys.publicKey && vapidKeys.privateKey) {
+  webpush.setVapidDetails(
+    'mailto:support@savvymarket.aau',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+}
+
 async function startServer() {
   const app = express();
+  app.use(express.json());
   const PORT = 3000;
 
   // API routes
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok' });
+  });
+
+  app.post('/api/notifications/send', async (req: Request, res: Response) => {
+    const { subscription, title, body, url } = req.body;
+
+    if (!subscription) {
+      return res.status(400).json({ error: 'Subscription is required' });
+    }
+
+    try {
+      const payload = JSON.stringify({ title, body, url });
+      await webpush.sendNotification(JSON.parse(subscription), payload);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      res.status(500).json({ error: 'Failed to send notification' });
+    }
+  });
+
+  app.get('/auth/callback', (_req: Request, res: Response) => {
+    res.send(`
+      <html>
+        <body>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+              window.close();
+            } else {
+              window.location.href = '/';
+            }
+          </script>
+          <p>Authentication successful. This window should close automatically.</p>
+        </body>
+      </html>
+    `);
   });
 
   if (process.env.NODE_ENV !== 'production') {

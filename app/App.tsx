@@ -6,6 +6,7 @@ import { useUIStore } from '../store/ui.store';
 import { useCartStore } from '../store/cart.store';
 import { supabase } from '../services/supabase/client';
 import { useLanguage } from './LanguageContext';
+import { notificationService } from '../services/notificationService';
 
 // Layout Components
 import Navbar from '../components/layout/Navbar';
@@ -55,6 +56,19 @@ const AppRoutes: React.FC = () => {
   const { fetchCart } = useCartStore();
   const { addToast } = useUIStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const initNotifications = async () => {
+      await notificationService.registerServiceWorker();
+      if (user) {
+        const granted = await notificationService.requestPermission();
+        if (granted) {
+          await notificationService.subscribeUser();
+        }
+      }
+    };
+    initNotifications();
+  }, [user]);
 
   useEffect(() => {
     if (user) {

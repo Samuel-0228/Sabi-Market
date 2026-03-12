@@ -130,6 +130,22 @@ export const db = {
       .update({ status })
       .eq('id', orderId);
     if (error) handleSupabaseError(error, 'updateOrderItemStatus');
+
+    // Notify buyer
+    const { data: order } = await supabase
+      .from('orders')
+      .select('buyer_id, listings(title)')
+      .eq('id', orderId)
+      .single();
+
+    if (order) {
+      this.notifyUser(
+        (order as any).buyer_id,
+        'Order Update',
+        `Your order for ${(order as any).listings?.title} is now ${status}.`,
+        '/orders'
+      );
+    }
   },
 
   async createOrder(listing: Listing, amount: number, deliveryInfo: string) {
@@ -148,18 +164,47 @@ export const db = {
       });
 
     if (error) handleSupabaseError(error, 'createOrder');
+
+    // Notify seller
+    this.notifyUser(
+      listing.seller_id,
+      'New Order!',
+      `You have a new order for ${listing.title}.`,
+      '/seller-dashboard'
+    );
   },
 
   async sendMessage(conversationId: string, content: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
+
+    // Fetch conversation to find recipient
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('buyer_id, seller_id, listings(title)')
+      .eq('id', conversationId)
+      .single();
+
     const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: user.id,
       content,
       created_at: new Date().toISOString()
     });
+
     if (error) handleSupabaseError(error, 'sendMessage');
+
+    // Notify recipient
+    if (conv) {
+      const recipientId = user.id === (conv as any).buyer_id ? (conv as any).seller_id : (conv as any).buyer_id;
+      const listingTitle = (conv as any).listings?.title || 'a listing';
+      this.notifyUser(
+        recipientId,
+        'New Message',
+        `New message regarding ${listingTitle}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+        `/messages?id=${conversationId}`
+      );
+    }
   },
 
   async uploadImage(file: File): Promise<string> {
@@ -186,5 +231,30 @@ export const db = {
     }).select('id').single();
     if (createError) handleSupabaseError(createError, 'createConversation');
     return (created as any).id;
+  },
+
+  async notifyUser(userId: string, title: string, body: string, url: string) {
+    try {
+      const { data: subData } = await supabase
+        .from('push_subscriptions')
+        .select('subscription')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (subData?.subscription) {
+        await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription: subData.subscription,
+            title,
+            body,
+            url
+          })
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to send push notification:', err);
+    }
   }
 };

@@ -34,5 +34,14 @@ export const authService = {
   },
   async updatePassword(password: string) {
     return await supabase.auth.updateUser({ password });
+  },
+  async getGoogleAuthUrl() {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        skipBrowserRedirect: true
+      }
+    });
   }
 };
