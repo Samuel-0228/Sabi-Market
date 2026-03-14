@@ -162,7 +162,7 @@ const ProductDetailsPage: React.FC = () => {
                 onClick={() => navigate('/checkout', { state: { listing } })}
                 className="btn-premium px-12 py-5 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl flex-1"
               >
-                Acquire Now
+                Buy Now
               </button>
               <button 
                 onClick={handleAddToCart}
