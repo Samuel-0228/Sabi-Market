@@ -118,9 +118,9 @@ const Landing: React.FC = () => {
             
             <div className="reveal delay-2 relative">
               <div className="aspect-square bg-gradient-to-br from-savvy-accent/20 to-transparent rounded-[4rem] border border-white/10 p-8 flex flex-col justify-center items-center text-center">
-                <Lock className="w-10 h-10 text-savvy-accent mb-8 animate-pulse" />
+                <Lock className="w-20 h-20 text-savvy-accent mb-8 animate-pulse" />
                 <h3 className="text-3xl font-black uppercase tracking-tighter mb-4">Verified Nodes Only</h3>
-                <p className="text-white/50 font-medium">Exclusive to  AAU Students. No outsiders, no scams.</p>
+                <p className="text-white/50 font-medium">Exclusive to @aau.edu.et email holders. No outsiders, no scams.</p>
               </div>
               {/* Decorative elements */}
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-savvy-accent/10 blur-[100px] rounded-full"></div>
